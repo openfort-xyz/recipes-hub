@@ -24,6 +24,6 @@
 - Keep Openfort state updates inside existing context/providers; avoid introducing new global singletons.
 
 ## PR instructions
-- Title format: `[usdc-transfer] <summary>`.
+- Title format: `[usdc] <summary>`.
 - Update `README.md` if onboarding, faucet steps, or required env vars change.
 - Confirm the Expo app launches from a clean `npm start` before opening a PR.

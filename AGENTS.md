@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project overview
-- Collection of Openfort integration samples (`aave`, `hyperliquid`, `morpho`, `usdc-transfer`).
+- Collection of Openfort integration samples (`aave`, `hyperliquid`, `morpho`, `usdc`).
 - Each subdirectory has its own `AGENTS.md` with detailed setup instructions; start at the sample you are modifying.
 
 ## Setup commands

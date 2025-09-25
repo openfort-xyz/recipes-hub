@@ -19,7 +19,7 @@ This repository contains comprehensive samples demonstrating how to integrate Op
 - **Stack:** Vite + React frontend, Express.js backend
 - **Purpose:** Web application for interacting with Morpho Blue lending vaults on Base. Shows vault supply/withdrawal operations with yield optimization strategies.
 
-### [USDC Transfer](./usdc-transfer/)
+### [USDC Transfer](./usdc/)
 - **Languages:** TypeScript, React Native
 - **Stack:** Expo React Native
 - **Purpose:** Mobile application demonstrating basic ERC-20 token transfers using Openfort's embedded wallet infrastructure. Perfect for understanding wallet creation, faucet integration, and gasless transactions.
