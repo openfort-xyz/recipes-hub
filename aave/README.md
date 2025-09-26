@@ -1,5 +1,11 @@
 # Aave Sample
 
+## Quick Start
+
+```bash
+npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/aave openfort-aave && cd openfort-aave
+```
+
 ## Overview
 This sample demonstrates how to pair Openfort's embedded wallet infrastructure with the Aave protocol to build a full-stack DeFi experience. A Vite + React frontend connects to an Express backend that proxies Shield operations, letting users authenticate, inspect balances, and execute lending transactions with sponsored gas.
 

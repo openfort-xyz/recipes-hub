@@ -1,5 +1,11 @@
 # Openfort × Morpho Sample
 
+## Quick Start
+
+```bash
+npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/morpho openfort-morpho && cd openfort-morpho
+```
+
 ## Overview
 This sample pairs an Openfort embedded wallet frontend with a minimal Express backend to interact with a Morpho Blue USDC vault on Base. Users can authenticate through Shield, view balances, and supply or withdraw USDC from the configured vault using sponsored transactions.
 

@@ -4,25 +4,12 @@ This repository contains comprehensive samples demonstrating how to integrate Op
 
 ## Recipes
 
-### [Yield on Aave](./aave/)
-- **Languages:** TypeScript, React, Node.js
-- **Stack:** Vite + React frontend, Express.js backend
-- **Purpose:** Demonstrates DeFi lending and borrowing operations using Openfort embedded wallets with the Aave protocol. Shows how to interact with lending pools, manage collateral, and execute DeFi transactions with gas sponsorship.
-
-### [Trade on Hyperliquid](./hyperliquid/)
-- **Languages:** TypeScript, React Native
-- **Stack:** Expo React Native
-- **Purpose:** Mobile trading application for Hyperliquid's decentralized exchange. Demonstrates how to combine Openfort's embedded wallets with perpetual trading, real-time price feeds, and order management.
-
-### [Yield on Morpho](./morpho/)
-- **Languages:** TypeScript, React, Node.js
-- **Stack:** Vite + React frontend, Express.js backend
-- **Purpose:** Web application for interacting with Morpho Blue lending vaults on Base. Shows vault supply/withdrawal operations with yield optimization strategies.
-
-### [USDC Transfer](./usdc/)
-- **Languages:** TypeScript, React Native
-- **Stack:** Expo React Native
-- **Purpose:** Mobile application demonstrating basic ERC-20 token transfers using Openfort's embedded wallet infrastructure. Perfect for understanding wallet creation, faucet integration, and gasless transactions.
+| Name | Description | Quick Start |
+|------|-------------|-------------|
+| **[Yield on Aave](./aave/)** | DeFi lending and borrowing with Aave protocol. Interact with lending pools, manage collateral, and execute transactions with gas sponsorship. | `npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/aave openfort-aave && cd openfort-aave` |
+| **[Trade on Hyperliquid](./hyperliquid/)** | Mobile trading on Hyperliquid's DEX. Combines embedded wallets with perpetual trading, real-time price feeds, and order management. | `npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/hyperliquid openfort-hyperliquid && cd openfort-hyperliquid` |
+| **[Yield on Morpho](./morpho/)** | Interact with Morpho Blue lending vaults on Base. Supply/withdraw operations with yield optimization strategies. | `npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/morpho openfort-morpho && cd openfort-morpho` |
+| **[USDC Transfer](./usdc/)** | Basic ERC-20 token transfers with embedded wallets. Perfect for understanding wallet creation, faucet integration, and gasless transactions. | `npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/usdc openfort-usdc && cd openfort-usdc` |
 
 ## Getting Started
 

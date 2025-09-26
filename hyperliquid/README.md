@@ -1,5 +1,11 @@
 # Hyperliquid Trading Demo
 
+## Quick Start
+
+```bash
+npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/hyperliquid openfort-hyperliquid && cd openfort-hyperliquid
+```
+
 ## Overview
 Expo React Native application showcasing how Openfort's embedded wallets integrate with Hyperliquid's testnet exchange. The sample mirrors the USDC transfer architecture so you can reuse onboarding, wallet recovery, and trading utilities across mobile projects.
 

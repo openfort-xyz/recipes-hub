@@ -1,5 +1,11 @@
 # USDC Transfer Demo
 
+## Quick Start
+
+```bash
+npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/usdc openfort-usdc && cd openfort-usdc
+```
+
 ## Overview
 React Native Expo application demonstrating how to create, fund, and transfer between Openfort embedded wallets using USDC on Ethereum and Base Sepolia. The sample highlights wallet provisioning, faucet funding, and gas-sponsored ERC-20 transfers in a mobile-friendly flow.
 
