@@ -3,7 +3,7 @@
 ## Quick Start
 
 ```bash
-npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/morpho openfort-morpho && cd openfort-morpho
+npx gitpick openfort-xyz/recipes-hub/tree/main/morpho openfort-morpho && cd openfort-morpho
 ```
 
 ## Overview
