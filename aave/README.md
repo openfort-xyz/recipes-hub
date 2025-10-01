@@ -3,7 +3,7 @@
 ## Quick Start
 
 ```bash
-npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/aave openfort-aave && cd openfort-aave
+npx gitpick openfort-xyz/recipes-hub/tree/main/aave openfort-aave && cd openfort-aave
 ```
 
 ## Overview
