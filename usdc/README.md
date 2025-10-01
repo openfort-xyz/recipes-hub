@@ -3,7 +3,7 @@
 ## Quick Start
 
 ```bash
-npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/usdc openfort-usdc && cd openfort-usdc
+npx gitpick openfort-xyz/recipes-hub/tree/main/usdc openfort-usdc && cd openfort-usdc
 ```
 
 ## Overview
