@@ -3,7 +3,7 @@
 ## Quick Start
 
 ```bash
-npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/hyperliquid openfort-hyperliquid && cd openfort-hyperliquid
+npx gitpick openfort-xyz/recipes-hub/tree/main/hyperliquid openfort-hyperliquid && cd openfort-hyperliquid
 ```
 
 ## Overview
