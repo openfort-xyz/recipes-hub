@@ -8,6 +8,7 @@ This repository contains comprehensive samples demonstrating how to integrate Op
 |------|-------------|-------------|
 | **[Yield on Aave](./aave/)** | DeFi lending and borrowing with Aave protocol. Interact with lending pools, manage collateral, and execute transactions with gas sponsorship. | `npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/aave openfort-aave && cd openfort-aave` |
 | **[Trade on Hyperliquid](./hyperliquid/)** | Mobile trading on Hyperliquid's DEX. Combines embedded wallets with perpetual trading, real-time price feeds, and order management. | `npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/hyperliquid openfort-hyperliquid && cd openfort-hyperliquid` |
+| **[Swap on LiFi](./lifi/)** | Cross-chain bridge and swap flows with LiFi routing engine. Multi-chain support across Ethereum, Polygon, Arbitrum, Optimism, Base, and Avalanche. | `npx gitpick openfort-xyz/recipes-hub/tree/main/lifi openfort-lifi && cd openfort-lifi` |
 | **[Yield on Morpho](./morpho/)** | Interact with Morpho Blue lending vaults on Base. Supply/withdraw operations with yield optimization strategies. | `npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/morpho openfort-morpho && cd openfort-morpho` |
 | **[USDC Transfer](./usdc/)** | Basic ERC-20 token transfers with embedded wallets. Perfect for understanding wallet creation, faucet integration, and gasless transactions. | `npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/usdc openfort-usdc && cd openfort-usdc` |
 
@@ -33,6 +34,7 @@ Each sample is completely self-contained with its own setup instructions, enviro
 |--------|----------|---------|------------|---------------|
 | **Aave** | React + Vite | Express.js | Ethereum | `@aave/react`, `wagmi`, `viem` |
 | **Hyperliquid** | React Native | - | Arbitrum Sepolia | `@nktkas/hyperliquid`, `@openfort/react-native` |
+| **LiFi** | Next.js 15 | - | Multi-chain | `@lifi/sdk`, `@lifi/wallet-management`, `wagmi` |
 | **Morpho** | React + Vite | Express.js | Base | `wagmi`, `viem`, `graphql-request` |
 | **USDC** | React Native | - | Ethereum Sepolia | `@openfort/react-native`, `expo` |
 
