@@ -5,9 +5,9 @@
 - Demonstrates cross-chain bridge and swap flows with Shield-managed embedded wallets and LiFi routing engine.
 
 ## Setup commands
-- `bun install` (or `npm install` / `yarn install`)
+- `npm install` (or `yarn install` / `bun install`)
 - `cp .env.example .env.local` (or create `.env.local` if example doesn't exist)
-- `bun dev` (or `npm run dev` / `yarn dev`) – starts on `http://localhost:3000`
+- `npm run dev` (or `yarn dev` / `bun dev`) – starts on `http://localhost:3000`
 
 ## Environment
 - `.env.local` needs `NEXT_PUBLIC_OPENFORT_PUBLISHABLE_KEY`, `NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY`, `NEXT_PUBLIC_OPENFORT_POLICY_ID`, `NEXT_PUBLIC_OPENFORT_DEFAULT_CHAIN_ID`, optional `NEXT_PUBLIC_LIFI_API_KEY`, and `NEXT_PUBLIC_LIFI_INTEGRATOR`.
@@ -17,7 +17,7 @@
 - `NEXT_PUBLIC_LIFI_INTEGRATOR` should be set to "Recipe" or your integrator name.
 
 ## Testing instructions
-- `bun run build` (or `npm run build`) – verify production build succeeds.
+- `npm run build` (or `yarn build` / `bun run build`) – verify production build succeeds.
 - Manually validate swap flows across different chain combinations (Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche).
 - Test authentication, route discovery, execution tracking, and resume/stop controls.
 

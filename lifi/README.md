@@ -76,8 +76,8 @@ lifi/
 
 ### Install & Run
 ```bash
-bun install        # or npm install / yarn install
-bun dev            # or npm run dev / yarn dev
+npm install        # or yarn install / bun install
+npm run dev        # or yarn dev / bun dev
 # http://localhost:3000
 ```
 
@@ -90,7 +90,7 @@ bun dev            # or npm run dev / yarn dev
 6. Resume or stop background execution as needed; view transaction details via explorer links.
 
 ## Development
-- **Scripts** – `bun dev` (development), `bun build` (production build), `bun start` (production server).
+- **Scripts** – `npm run dev` (development), `npm run build` (production build), `npm start` (production server).
 - Keep React components functional and prefer hooks for shared logic.
 - Maintain Tailwind class conventions from existing components.
 - Test multi-chain flows across different network combinations.
