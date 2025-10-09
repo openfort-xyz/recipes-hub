@@ -4,6 +4,7 @@ import {
   OpenfortProvider,
   RecoveryMethod,
   type OpenfortProviderProps,
+  AuthProvider,
 } from "@openfort/react";
 import type { PropsWithChildren } from "react";
 
@@ -49,7 +50,7 @@ export const OpenfortProviderBoundary = ({
       walletConfig={{
         shieldPublishableKey,
         ethereumProviderPolicyId,
-        recoverWalletAutomaticallyAfterAuth: false,
+        recoverWalletAutomaticallyAfterAuth: true,
       }}
       uiConfig={{
         initialChainId: Number.isFinite(defaultChainId)
@@ -58,6 +59,11 @@ export const OpenfortProviderBoundary = ({
         walletRecovery: {
           defaultMethod: RecoveryMethod.PASSKEY,
         },
+        authProviders: [
+          AuthProvider.EMAIL,
+          AuthProvider.GOOGLE,
+          AuthProvider.WALLET,
+        ],
       }}
     >
       {children}
