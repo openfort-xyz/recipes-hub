@@ -131,11 +131,21 @@ export function useVaultOperations() {
       const initialWalletBalance = walletBalance;
       const initialVaultBalance = userVaultBalance;
 
+      // 0.1 USDC with 6 decimals = 100000
+      const supplyAmount = 100000n;
+
+      // Check if wallet has enough balance
+      if (walletBalance < supplyAmount) {
+        alert("Insufficient USDC balance. Need at least 0.1 USDC.");
+        setIsSupplying(false);
+        return;
+      }
+
       const approveHash = await walletClient.writeContract({
         address: USDC_CONTRACT_ADDRESS,
         abi: usdcAbi,
         functionName: 'approve',
-        args: [VAULT_ADDRESS as `0x${string}`, walletBalance],
+        args: [VAULT_ADDRESS as `0x${string}`, supplyAmount],
       });
 
       await waitForTransaction(approveHash);
@@ -144,7 +154,7 @@ export function useVaultOperations() {
         address: VAULT_ADDRESS as `0x${string}`,
         abi: MINIMAL_VAULT_ABI,
         functionName: 'deposit',
-        args: [walletBalance, address as `0x${string}`],
+        args: [supplyAmount, address as `0x${string}`],
       });
 
       await waitForTransaction(depositHash);
