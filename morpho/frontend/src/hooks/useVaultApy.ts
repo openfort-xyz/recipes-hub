@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { GraphQLClient, gql } from 'graphql-request';
 
-const MORPHO_API = "https://blue-api.morpho.org/graphql";
+const MORPHO_API = "https://api.morpho.org/graphql";
 const VAULT_ADDRESS = "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183";
 
 interface VaultApyResponse {
