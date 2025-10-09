@@ -105,5 +105,5 @@ npm run dev        # or yarn dev / bun dev
 ## Resources
 - [Openfort Documentation](https://docs.openfort.io)
 - [Openfort Embedded Wallet Docs](https://www.openfort.io/docs/products/embedded-wallet/react)
-- [LiFi Developer Docs](https://developers.lifi.io/)
+- [LiFi Developer Docs](https://docs.li.fi/sdk/overview/)
 - [Openfort Dashboard](https://dashboard.openfort.io/)
