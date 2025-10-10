@@ -263,7 +263,8 @@ export function startUsdcBalancePolling(
 
 /**
  * Transfer USDC from a wallet to a recipient address. Ensures the wallet is active if
- * activeWallet and setActiveWallet are provided. Throws on failure. Returns txHash.
+ * activeWallet and setActiveWallet are provided. Throws on failure. Returns the confirmed
+ * transaction hash when available, otherwise the transaction intent id (`tin_*`).
  */
 export async function transferUSDC(params: {
   fromWallet: { address: string; wallet: { getProvider: () => Promise<any> } };
@@ -297,7 +298,7 @@ export async function transferUSDC(params: {
   // ERC20 transfer(address,uint256)
   const transferData = buildTransferData(toAddress, amountHex);
 
-  const txHash = await provider.request({
+  const transactionIntentId = await provider.request({
     method: "wallet_sendCalls",
     params: [
       {
@@ -311,14 +312,20 @@ export async function transferUSDC(params: {
     ],
   });
 
+  let finalTxHash: string | null = null;
+
   if (waitForReceipt) {
     try {
-      const receipt = await waitForTransactionReceipt(provider, txHash, {
+      const statusResult = await waitForTransactionReceipt(provider, transactionIntentId, {
         timeoutMs: 10_000,
         intervalMs: 1_000,
       });
-      if (receipt && receipt.status === "0x0") {
-        throw new Error("Transaction was mined but failed.");
+      if (statusResult?.status === "CONFIRMED") {
+        const receipt = statusResult.receipts?.[0];
+        if (receipt?.status === "reverted") {
+          throw new Error("Transaction was mined but failed.");
+        }
+        finalTxHash = receipt?.transactionHash || null;
       }
     } catch (err: any) {
       // If polling failed, allow caller to proceed; they can refresh balances
@@ -328,27 +335,27 @@ export async function transferUSDC(params: {
     }
   }
 
-  return txHash as string;
+  return finalTxHash ?? (transactionIntentId as string);
 }
 
 
 /**
- * Poll for a transaction receipt until it is available or timeout.
- * Returns the receipt object or null on timeout.
+ * Poll for a transaction intent status until it is confirmed or times out.
+ * Returns the status payload or null on timeout.
  */
 export async function waitForTransactionReceipt(
   provider: any,
-  txHash: string,
+  transactionIntentId: string,
   options?: { timeoutMs?: number; intervalMs?: number }
 ): Promise<any | null> {
   return await pollUntil<any>(
     async () => {
       return await provider.request({
-        method: "eth_getTransactionReceipt",
-        params: [txHash],
+        method: "wallet_getCallsStatus",
+        params: [transactionIntentId],
       });
     },
-    (receipt) => Boolean(receipt),
+    (result) => result?.status === "CONFIRMED",
     { timeoutMs: options?.timeoutMs ?? 10_000, intervalMs: options?.intervalMs ?? 1_000 }
   );
 }
@@ -356,4 +363,3 @@ export async function waitForTransactionReceipt(
 // ------------------------------------
 // Functions (USDC-specific)
 // ------------------------------------
-
