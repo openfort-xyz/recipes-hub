@@ -8,9 +8,9 @@ import Footer from "@/components/footer";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Bridges with Openfort",
+  title: "Openfort × LI.FI Bridge Recipe",
   description:
-    "Bridge tokens across multiple chains seamlessly with Openfort embedded wallets and LiFi. Access the best routes and execute cross-chain transfers with confidence.",
+    "An Openfort embedded wallet experience powered by LI.FI routing. Bridge tokens across chains with trusted co-branded flows and real-time execution tracking.",
 };
 
 export default function RootLayout({

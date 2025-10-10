@@ -1,14 +1,13 @@
 import Link from "next/link";
 import OpenfortLogo from "@/features/openfort/components/logo";
+import LiFiLogo from "@/features/lifi/components/li-fi-logo";
 import { HamburgerMenu } from "./hamburger-menu";
 import OpenfortConnectButton from "@/features/openfort/components/connect-button";
 
 export default function Header() {
   return (
-    <div
-      className={"absolute top-0 flex items-center justify-between w-full py-2"}
-    >
-      <div className="pl-4 h-[40px] flex items-center">
+    <div className="absolute top-0 flex items-center justify-between w-full py-2">
+      <div className="pl-4 h-[40px] flex items-center gap-3">
         <Link href="/">
           <OpenfortLogo />
         </Link>

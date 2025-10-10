@@ -1,4 +1,4 @@
-import OpenfortLogo from "@/features/openfort/components/logo";
+import { CoBrandLogos } from "@/features/lifi/components/co-branding";
 
 interface FooterProps {
   bottomLinks?: {
@@ -15,6 +15,7 @@ export default function Footer({
     },
     { text: "Docs", url: "https://www.openfort.io/docs" },
     { text: "Dashboard", url: "https://dashboard.openfort.io" },
+    { text: "LI.FI Docs", url: "https://docs.li.fi" },
     { text: "Support", url: "https://www.openfort.io/company/contact" },
   ],
 }: FooterProps) {
@@ -23,8 +24,10 @@ export default function Footer({
       <div className="container mx-auto px-4 py-3">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <span className="font-medium">powered by</span>
-            <OpenfortLogo width={90} height={18} />
+            <span className="font-medium uppercase tracking-wide">
+              Powered by
+            </span>
+            <CoBrandLogos variant="compact" />
           </div>
           <ul className="flex gap-4">
             {bottomLinks.map((link, linkIdx) => (

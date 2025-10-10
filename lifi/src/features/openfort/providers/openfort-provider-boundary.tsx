@@ -64,6 +64,7 @@ export const OpenfortProviderBoundary = ({
           AuthProvider.GOOGLE,
           AuthProvider.WALLET,
         ],
+        mode: "dark",
       }}
     >
       {children}

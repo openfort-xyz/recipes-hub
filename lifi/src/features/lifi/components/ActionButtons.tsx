@@ -109,9 +109,7 @@ export default function ActionButtons({
             )}
           </Button>
         ) : (
-          <div className="w-full">
-            Connect your wallet with Openfort to swap
-          </div>
+          null
         )}
 
         {hasActiveRoute && (

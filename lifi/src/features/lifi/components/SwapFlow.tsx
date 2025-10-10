@@ -1,6 +1,7 @@
 "use client";
 
 import { useSwapController } from "@/features/lifi/hooks/use-swap-controller";
+import { CoBrandHero } from "./co-branding";
 import ActionButtons from "./ActionButtons";
 import ExecutionDisplay from "./ExecutionDisplay";
 import RouteDisplay from "./RouteDisplay";
@@ -35,6 +36,7 @@ export const SwapFlow = () => {
   return (
     <main className="flex-1 flex items-center justify-center p-6">
       <div className="w-full max-w-md space-y-6">
+        <CoBrandHero />
         {state.showExecutionDisplay ? (
           <ExecutionDisplay
             activeRoute={state.activeRoute}
