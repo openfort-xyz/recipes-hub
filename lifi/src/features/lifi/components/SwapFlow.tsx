@@ -41,8 +41,6 @@ export const SwapFlow = () => {
             isExecuting={state.isExecuting}
             isRouteCompleted={state.isRouteCompleted}
             executionProgress={state.executionProgress}
-            onResumeRoute={actions.resumeActiveRoute}
-            onMoveToBackground={actions.moveActiveRouteToBackground}
             onStopRoute={actions.stopActiveRoute}
             onBackToForm={actions.backToForm}
           />

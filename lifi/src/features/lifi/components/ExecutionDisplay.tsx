@@ -11,8 +11,6 @@ interface ExecutionDisplayProps {
   isExecuting: boolean;
   isRouteCompleted: boolean;
   executionProgress: ExecutionProgress[];
-  onResumeRoute: () => void;
-  onMoveToBackground: () => void;
   onStopRoute: () => void;
   onBackToForm: () => void;
 }
@@ -22,8 +20,6 @@ export default function ExecutionDisplay({
   isExecuting,
   isRouteCompleted,
   executionProgress,
-  onResumeRoute,
-  onMoveToBackground,
   onStopRoute,
   onBackToForm,
 }: ExecutionDisplayProps) {
@@ -60,7 +56,7 @@ export default function ExecutionDisplay({
   const getOverallStatus = () => {
     if (isRouteCompleted) return "COMPLETED";
     if (isExecuting) return "EXECUTING";
-    return "PAUSED";
+    return "STOPPED";
   };
 
   const getOverallStatusColor = (status: string) => {
@@ -69,8 +65,8 @@ export default function ExecutionDisplay({
         return "bg-green-500/20 text-green-400 border-green-500/30";
       case "EXECUTING":
         return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-      case "PAUSED":
-        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+      case "STOPPED":
+        return "bg-gray-500/20 text-gray-400 border-gray-500/30";
       default:
         return "bg-gray-500/20 text-gray-400 border-gray-500/30";
     }
@@ -162,32 +158,12 @@ export default function ExecutionDisplay({
           {/* Execution Progress History */}
           {executionProgress.length > 0 && (
             <div className="bg-muted/40 rounded-lg p-4 border border-border">
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <div>
-                  <h4 className="text-sm font-medium">Execution History</h4>
-                  <span className="text-xs text-muted-foreground">
-                    {executionProgress.filter((p) => p.status === "DONE").length} /{" "}
-                    {executionProgress.length} steps complete
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {!isRouteCompleted && !isExecuting && (
-                    <button
-                      onClick={onResumeRoute}
-                      className="px-3 py-1.5 text-xs border border-primary/40 hover:bg-primary/10 rounded-md text-primary transition-colors cursor-pointer"
-                    >
-                      Resume execution
-                    </button>
-                  )}
-                  {isExecuting && (
-                    <button
-                      onClick={onMoveToBackground}
-                      className="px-3 py-1.5 text-xs border border-muted-foreground/40 hover:bg-muted/60 rounded-md text-muted-foreground transition-colors cursor-pointer"
-                    >
-                      Run in background
-                    </button>
-                  )}
-                </div>
+              <div className="mb-4">
+                <h4 className="text-sm font-medium">Execution History</h4>
+                <span className="text-xs text-muted-foreground">
+                  {executionProgress.filter((p) => p.status === "DONE").length} /{" "}
+                  {executionProgress.length} steps complete
+                </span>
               </div>
               <div className="space-y-3">
                 {executionProgress.map((progress, index) => {
