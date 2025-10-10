@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useOpenfortWallet } from "@/features/openfort/hooks/use-openfort-wallet";
 import { OpenfortButton, useSignOut } from "@openfort/react";
@@ -21,6 +22,19 @@ export default function OpenfortConnectButton({
     address,
   } = useOpenfortWallet();
   const { signOut } = useSignOut();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyAddress = useCallback(async () => {
+    if (address) {
+      try {
+        await navigator.clipboard.writeText(address);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error("Failed to copy address:", err);
+      }
+    }
+  }, [address]);
 
   if (!isAuthenticated || !isConnected) {
     return (
@@ -37,7 +51,13 @@ export default function OpenfortConnectButton({
   if (compact) {
     return (
       <div className={cn("flex items-center gap-2 w-full", className)}>
-        <span className="text-sm truncate max-w-[150px]">{displayName}</span>
+        <span
+          className="text-sm truncate max-w-[150px] cursor-pointer hover:text-primary transition-colors"
+          onClick={handleCopyAddress}
+          title={copied ? "Copied!" : "Click to copy address"}
+        >
+          {copied ? "Copied!" : displayName}
+        </span>
         <Button
           variant="secondary"
           size="sm"
@@ -54,7 +74,13 @@ export default function OpenfortConnectButton({
   return (
     <div className={cn("flex items-center gap-3", className)}>
       <div className="flex flex-col text-sm">
-        <span className="font-semibold">{displayName}</span>
+        <span
+          className="font-semibold cursor-pointer hover:text-primary transition-colors"
+          onClick={handleCopyAddress}
+          title={copied ? "Copied!" : "Click to copy address"}
+        >
+          {copied ? "Copied!" : displayName}
+        </span>
         <span className="text-xs text-muted-foreground">
           Wallet connected via Openfort
         </span>
