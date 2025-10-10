@@ -619,6 +619,7 @@ Do you want to continue?`
       showRouteDisplay: false,
       showExecutionDisplay: false,
       isExecuting: false,
+      isLoading: false,
       executionProgress: [],
       activeRoute: null,
       isRouteCompleted: false,
