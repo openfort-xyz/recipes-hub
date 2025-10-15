@@ -631,6 +631,7 @@ Do you want to continue?`
   const handleClear = useCallback(() => {
     setSwapState((prev) => ({
       ...prev,
+      amount: DEFAULT_SWAP_AMOUNT,
       routes: [],
       selectedRoute: null,
       error: null,
