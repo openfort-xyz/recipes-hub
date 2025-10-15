@@ -9,7 +9,7 @@ In this guide, we'll demonstrate how to use Pimlico, a bundler and paymaster ser
 In your app's repository, install the required dependencies from Openfort, Permissionless, and Viem:
 
 ```bash
-npm i @openfort/react permissionless viem wagmi
+pnpm add @openfort/react permissionless viem wagmi
 ```
 
 ## 1. Sign up for a Pimlico account and get your API key
