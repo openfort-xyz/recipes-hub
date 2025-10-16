@@ -40,7 +40,7 @@ export function UserOperation() {
         setEmbeddedWallet(activeWallet.wallet)
       })
     }
-  }, [wallets.length, setActiveWallet, wallets[0].address, wallets[0].id])
+  }, [wallets.length])
 
   const sendUserOperation = async () => {
     if (!user || !embeddedWallet) {
