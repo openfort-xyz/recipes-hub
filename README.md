@@ -11,6 +11,7 @@ This repository contains comprehensive samples demonstrating how to integrate Op
 | **[Swap on LiFi](./lifi/)** | Cross-chain bridge and swap flows with LiFi routing engine. Multi-chain support across Ethereum, Polygon, Arbitrum, Optimism, Base, and Avalanche. | `npx gitpick openfort-xyz/recipes-hub/tree/main/lifi openfort-lifi && cd openfort-lifi` |
 | **[Yield on Morpho](./morpho/)** | Interact with Morpho Blue lending vaults on Base. Supply/withdraw operations with yield optimization strategies. | `npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/morpho openfort-morpho && cd openfort-morpho` |
 | **[USDC Transfer](./usdc/)** | Basic ERC-20 token transfers with embedded wallets. Perfect for understanding wallet creation, faucet integration, and gasless transactions. | `npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/usdc openfort-usdc && cd openfort-usdc` |
+| **[Permissionless 7702](./7702/)** | Openfort + Permissionless EIP-7702 authorization recipe with gas sponsorship via Pimlico. | `npx gitpick openfort-xyz/recipes-hub/tree/main/7702 openfort-permissionless-7702 && cd openfort-permissionless-7702` |
 
 ## Getting Started
 
@@ -37,4 +38,5 @@ Each sample is completely self-contained with its own setup instructions, enviro
 | **LiFi** | Next.js 15 | - | Multi-chain | `@lifi/sdk`, `@lifi/wallet-management`, `wagmi` |
 | **Morpho** | React + Vite | Express.js | Base | `wagmi`, `viem`, `graphql-request` |
 | **USDC** | React Native | - | Ethereum Sepolia | `@openfort/react-native`, `expo` |
+| **Permissionless 7702** | Next.js 15 | - | Ethereum Sepolia | `@openfort/react`, `permissionless`, `viem`, `wagmi` |
 
