@@ -40,5 +40,5 @@ Each sample is completely self-contained with its own setup instructions, enviro
 | **Morpho** | React + Vite | Express.js | Base | `wagmi`, `viem`, `graphql-request` |
 | **USDC** | React Native | - | Ethereum Sepolia | `@openfort/react-native`, `expo` |
 | **Permissionless 7702** | Next.js 15 | - | Ethereum Sepolia | `@openfort/react`, `permissionless`, `viem`, `wagmi` |
-| **x402** | React + Vite | Hono | Base/Base-Sepolia | `@openfort/react`, `wagmi`, `viem`, `hono` |
+| **x402** | React + Vite | Node.js | Base/Base-Sepolia | `@openfort/react`, `wagmi`, `viem` |
 

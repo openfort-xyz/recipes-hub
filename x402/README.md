@@ -6,7 +6,7 @@ A structured, end-to-end reference that showcases how Openfort smart accounts po
 
 ```
 openfort_x402/
-├─ server/                       # Hono API broken into config, routes, services
+├─ server/                       # Node.js API broken into config, routes, services
 │  ├─ app.js                     # Assembles middleware + routes
 │  ├─ config/environment.js      # Environment parsing & payment defaults
 │  ├─ integrations/openfort...   # Openfort Node client creator
@@ -20,7 +20,7 @@ openfort_x402/
 │  ├─ integrations/openfort/     # React providers & config helpers
 │  ├─ integrations/x402/         # Protocol helpers (types, encoding, balance)
 │  └─ types/                     # Global ambient types (window.x402, …)
-└─ server.js                     # Node entry that boots the Hono server
+└─ server.js                     # Node entry that boots the HTTP server
 ```
 
 ## Quick Start
@@ -97,7 +97,7 @@ X402_ASSET_ADDRESS=0x...            # token address for your network
 
 ## Feature Highlights
 
-- Modular Hono server with environment-driven configuration.
+- Modular Node.js server with environment-driven configuration.
 - Dedicated x402 helpers for payload selection and encoding.
 - Smart-account UX using the Openfort React SDK (providers, wallet creation, recovery flows).
 - React feature module for the entire paywall journey with explicit loading/error/auth/payment states.
@@ -108,7 +108,7 @@ X402_ASSET_ADDRESS=0x...            # token address for your network
 - React 18 + Vite + TypeScript
 - Wagmi & viem for blockchain interaction
 - Openfort React + Node SDKs
-- Hono for lightweight HTTP APIs
+- Node.js built-in http module for lightweight HTTP APIs
 - Biome for formatting/linting (`pnpm check`, `pnpm format`)
 
 ## Useful Scripts

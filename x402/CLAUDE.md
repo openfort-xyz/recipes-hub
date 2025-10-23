@@ -7,7 +7,7 @@ This is the **Openfort x402 Modular Demo** - a production-ready reference implem
 ## Architecture Principles
 
 ### 1. **Separation of Concerns**
-- **Server Layer** (`server/`): Hono-based API handling x402 payment requirements, Shield session creation, and content delivery
+- **Server Layer** (`server/`): Node.js HTTP API handling x402 payment requirements, Shield session creation, and content delivery
 - **Integration Layer** (`src/integrations/`): Protocol-specific helpers for Openfort and x402 that have zero UI dependencies
 - **Feature Layer** (`src/features/`): Self-contained feature modules with their own components, hooks, and utilities
 
@@ -29,7 +29,7 @@ This is the **Openfort x402 Modular Demo** - a production-ready reference implem
 ### File Organization Rules
 
 1. **Server Code** (`server/`):
-   - `app.js`: Main Hono application assembly
+   - `app.js`: Main HTTP server request handler
    - `config/`: Environment parsing and defaults
    - `integrations/`: External service clients (Openfort)
    - `routes/`: HTTP endpoint handlers (one file per route group)
@@ -120,7 +120,7 @@ See [README.md](README.md) for complete environment variable documentation.
 1. Create route handler in `server/routes/`
 2. Add route to `server/app.js`
 3. Update environment config if new settings needed
-4. Add error handling (use Hono's HTTP exception helpers)
+4. Add error handling (use standard HTTP error responses)
 5. Document endpoint in README.md
 
 ### Modifying Payment Logic

@@ -4,9 +4,9 @@ This document provides specific guidance for AI coding assistants working with t
 
 ## Quick Context
 
-You are working on a **React + Vite + Hono** application that demonstrates x402 payment protocol integration with Openfort smart accounts. The stack includes:
+You are working on a **React + Vite + Node.js** application that demonstrates x402 payment protocol integration with Openfort smart accounts. The stack includes:
 - Frontend: React 18, TypeScript, Tailwind CSS v4, Wagmi, viem
-- Backend: Hono (Node.js), Openfort Node SDK
+- Backend: Node.js (built-in http module), Openfort Node SDK
 - Tools: Biome (not Prettier), pnpm (not npm), TypeScript 5.8
 
 ## Critical Rules
@@ -80,26 +80,24 @@ export function useMyFeature() {
 
 1. Create handler in `server/routes/newEndpoint.js`:
 ```javascript
-import { Hono } from 'hono'
-
-const router = new Hono()
-
-router.get('/', async (c) => {
+export async function handleNewEndpoint(req, res) {
   try {
     // Implementation
-    return c.json({ success: true, data })
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ success: true, data }));
   } catch (error) {
-    return c.json({ error: error.message }, 500)
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: error.message }));
   }
-})
-
-export default router
+}
 ```
 
 2. Register in `server/app.js`:
 ```javascript
-import newEndpoint from './routes/newEndpoint.js'
-app.route('/api/new-endpoint', newEndpoint)
+import { handleNewEndpoint } from './routes/newEndpoint.js'
+// Add to the routing logic:
+} else if (pathname === "/api/new-endpoint" && req.method === "GET") {
+  await handleNewEndpoint(req, res);
 ```
 
 ### Adding a UI Component
@@ -204,11 +202,11 @@ pnpm dev:all
 - Public clients for read operations
 - Wallet clients for write operations
 
-### Hono
-- Use `c.json()` for responses
-- Use `c.req.json()` for parsing body
-- Middleware via `app.use()`
-- Routing via `app.route()`
+### Node.js HTTP
+- Use `res.writeHead()` and `res.end()` for responses
+- Parse request body manually with stream listeners
+- Set CORS headers via `res.setHeader()`
+- Route via pathname matching in request handler
 
 ### Openfort SDK
 - Client components: `@openfort/react`
@@ -248,7 +246,7 @@ function PaymentUI() { return <div>...</div> }
 ## Architecture Overview
 
 ### Server Layer (`server/`)
-- **app.js**: Main Hono application
+- **app.js**: Main HTTP request handler
 - **config/**: Environment configuration
 - **integrations/**: External service clients (Openfort)
 - **routes/**: HTTP endpoints (402 responses, Shield sessions)

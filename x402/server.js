@@ -1,5 +1,5 @@
 import { config } from "dotenv";
-import { serve } from "@hono/node-server";
+import { createServer } from "http";
 
 import { createPaywallServer } from "./server/app.js";
 import { resolveEnvironment } from "./server/config/environment.js";
@@ -8,7 +8,7 @@ import { resolveEnvironment } from "./server/config/environment.js";
 config({ path: ".env.local" });
 
 const env = resolveEnvironment();
-const app = createPaywallServer(env);
+const requestHandler = createPaywallServer(env);
 
 console.log(`
 🚀 x402 Demo Server
@@ -20,7 +20,8 @@ console.log(`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `);
 
-serve({
-  fetch: app.fetch,
-  port: env.port,
+const server = createServer(requestHandler);
+
+server.listen(env.port, () => {
+  console.log(`Server is listening on port ${env.port}`);
 });
