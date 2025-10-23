@@ -12,6 +12,7 @@ This repository contains comprehensive samples demonstrating how to integrate Op
 | **[Yield on Morpho](./morpho/)** | Interact with Morpho Blue lending vaults on Base. Supply/withdraw operations with yield optimization strategies. | `npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/morpho openfort-morpho && cd openfort-morpho` |
 | **[USDC Transfer](./usdc/)** | Basic ERC-20 token transfers with embedded wallets. Perfect for understanding wallet creation, faucet integration, and gasless transactions. | `npx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/usdc openfort-usdc && cd openfort-usdc` |
 | **[Permissionless 7702](./7702/)** | Openfort + Permissionless EIP-7702 authorization recipe with gas sponsorship via Pimlico. | `npx gitpick openfort-xyz/recipes-hub/tree/main/7702 openfort-permissionless-7702 && cd openfort-permissionless-7702` |
+| **[x402 Paywall](./x402/)** | End-to-end x402 payment protocol integration with Openfort smart accounts. Demonstrates content paywalls with USDC payments on Base/Base-Sepolia. | `npx gitpick openfort-xyz/recipes-hub/tree/main/x402 openfort-x402 && cd openfort-x402` |
 
 ## Getting Started
 
@@ -39,4 +40,5 @@ Each sample is completely self-contained with its own setup instructions, enviro
 | **Morpho** | React + Vite | Express.js | Base | `wagmi`, `viem`, `graphql-request` |
 | **USDC** | React Native | - | Ethereum Sepolia | `@openfort/react-native`, `expo` |
 | **Permissionless 7702** | Next.js 15 | - | Ethereum Sepolia | `@openfort/react`, `permissionless`, `viem`, `wagmi` |
+| **x402** | React + Vite | Hono | Base/Base-Sepolia | `@openfort/react`, `wagmi`, `viem`, `hono` |
 
