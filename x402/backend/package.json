@@ -2,18 +2,20 @@
   "name": "openfort-x402-backend",
   "version": "1.0.0",
   "description": "Backend server for x402 paywall demo",
-  "main": "server.js",
+  "main": "dist/server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsc && node --watch dist/server.js"
   },
   "dependencies": {
     "dotenv": "^16.3.1",
-    "@openfort/openfort-node": "^0.75.0"
+    "@openfort/openfort-node": "^0.6.74"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
   },
   "keywords": ["openfort", "x402", "paywall", "backend"],
   "author": "Openfort",
