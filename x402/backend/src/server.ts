@@ -52,7 +52,6 @@ console.log(`
 🌐 Running on: http://localhost:${env.port}
 🎯 Paying to: ${env.paywall.payToAddress}
 🔗 Network: ${env.paywall.payment.network}
-📋 Frontend should be on: http://localhost:5173
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `);
 
