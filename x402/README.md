@@ -5,7 +5,7 @@ A structured, end-to-end reference that showcases how Openfort smart accounts po
 ## Directory Overview
 
 ```
-openfort_x402/
+x402/
 ├─ frontend/                     # React + Vite client application
 │  ├─ src/
 │  │  ├─ App.tsx                 # Mounts the paywall experience
@@ -19,15 +19,17 @@ openfort_x402/
 │  ├─ index.html
 │  ├─ vite.config.ts
 │  └─ package.json
-├─ backend/                      # Node.js API server
-│  ├─ server/                    # API broken into config, routes, services
-│  │  ├─ app.js                  # Assembles middleware + routes
-│  │  ├─ config/environment.js   # Environment parsing & payment defaults
-│  │  ├─ integrations/openfort...# Openfort Node client creator
-│  │  └─ routes/…                # /api/protected-content, /shield-session, /health
-│  ├─ server.js                  # Node entry that boots the HTTP server
+├─ backend/                      # Express.js + TypeScript API server
+│  ├─ src/                       # TypeScript source files
+│  │  ├─ server.ts               # Express server setup and middleware
+│  │  ├─ config.ts               # Environment parsing & payment defaults
+│  │  ├─ openfort.ts             # Openfort Node client creator
+│  │  ├─ routes.ts               # /api/protected-content, /shield-session, /health
+│  │  └─ payment.ts              # Payment validation logic
+│  ├─ dist/                      # Compiled JavaScript output
 │  └─ package.json
 ├─ README.md
+├─ CLAUDE.md
 └─ AGENTS.md
 ```
 
@@ -106,12 +108,12 @@ X402_ASSET_VERSION=1
 CORS_ORIGINS=http://localhost:5173,http://localhost:3007
 ```
 
-`backend/server/config/environment.js` centralises all parsing and validation so you only touch a single file to adjust networks, amounts, or destination addresses.
+`backend/src/config.ts` centralises all parsing and validation so you only touch a single file to adjust networks, amounts, or destination addresses.
 
 ## Integration Recipe
 
 1. **Configure the backend**
-   - Update `backend/.env.local` and/or `backend/server/config/environment.js` with your network, pay-to address, and custom messaging.
+   - Update `backend/.env.local` and/or `backend/src/config.ts` with your network, pay-to address, and custom messaging.
    - The server exposes:
      - `/api/protected-content` – returns a 402 response with x402 payment requirements or unlocks content after payment/on-chain proof.
      - `/api/shield-session` – issues Openfort Shield recovery sessions.
@@ -132,13 +134,13 @@ CORS_ORIGINS=http://localhost:5173,http://localhost:3007
    - `frontend/src/integrations/x402` exposes utilities for selecting requirements, encoding payloads, and reading USDC balances. Reuse these helpers inside other flows (e.g., a dashboard) without touching UI code.
 
 5. **Adjust business rules**
-   - Change the demo content response in `backend/server/routes/protectedContent.js`.
-   - Modify payment fallback values in `backend/server/services/paymentRequirements.js`.
-   - Add custom authentication/authorisation before creating Shield sessions in `backend/server/routes/shieldSession.js`.
+   - Change the demo content response in `backend/src/routes.ts` (handleProtectedContent function).
+   - Modify payment validation logic in `backend/src/payment.ts`.
+   - Add custom authentication/authorisation before creating Shield sessions in `backend/src/routes.ts` (handleShieldSession function).
 
 ## Feature Highlights
 
-- Modular Node.js server with environment-driven configuration.
+- Modular Express.js + TypeScript server with environment-driven configuration.
 - Dedicated x402 helpers for payload selection and encoding.
 - Smart-account UX using the Openfort React SDK (providers, wallet creation, recovery flows).
 - React feature module for the entire paywall journey with explicit loading/error/auth/payment states.
@@ -146,11 +148,11 @@ CORS_ORIGINS=http://localhost:5173,http://localhost:3007
 
 ## Tooling
 
-- React 18 + Vite + TypeScript
+- **Frontend**: React 18 + Vite + TypeScript
+- **Backend**: Express.js 5 + TypeScript
 - Wagmi & viem for blockchain interaction
 - Openfort React + Node SDKs
-- Node.js built-in http module for lightweight HTTP APIs
-- Biome for formatting/linting (`pnpm check`, `pnpm format`)
+- Biome for frontend formatting/linting (`pnpm check`, `pnpm format`)
 
 ## Useful Scripts
 
@@ -169,6 +171,7 @@ pnpm format      # Format code with Biome
 
 ```bash
 cd backend
-pnpm start       # Start production server
-pnpm dev         # Start with nodemon (auto-reload)
+pnpm build       # Compile TypeScript to dist/
+pnpm start       # Start production server (runs compiled code)
+pnpm dev         # Build and start with --watch (auto-reload on changes)
 ```

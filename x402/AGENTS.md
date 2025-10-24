@@ -4,9 +4,9 @@ This document provides specific guidance for AI coding assistants working with t
 
 ## Quick Context
 
-You are working on a **React + Vite + Node.js** application that demonstrates x402 payment protocol integration with Openfort smart accounts. The stack includes:
+You are working on a **React + Vite + Express.js** application that demonstrates x402 payment protocol integration with Openfort smart accounts. The stack includes:
 - Frontend: React 18, TypeScript, Tailwind CSS v4, Wagmi, viem
-- Backend: Node.js (built-in http module), Openfort Node SDK
+- Backend: Express.js 5, TypeScript, Openfort Node SDK
 - Tools: Biome (not Prettier), pnpm (not npm), TypeScript 5.8
 
 ## Critical Rules
@@ -26,7 +26,7 @@ You are working on a **React + Vite + Node.js** application that demonstrates x4
 ### 3. Code Standards
 - NO `any` types without explicit justification
 - NO hardcoded addresses, amounts, or API keys
-- NO UI imports in `src/integrations/` code
+- NO UI imports in `frontend/src/integrations/` code
 - NO console.logs in production code paths
 - YES to explicit error handling
 - YES to TypeScript strict mode compliance
@@ -71,33 +71,31 @@ export function useMyFeature() {
 ### Environment Variables
 - Server-side: Access via `process.env.VARIABLE_NAME` (configured in `backend/.env.local`)
 - Client-side: Must have `VITE_` prefix (configured in `frontend/.env.local`)
-- Always validate in `backend/server/config/environment.js`
+- Always validate in `backend/src/config.ts`
 - Never inline values that should be configurable
 
 ## Common Task Patterns
 
 ### Adding an API Endpoint
 
-1. Create handler in `backend/server/routes/newEndpoint.js`:
-```javascript
-export async function handleNewEndpoint(req, res) {
+1. Create handler in `backend/src/routes.ts`:
+```typescript
+export async function handleNewEndpoint(req: express.Request, res: express.Response) {
   try {
     // Implementation
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ success: true, data }));
+    res.status(200).json({ success: true, data });
   } catch (error) {
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: error.message }));
+    console.error("Error in handleNewEndpoint:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 }
 ```
 
-2. Register in `backend/server/app.js`:
-```javascript
-import { handleNewEndpoint } from './routes/newEndpoint.js'
-// Add to the routing logic:
-} else if (pathname === "/api/new-endpoint" && req.method === "GET") {
-  await handleNewEndpoint(req, res);
+2. Register in `backend/src/server.ts`:
+```typescript
+import { handleNewEndpoint } from './routes.js'
+// Add route:
+app.get("/api/new-endpoint", handleNewEndpoint);
 ```
 
 ### Adding a UI Component
@@ -134,7 +132,7 @@ Place in `frontend/src/integrations/x402/`:
 ### Modifying Payment Flow
 
 Key files:
-- Server validation: `backend/server/services/paymentRequirements.js`
+- Server validation: `backend/src/payment.ts`
 - Client encoding: `frontend/src/integrations/x402/payments.ts`
 - UI orchestration: `frontend/src/features/paywall/PaywallExperience.tsx`
 - Balance checks: `frontend/src/features/paywall/hooks/useUsdcBalance.ts`
@@ -208,11 +206,11 @@ cd backend && pnpm dev
 - Public clients for read operations
 - Wallet clients for write operations
 
-### Node.js HTTP
-- Use `res.writeHead()` and `res.end()` for responses
-- Parse request body manually with stream listeners
-- Set CORS headers via `res.setHeader()`
-- Route via pathname matching in request handler
+### Express.js
+- Use `res.status().json()` for JSON responses
+- Use `express.json()` middleware to parse request body
+- Set CORS headers via middleware or `res.setHeader()`
+- Route via Express routing methods (`app.get()`, `app.post()`, etc.)
 
 ### Openfort SDK
 - Client components: `@openfort/react`
@@ -245,20 +243,20 @@ function process(data: PaymentData) { }
 
 ❌ Mixing concerns:
 ```typescript
-// BAD: backend/server/routes/payment.js
+// BAD: backend/src/routes.ts
 function PaymentUI() { return <div>...</div> }
 ```
 
 ## Architecture Overview
 
 ### Backend (`backend/`)
-- **server/**: Node.js API server
-  - **app.js**: Main HTTP request handler
-  - **config/**: Environment configuration
-  - **integrations/**: External service clients (Openfort)
-  - **routes/**: HTTP endpoints (402 responses, Shield sessions)
-  - **services/**: Business logic (payment validation, x402 encoding)
-- **server.js**: Server entry point
+- **src/**: TypeScript source files
+  - **server.ts**: Express server setup and middleware
+  - **config.ts**: Environment configuration
+  - **openfort.ts**: Openfort client initialization
+  - **routes.ts**: HTTP endpoints (402 responses, Shield sessions, health)
+  - **payment.ts**: Payment validation logic
+- **dist/**: Compiled JavaScript output
 - **package.json**: Backend dependencies
 
 ### Frontend (`frontend/`)

@@ -7,13 +7,13 @@ This is the **Openfort x402 Modular Demo** - a production-ready reference implem
 ## Architecture Principles
 
 ### 1. **Separation of Concerns**
-- **Server Layer** (`server/`): Node.js HTTP API handling x402 payment requirements, Shield session creation, and content delivery
-- **Integration Layer** (`src/integrations/`): Protocol-specific helpers for Openfort and x402 that have zero UI dependencies
-- **Feature Layer** (`src/features/`): Self-contained feature modules with their own components, hooks, and utilities
+- **Backend** (`backend/src/`): Express.js server handling x402 payment requirements, Shield session creation, and content delivery
+- **Frontend Integration Layer** (`frontend/src/integrations/`): Protocol-specific helpers for Openfort and x402 that have zero UI dependencies
+- **Frontend Feature Layer** (`frontend/src/features/`): Self-contained feature modules with their own components, hooks, and utilities
 
 ### 2. **Configuration Management**
-- All environment variables are centralized in `server/config/environment.js`
-- Client-side config uses Vite's `VITE_` prefix convention
+- Backend environment variables are centralized in `backend/src/config.ts`
+- Frontend environment variables use Vite's `VITE_` prefix convention
 - Never hardcode network addresses, token addresses, or payment amounts
 - Always use the environment helpers to access configuration
 
@@ -28,14 +28,14 @@ This is the **Openfort x402 Modular Demo** - a production-ready reference implem
 
 ### File Organization Rules
 
-1. **Server Code** (`server/`):
-   - `app.js`: Main HTTP server request handler
-   - `config/`: Environment parsing and defaults
-   - `integrations/`: External service clients (Openfort)
-   - `routes/`: HTTP endpoint handlers (one file per route group)
-   - `services/`: Business logic (payment validation, encoding)
+1. **Backend Code** (`backend/src/`):
+   - `server.ts`: Express server setup and middleware
+   - `config.ts`: Environment parsing and defaults
+   - `openfort.ts`: Openfort client initialization
+   - `routes.ts`: HTTP endpoint handlers
+   - `payment.ts`: Payment validation logic
 
-2. **Client Code** (`src/`):
+2. **Frontend Code** (`frontend/src/`):
    - `features/paywall/`: Complete paywall feature module
      - `PaywallExperience.tsx`: Main orchestrator component
      - `components/`: UI components for each state
@@ -59,7 +59,7 @@ features/paywall/
 When adding new features, follow this pattern. Features should be portable and have minimal external dependencies.
 
 #### 2. **Integration Helpers**
-Protocol integrations (`src/integrations/x402/`, `src/integrations/openfort/`) must:
+Protocol integrations (`frontend/src/integrations/x402/`, `frontend/src/integrations/openfort/`) must:
 - Be framework-agnostic (except for React provider wrappers)
 - Export clear, typed interfaces
 - Handle all encoding/decoding logic
@@ -79,33 +79,36 @@ When adding logic, create new hooks rather than bloating existing components.
 ### Running the Application
 
 ```bash
-# Install dependencies
-pnpm install
+# Install backend dependencies
+cd backend && pnpm install
 
-# Run both server and client
-pnpm dev:all
+# Install frontend dependencies
+cd frontend && pnpm install
 
-# Or run separately
-pnpm server  # http://localhost:3007
-pnpm dev     # http://localhost:5173
+# Run backend (in backend directory)
+cd backend && pnpm dev  # http://localhost:3007
+
+# Run frontend (in frontend directory, separate terminal)
+cd frontend && pnpm dev  # http://localhost:5173
 ```
 
 ### Before Committing
 
 ```bash
-# Type check
-pnpm tsc -b
+# Backend: Type check and build
+cd backend && pnpm build
 
-# Format and lint
-pnpm check
+# Frontend: Type check, format and lint
+cd frontend && pnpm tsc -b
+cd frontend && pnpm check
 
-# Build to verify production bundle
-pnpm build
+# Frontend: Build to verify production bundle
+cd frontend && pnpm build
 ```
 
 ### Environment Setup
 
-Copy `.env.local.example` (if exists) or create `.env.local` with:
+Create `backend/.env.local` and `frontend/.env.local` with:
 - Openfort API keys (publishable and secret)
 - Shield configuration
 - Network settings (base-sepolia or base)
@@ -117,22 +120,22 @@ See [README.md](README.md) for complete environment variable documentation.
 
 ### Adding a New API Endpoint
 
-1. Create route handler in `server/routes/`
-2. Add route to `server/app.js`
-3. Update environment config if new settings needed
+1. Add route handler function in `backend/src/routes.ts`
+2. Register route in `backend/src/server.ts` using Express
+3. Update environment config in `backend/src/config.ts` if new settings needed
 4. Add error handling (use standard HTTP error responses)
 5. Document endpoint in README.md
 
 ### Modifying Payment Logic
 
-1. Server-side validation: `server/services/paymentRequirements.js`
-2. Client-side encoding: `src/integrations/x402/payments.ts`
-3. Payment requirements selection: `src/integrations/x402/requirements.ts`
+1. Server-side validation: `backend/src/payment.ts`
+2. Client-side encoding: `frontend/src/integrations/x402/payments.ts`
+3. Payment requirements selection: `frontend/src/integrations/x402/requirements.ts`
 4. Never bypass validation or skip on-chain verification
 
 ### Adding UI Components
 
-1. Place in appropriate feature directory (`features/paywall/components/`)
+1. Place in appropriate feature directory (`frontend/src/features/paywall/components/`)
 2. Use Tailwind CSS for styling (v4 syntax)
 3. Import Heroicons for icons
 4. Keep components pure - logic goes in hooks
@@ -142,14 +145,14 @@ See [README.md](README.md) for complete environment variable documentation.
 
 - Openfort SDK handles account creation and recovery
 - Shield sessions are created server-side via `/api/shield-session`
-- Wallet activation happens in `PaywallExperience.tsx`
+- Wallet activation happens in `frontend/src/features/paywall/PaywallExperience.tsx`
 - Never expose Shield secret keys client-side
 
 ### Network Handling
 
 - Supported networks: base, base-sepolia
-- Network config: `src/integrations/x402/networks.ts`
-- Token addresses: `src/integrations/x402/contracts.ts`
+- Network config: `frontend/src/integrations/x402/networks.ts`
+- Token addresses: `frontend/src/integrations/x402/contracts.ts`
 - Wagmi handles network switching automatically
 
 ## Code Quality Standards
@@ -193,7 +196,7 @@ This is a demo/reference implementation, so comprehensive test coverage is not r
 
 ### x402 Protocol
 - Custom implementation (not an SDK)
-- Helpers in `src/integrations/x402/`
+- Helpers in `frontend/src/integrations/x402/`
 - Spec-compliant encoding and validation
 
 ### Blockchain (via viem/wagmi)
