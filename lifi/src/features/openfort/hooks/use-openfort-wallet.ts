@@ -1,4 +1,4 @@
-import { useStatus, useUser } from "@openfort/react";
+import { useUser, useWallets } from "@openfort/react";
 import { useAccount, useChainId } from "wagmi";
 
 export interface OpenfortWalletState {
@@ -12,25 +12,25 @@ export interface OpenfortWalletState {
 }
 
 export const useOpenfortWallet = (): OpenfortWalletState => {
-  const { isLoading: isStatusLoading, isConnected, isAuthenticated } =
-    useStatus();
-  const { user } = useUser();
+  const { isLoadingWallets, activeWallet } = useWallets();
+  const { user, isAuthenticated } = useUser();
   const { address } = useAccount();
   const chainId = useChainId();
 
   const walletAddress = address ?? "";
-  const isReady = !isStatusLoading && isConnected && !!walletAddress;
+  const isConnected = !!activeWallet && isAuthenticated;
+  const isReady = !isLoadingWallets && isConnected && !!walletAddress;
 
   return {
     address: walletAddress,
     chainId,
     isReady,
     isConnected,
-    isStatusLoading,
+    isStatusLoading: isLoadingWallets,
     isAuthenticated,
     playerName:
       user?.player?.name ||
       user?.linkedAccounts?.[0]?.email ||
-      user?.linkedAccounts?.[0]?.username,
+      user?.linkedAccounts?.[0]?.externalUserId,
   };
 };

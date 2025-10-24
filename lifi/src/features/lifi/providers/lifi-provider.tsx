@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type FC, type PropsWithChildren, useEffect, useState } from "react";
 import type { Config, CreateConnectorFn } from "wagmi";
 import { initializeLiFiConfig, loadSupportedChains } from "../services/lifi-config";
-import { useStatus } from "@openfort/react";
+import { useWallets } from "@openfort/react";
 
 interface LiFiProviderProps extends PropsWithChildren {
   wagmiConfig: Config;
@@ -17,9 +17,9 @@ export const LiFiProvider: FC<LiFiProviderProps> = ({
   wagmiConfig,
   connectors,
 }) => {
-  const { isLoading: isStatusLoading } = useStatus();
+  const { isLoadingWallets } = useWallets();
   const [isInitialized, setIsInitialized] = useState(false);
-  const isReady = !isStatusLoading;
+  const isReady = !isLoadingWallets;
 
   const {
     data: chains,

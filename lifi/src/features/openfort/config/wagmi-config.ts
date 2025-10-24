@@ -19,7 +19,7 @@ const DEFAULT_CHAIN_ID = Number.parseInt(
   10
 );
 
-const mainnetIds = new Set([
+const mainnetIds = new Set<number>([
   mainnet.id,
   polygon.id,
   arbitrum.id,
@@ -28,10 +28,12 @@ const mainnetIds = new Set([
   avalanche.id,
 ]);
 
-const chains = (mainnetIds.has(DEFAULT_CHAIN_ID)
-  ? [mainnet, polygon, arbitrum, optimism, base, avalanche]
-  : [sepolia, polygonAmoy, arbitrumSepolia, optimismSepolia, baseSepolia]
-) as const;
+const mainnetChains = [mainnet, polygon, arbitrum, optimism, base, avalanche] as const;
+const testnetChains = [sepolia, polygonAmoy, arbitrumSepolia, optimismSepolia, baseSepolia] as const;
+
+const chains = mainnetIds.has(DEFAULT_CHAIN_ID)
+  ? mainnetChains
+  : testnetChains;
 
 export const wagmiConfig = createConfig(
   getDefaultConfig({

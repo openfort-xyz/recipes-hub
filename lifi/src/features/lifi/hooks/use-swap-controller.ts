@@ -459,7 +459,7 @@ export const useSwapController = (): SwapController => {
         showExecutionDisplay: true,
       }));
 
-      const executionResult = await executeSwapRoute(selectedRoute, {
+      const _executionResult = await executeSwapRoute(selectedRoute, {
         updateRouteHook: (updatedRoute) => {
           monitorRouteExecution(updatedRoute);
 
@@ -511,8 +511,6 @@ Do you want to continue?`
         executeInBackground: false,
         disableMessageSigning: false,
       });
-
-      return executionResult;
     } catch (error) {
       setSwapState((prev) => ({
         ...prev,
