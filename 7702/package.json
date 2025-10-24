@@ -11,9 +11,9 @@
     "format": "biome format --write ."
   },
   "dependencies": {
-    "@openfort/openfort-js": "^0.10.23",
+    "@openfort/openfort-js": "^0.10.30",
     "@openfort/openfort-node": "^0.6.73",
-    "@openfort/react": "^0.0.24",
+    "@openfort/react": "^0.0.33",
     "@radix-ui/react-slot": "^1.2.0",
     "@tanstack/react-query": "^5.74.7",
     "@types/node": "^22.15.3",
