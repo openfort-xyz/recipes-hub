@@ -6,40 +6,62 @@ A structured, end-to-end reference that showcases how Openfort smart accounts po
 
 ```
 openfort_x402/
-├─ server/                       # Node.js API broken into config, routes, services
-│  ├─ app.js                     # Assembles middleware + routes
-│  ├─ config/environment.js      # Environment parsing & payment defaults
-│  ├─ integrations/openfort...   # Openfort Node client creator
-│  └─ routes/…                   # /api/protected-content, /shield-session, /health
-├─ src/
-│  ├─ App.tsx                    # Mounts the paywall experience
-│  ├─ features/paywall/          # All paywall UI + hooks
-│  │  ├─ PaywallExperience.tsx   # Orchestrates authentication → payment → unlock
-│  │  ├─ components/             # Auth, wallet, payment, success views
-│  │  └─ hooks/usePaymentRequirements.ts
-│  ├─ integrations/openfort/     # React providers & config helpers
-│  ├─ integrations/x402/         # Protocol helpers (types, encoding, balance)
-│  └─ types/                     # Global ambient types (window.x402, …)
-└─ server.js                     # Node entry that boots the HTTP server
+├─ frontend/                     # React + Vite client application
+│  ├─ src/
+│  │  ├─ App.tsx                 # Mounts the paywall experience
+│  │  ├─ features/paywall/       # All paywall UI + hooks
+│  │  │  ├─ PaywallExperience.tsx # Orchestrates authentication → payment → unlock
+│  │  │  ├─ components/          # Auth, wallet, payment, success views
+│  │  │  └─ hooks/usePaymentRequirements.ts
+│  │  ├─ integrations/openfort/  # React providers & config helpers
+│  │  ├─ integrations/x402/      # Protocol helpers (types, encoding, balance)
+│  │  └─ types/                  # Global ambient types (window.x402, …)
+│  ├─ index.html
+│  ├─ vite.config.ts
+│  └─ package.json
+├─ backend/                      # Node.js API server
+│  ├─ server/                    # API broken into config, routes, services
+│  │  ├─ app.js                  # Assembles middleware + routes
+│  │  ├─ config/environment.js   # Environment parsing & payment defaults
+│  │  ├─ integrations/openfort...# Openfort Node client creator
+│  │  └─ routes/…                # /api/protected-content, /shield-session, /health
+│  ├─ server.js                  # Node entry that boots the HTTP server
+│  └─ package.json
+├─ README.md
+└─ AGENTS.md
 ```
 
 ## Quick Start
 
+### Install dependencies
+
 ```bash
+# Install frontend dependencies
+cd frontend
 pnpm install
-pnpm dev:all          # Runs server (http://localhost:3007) + Vite (http://localhost:5173)
+
+# Install backend dependencies
+cd ../backend
+pnpm install
 ```
 
-To run individually:
+### Run the application
 
 ```bash
-pnpm server
-pnpm dev
+# From the backend directory
+cd backend
+pnpm dev              # Runs server on http://localhost:3007
+
+# From the frontend directory (in a separate terminal)
+cd frontend
+pnpm dev              # Runs Vite on http://localhost:5173
 ```
 
 ## Environment Setup
 
-Create `.env.local` (used by both server & client):
+### Frontend Configuration
+
+Create `frontend/.env.local`:
 
 ```env
 # Openfort Configuration
@@ -49,51 +71,70 @@ VITE_WALLET_CONNECT_PROJECT_ID=your-wallet-connect-project-id
 VITE_POLICY_ID=pol_...
 VITE_CREATE_ENCRYPTED_SESSION_ENDPOINT=http://localhost:3007/api/shield-session
 
-# Server-side Openfort Keys
-OPENFORT_SECRET_KEY=sk_test_...
-OPENFORT_SHIELD_SECRET_KEY=shsk_test_...
-OPENFORT_SHIELD_ENCRYPTION_SHARE=shield_encryption_share
-
 # Client-side X402 Defaults
 VITE_X402_RESOURCE_URL=http://localhost:3007/api/protected-content
 VITE_X402_DEFAULT_AMOUNT=0.1        # Default payment amount in USDC
-
-# Server X402 Configuration (optional overrides - fallbacks are provided)
-PAY_TO_ADDRESS=0x...
-X402_NETWORK=base-sepolia           # or base
-X402_MAX_AMOUNT=100000              # base units (6 decimals for USDC)
-X402_ASSET_ADDRESS=0x...            # token address for your network
 ```
 
-`server/config/environment.js` centralises all parsing and validation so you only touch a single file to adjust networks, amounts, or destination addresses.
+### Backend Configuration
+
+Create `backend/.env.local`:
+
+```env
+# Server Configuration
+PORT=3007
+
+# Server-side Openfort Keys
+OPENFORT_SECRET_KEY=sk_test_...
+OPENFORT_SHIELD_PUBLISHABLE_KEY=...
+OPENFORT_SHIELD_SECRET_KEY=shsk_test_...
+OPENFORT_SHIELD_ENCRYPTION_SHARE=shield_encryption_share
+
+# Payment Configuration
+PAY_TO_ADDRESS=0x...
+X402_NETWORK=base-sepolia           # or base
+X402_RESOURCE=http://localhost:3007/api/protected-content
+X402_DESCRIPTION=Access to premium content
+X402_MIME_TYPE=application/json
+X402_MAX_AMOUNT=100000              # base units (6 decimals for USDC)
+X402_TIMEOUT=300
+X402_ASSET_ADDRESS=0x...            # token address for your network
+X402_ASSET_NAME=USDC
+X402_ASSET_VERSION=1
+
+# CORS Configuration
+CORS_ORIGINS=http://localhost:5173,http://localhost:3007
+```
+
+`backend/server/config/environment.js` centralises all parsing and validation so you only touch a single file to adjust networks, amounts, or destination addresses.
 
 ## Integration Recipe
 
-1. **Configure the server**
-   - Update `.env.local` and/or `server/config/environment.js` with your network, pay-to address, and custom messaging.
+1. **Configure the backend**
+   - Update `backend/.env.local` and/or `backend/server/config/environment.js` with your network, pay-to address, and custom messaging.
    - The server exposes:
      - `/api/protected-content` – returns a 402 response with x402 payment requirements or unlocks content after payment/on-chain proof.
      - `/api/shield-session` – issues Openfort Shield recovery sessions.
      - `/api/health` – quick readiness probe.
 
 2. **Embed providers once**
-   - `src/integrations/openfort/OpenfortProviders.tsx` wraps Wagmi, React Query, and the Openfort React SDK. Wrap your application root with `<OpenfortProviders>` so any page can opt into smart account flows.
+   - `frontend/src/integrations/openfort/OpenfortProviders.tsx` wraps Wagmi, React Query, and the Openfort React SDK. Wrap your application root with `<OpenfortProviders>` so any page can opt into smart account flows.
 
 3. **Use the paywall experience**
-   - `src/features/paywall/PaywallExperience.tsx` orchestrates:
+   - `frontend/src/features/paywall/PaywallExperience.tsx` orchestrates:
      1. Fetching x402 requirements via `usePaymentRequirements`.
      2. Openfort authentication + wallet activation.
      3. On-chain USDC transfer (viem/wagmi) and monitoring the receipt.
      4. Unlocking protected content once payment is final.
-   - Swap out any UI states by editing the components inside `src/features/paywall/components/`.
+   - Swap out any UI states by editing the components inside `frontend/src/features/paywall/components/`.
 
 4. **Share protocol helpers**
-   - `src/integrations/x402` exposes utilities for selecting requirements, encoding payloads, and reading USDC balances. Reuse these helpers inside other flows (e.g., a dashboard) without touching UI code.
+   - `frontend/src/integrations/x402` exposes utilities for selecting requirements, encoding payloads, and reading USDC balances. Reuse these helpers inside other flows (e.g., a dashboard) without touching UI code.
 
 5. **Adjust business rules**
-   - Change the demo content response in `server/routes/protectedContent.js`.
-   - Modify payment fallback values in `server/services/paymentRequirements.js`.
-   - Add custom authentication/authorisation before creating Shield sessions in `server/routes/shieldSession.js`.
+   - Change the demo content response in `backend/server/routes/protectedContent.js`.
+   - Modify payment fallback values in `backend/server/services/paymentRequirements.js`.
+   - Add custom authentication/authorisation before creating Shield sessions in `backend/server/routes/shieldSession.js`.
 
 ## Feature Highlights
 
@@ -113,10 +154,21 @@ X402_ASSET_ADDRESS=0x...            # token address for your network
 
 ## Useful Scripts
 
+### Frontend
+
 ```bash
-pnpm dev         # Frontend only
-pnpm server      # API only
-pnpm dev:all     # Run both concurrently
-pnpm tsc -b      # Type-check client + config
-pnpm build       # Production build (client bundle)
+cd frontend
+pnpm dev         # Start Vite dev server
+pnpm build       # Production build
+pnpm preview     # Preview production build
+pnpm check       # Run Biome linter/formatter check
+pnpm format      # Format code with Biome
+```
+
+### Backend
+
+```bash
+cd backend
+pnpm start       # Start production server
+pnpm dev         # Start with nodemon (auto-reload)
 ```
