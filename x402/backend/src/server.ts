@@ -1,59 +1,50 @@
-import type { IncomingMessage, ServerResponse } from "http";
-import { createServer } from "http";
+import express from "express";
 import { config } from "dotenv";
-import { loadConfig, type Config } from "./config.js";
+import { loadConfig } from "./config.js";
 import { createOpenfortClient } from "./openfort.js";
 import { handleHealth, handleShieldSession, handleProtectedContent } from "./routes.js";
 
 // Load .env.local
 config({ path: ".env.local" });
 
-function setCorsHeaders(res: ServerResponse, allowedOrigins: string[]): void {
-  const origin = allowedOrigins[0] || "*";
+const env = loadConfig();
+const openfortClient = createOpenfortClient(env.openfort.secretKey);
+
+const app = express();
+
+// Middleware
+app.use(express.json());
+
+// CORS middleware
+app.use((req, res, next) => {
+  const origin = env.allowedOrigins[0] || "*";
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-PAYMENT, X-TRANSACTION-HASH");
   res.setHeader("Access-Control-Expose-Headers", "X-PAYMENT-RESPONSE");
-}
-
-async function handleRequest(
-  req: IncomingMessage,
-  res: ServerResponse,
-  config: Config,
-  openfortClient: ReturnType<typeof createOpenfortClient>
-): Promise<void> {
-  setCorsHeaders(res, config.allowedOrigins);
 
   if (req.method === "OPTIONS") {
-    res.writeHead(204);
-    res.end();
-    return;
+    return res.sendStatus(204);
   }
+  next();
+});
 
-  const url = new URL(req.url!, `http://${req.headers.host}`);
-  const pathname = url.pathname;
+// Routes
+app.get("/api/health", handleHealth);
+app.post("/api/shield-session", (req, res) => handleShieldSession(req, res, openfortClient, env.openfort.shield));
+app.all("/api/protected-content", (req, res) => handleProtectedContent(req, res, env.paywall));
 
-  try {
-    if (pathname === "/api/health" && req.method === "GET") {
-      await handleHealth(req, res);
-    } else if (pathname === "/api/shield-session" && req.method === "POST") {
-      await handleShieldSession(req, res, openfortClient, config.openfort.shield);
-    } else if (pathname === "/api/protected-content") {
-      await handleProtectedContent(req, res, config.paywall);
-    } else {
-      res.writeHead(404, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Not Found" }));
-    }
-  } catch (error) {
-    console.error("Server error:", error);
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Internal Server Error" }));
-  }
-}
+// 404 handler
+app.use((_req, res) => {
+  res.status(404).json({ error: "Not Found" });
+});
 
-const env = loadConfig();
-const openfortClient = createOpenfortClient(env.openfort.secretKey);
+// Error handler
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error("Server error:", err);
+  res.status(500).json({ error: "Internal Server Error" });
+});
 
 console.log(`
 🚀 x402 Demo Server
@@ -65,8 +56,6 @@ console.log(`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `);
 
-const server = createServer((req, res) => handleRequest(req, res, env, openfortClient));
-
-server.listen(env.port, () => {
+app.listen(env.port, () => {
   console.log(`Server is listening on port ${env.port}`);
 });
