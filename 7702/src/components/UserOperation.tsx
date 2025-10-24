@@ -151,10 +151,10 @@ export function UserOperation() {
           </CardDescription>
         </CardHeader>
         <CardFooter className="flex gap-2 justify-end">
-          <Button onClick={logout} variant="outline">
+          <Button onClick={() => logout()} variant="outline">
             Logout
           </Button>
-          <Button onClick={sendUserOperation} disabled={loading} variant="default">
+          <Button onClick={() => sendUserOperation()} disabled={loading} variant="default">
             {loading ? <Loader2 className="h-4 w-4 animate-spin text-amber-500" /> : null}
             Send 7702 UserOp
           </Button>
