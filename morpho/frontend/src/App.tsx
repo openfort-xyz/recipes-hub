@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
-import { OpenfortButton, useStatus } from "@openfort/react";
+import { OpenfortButton, useUser } from "@openfort/react";
 import { BalanceCard } from './components/BalanceCard';
 import { ActionButtons } from './components/ActionButtons';
 import { useVaultOperations } from './hooks/useVaultOperations';
 import { useVaultApy } from './hooks/useVaultApy';
 
 function App() {
-  const { isConnected } = useStatus();
+  const { isAuthenticated } = useUser();
   const {
     isSupplying,
     isWithdrawing,
@@ -34,20 +34,20 @@ function App() {
             title="Wallet Balance"
             balance={walletBalance}
             currency="USDC"
-            isConnected={isConnected}
+            isConnected={isAuthenticated}
           />
           <BalanceCard
             title="Morpho Vault"
             balance={userVaultBalance}
             currency="USDC"
             apy={vaultApy}
-            isConnected={isConnected}
+            isConnected={isAuthenticated}
           />
         </div>
 
         <div className="bg-neutral-900 rounded-2xl border border-neutral-700 shadow-xl p-8 mb-6 flex flex-col items-center justify-center space-y-4">
           <OpenfortButton />
-          {isConnected && (
+          {isAuthenticated && (
             <ActionButtons
               isSupplying={isSupplying}
               isWithdrawing={isWithdrawing}

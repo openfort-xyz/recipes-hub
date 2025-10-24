@@ -1,6 +1,5 @@
 'use client'
 
-// Openfort
 import { OpenfortButton, type UserWallet, use7702Authorization, useSignOut, useUser, useWallets } from '@openfort/react'
 import { Loader2 } from 'lucide-react'
 import { createSmartAccountClient } from 'permissionless'
@@ -10,9 +9,7 @@ import { useEffect, useState } from 'react'
 import { createPublicClient, http, zeroAddress } from 'viem'
 import { entryPoint08Address } from 'viem/account-abstraction'
 import { sepolia } from 'viem/chains'
-// Blockchain
-import { useWalletClient } from 'wagmi'
-// UI Components
+import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -26,7 +23,9 @@ export function UserOperation() {
   const [error, setError] = useState<string | null>(null)
   const { signAuthorization } = use7702Authorization()
 
-  const { data: walletClient } = useWalletClient()
+  const walletClient = useWalletClient()
+  const { isConnected, chainId } = useAccount()
+  const { switchChain } = useSwitchChain()
 
   const { wallets, setActiveWallet } = useWallets()
   const [embeddedWallet, setEmbeddedWallet] = useState<UserWallet | undefined>(undefined)
@@ -41,6 +40,23 @@ export function UserOperation() {
       })
     }
   }, [wallets.length])
+
+  // Automatically switch to Sepolia when wallet connects
+  useEffect(() => {
+    console.log('isConnected:', isConnected, 'chainId:', chainId)
+    if (chainId !== sepolia.id) {
+      console.log('Switching to Sepolia network...')
+      switchChain(
+        { chainId: sepolia.id },
+        {
+          onError: (error) => {
+            console.error('Failed to switch chain:', error)
+            setError(`Please switch to Sepolia network manually. ${error.message}`)
+          },
+        }
+      )
+    }
+  }, [chainId, switchChain])
 
   const sendUserOperation = async () => {
     if (!user || !embeddedWallet) {
@@ -68,20 +84,20 @@ export function UserOperation() {
       const pimlicoClient = createPimlicoClient({
         transport: http(pimlicoUrl),
       })
-
+      console.log('walletClient:', walletClient)
       // Get the wallet provider
-      if (!walletClient) {
+      if (!walletClient.data) {
         throw new Error('No wallet found')
       }
 
       const simpleSmartAccount = await toSimpleSmartAccount({
-        owner: walletClient,
+        owner: walletClient.data,
         entryPoint: {
           address: entryPoint08Address,
           version: '0.8',
         },
         client: publicClient,
-        address: walletClient.account.address,
+        address: walletClient.data.account.address,
       })
 
       // Create the smart account client
@@ -101,7 +117,7 @@ export function UserOperation() {
         contractAddress: '0xe6Cae83BdE06E4c305530e199D7217f42808555B',
         chainId: sepolia.id,
         nonce: await publicClient.getTransactionCount({
-          address: walletClient.account.address,
+          address: walletClient.data.account.address,
         }),
       })
 
@@ -151,10 +167,10 @@ export function UserOperation() {
           </CardDescription>
         </CardHeader>
         <CardFooter className="flex gap-2 justify-end">
-          <Button onClick={logout} variant="outline">
+          <Button onClick={() => logout()} variant="outline">
             Logout
           </Button>
-          <Button onClick={sendUserOperation} disabled={loading} variant="default">
+          <Button onClick={() => sendUserOperation()} disabled={loading} variant="default">
             {loading ? <Loader2 className="h-4 w-4 animate-spin text-amber-500" /> : null}
             Send 7702 UserOp
           </Button>

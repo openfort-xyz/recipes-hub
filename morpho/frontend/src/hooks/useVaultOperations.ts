@@ -44,7 +44,7 @@ export function useVaultOperations() {
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     query: { enabled: !!address },
-  });
+  }) as { data: bigint | undefined; refetch: () => Promise<{ data: bigint | undefined }> };
 
   const waitForTransaction = useCallback(async (hash: Hash) => {
     await viemClient.waitForTransactionReceipt({ hash });

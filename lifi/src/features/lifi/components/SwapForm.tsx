@@ -73,7 +73,6 @@ export default function SwapForm({
     address: walletAddress,
     chainId: fromChain?.id,
     token: resolveTokenAddress(fromToken),
-    watch: true,
     query: {
       enabled: Boolean(walletAddress && fromChain && fromToken),
     },
@@ -86,7 +85,6 @@ export default function SwapForm({
     address: walletAddress,
     chainId: toChain?.id,
     token: resolveTokenAddress(toToken),
-    watch: true,
     query: {
       enabled: Boolean(walletAddress && toChain && toToken),
     },

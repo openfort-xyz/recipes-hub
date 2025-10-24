@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft } from "lucide-react";
-import { useStatus } from "@openfort/react";
+import { useWallets, useUser } from "@openfort/react";
 
 interface ActionButtonsProps {
   isLoading: boolean;
@@ -31,7 +31,9 @@ export default function ActionButtons({
   onBackToForm,
   onShowExecutionDisplay,
 }: ActionButtonsProps) {
-  const { isConnected } = useStatus();
+  const { activeWallet } = useWallets();
+  const { isAuthenticated } = useUser();
+  const isConnected = !!activeWallet && isAuthenticated;
 
   if (showRouteDisplay) {
     // Route display view - show Execute Swap, View Execution (if active), and Back buttons

@@ -1,0 +1,2 @@
+overrides:
+  '@openfort/openfort-node': link:../../openfort-node
