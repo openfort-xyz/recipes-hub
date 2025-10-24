@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface ValidationError {
   key: string;
   message: string;

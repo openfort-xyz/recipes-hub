@@ -1,4 +1,4 @@
-import { useStatus } from "@openfort/react";
+import { useUser } from "@openfort/react";
 import { useMemo } from 'react';
 import { useAccount, useReadContract } from "wagmi";
 import { usdcAbi, USDC_CONTRACT_ADDRESS } from './contracts/usdc';
@@ -12,7 +12,7 @@ import { useAaveOperations } from './hooks/useAaveOperations';
 
 function App() {
   const { address, chainId: currentChainId } = useAccount();
-  const { isConnected } = useStatus();
+  const { isAuthenticated } = useUser();
 
 
   // Read USDC balance
@@ -24,7 +24,7 @@ function App() {
     query: {
       enabled: !!address,
     },
-  });
+  }) as { data: bigint | undefined; refetch: () => Promise<any> };
 
   const user = address ? evmAddress(address) : undefined;
 
@@ -88,12 +88,12 @@ function App() {
       {/* Balance Cards Container */}
       <div className="flex flex-col md:flex-row gap-6 mb-6 justify-center items-center">
         <WalletBalanceCard
-          isConnected={isConnected}
+          isConnected={isAuthenticated}
           address={address}
           usdcBalance={usdcBalance}
         />
         <AaveSupplyCard
-          isConnected={isConnected}
+          isConnected={isAuthenticated}
           address={address}
           suppliesLoading={suppliesLoading}
           usdcSupplyData={usdcSupplyData}
@@ -102,7 +102,7 @@ function App() {
       </div>
 
       <ActionButtons
-        isConnected={isConnected}
+        isConnected={isAuthenticated}
         isLoading={isLoading}
         usdcReserve={usdcReserve}
         usdcBalance={usdcBalance}
