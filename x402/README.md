@@ -1,167 +1,95 @@
 # Openfort x402 Modular Demo
 
-A structured, end-to-end reference that showcases how Openfort smart accounts power an x402 paywall. The project is split into clear server, integration, and UI layers so it is easy to lift pieces into your own stack.
+A structured, end-to-end reference that showcases how Openfort smart accounts power an x402 paywall.
 
-## Directory Overview
-
-```
-openfort_x402/
-├─ server/                       # Node.js API broken into config, routes, services
-│  ├─ app.js                     # Assembles middleware + routes
-│  ├─ config/environment.js      # Environment parsing & payment defaults
-│  ├─ integrations/openfort...   # Openfort Node client creator
-│  └─ routes/…                   # /api/protected-content, /protected-create-encryption-session, /health
-├─ src/
-│  ├─ App.tsx                    # Mounts the paywall experience
-│  ├─ features/paywall/          # All paywall UI + hooks
-│  │  ├─ PaywallExperience.tsx   # Orchestrates authentication → payment → unlock
-│  │  ├─ components/             # Auth, wallet, payment, success views
-│  │  └─ hooks/usePaymentRequirements.ts
-│  ├─ integrations/openfort/     # React providers & config helpers
-│  ├─ integrations/x402/         # Protocol helpers (types, encoding, balance)
-│  └─ types/                     # Global ambient types (window.x402, …)
-└─ server.js                     # Node entry that boots the HTTP server
-```
-
-## Quick Start
-
-### Install dependencies
+## 1. Setup
 
 ```bash
-# Install frontend dependencies
-cd frontend
-pnpm install
-
-# Install backend dependencies
-cd ../backend
-pnpm install
+cd x402
 ```
 
-### Run the application
+## 2. Get Credentials
 
-```bash
-# From the backend directory
-cd backend
-pnpm dev              # Runs server on http://localhost:3007
+You'll need to configure credentials for both frontend and backend.
 
-# From the frontend directory (in a separate terminal)
-cd frontend
-pnpm dev              # Runs Vite on http://localhost:5173
-```
+### Openfort Dashboard
 
-## Environment Setup
+1. Go to [Openfort Dashboard](https://dashboard.openfort.xyz)
+2. Create an account or sign in
+3. Get your API keys:
+   - **Publishable Key** (`pk_test_...`) - Frontend
+   - **Secret Key** (`sk_test_...`) - Backend
+   - **Shield Keys** 
+4. Create a Policy and get the **Policy ID** (`pol_...`)
 
-### Frontend Configuration
+### Configure Environment
 
 Create `frontend/.env.local`:
 
 ```env
-# Openfort Configuration
 VITE_OPENFORT_PUBLISHABLE_KEY=pk_test_...
 VITE_SHIELD_PUBLISHABLE_KEY=shpk_test_...
 VITE_WALLET_CONNECT_PROJECT_ID=your-wallet-connect-project-id
 VITE_POLICY_ID=pol_...
 VITE_CREATE_ENCRYPTED_SESSION_ENDPOINT=http://localhost:3007/api/protected-create-encryption-session
-
-# Client-side X402 Defaults
 VITE_X402_RESOURCE_URL=http://localhost:3007/api/protected-content
-VITE_X402_DEFAULT_AMOUNT=0.1        # Default payment amount in USDC
+VITE_X402_DEFAULT_AMOUNT=0.1
 ```
-
-### Backend Configuration
 
 Create `backend/.env.local`:
 
 ```env
-# Server Configuration
 PORT=3007
-
-# Server-side Openfort Keys
 OPENFORT_SECRET_KEY=sk_test_...
-OPENFORT_SHIELD_PUBLISHABLE_KEY=...
+OPENFORT_SHIELD_PUBLISHABLE_KEY=shpk_test_...
 OPENFORT_SHIELD_SECRET_KEY=shsk_test_...
 OPENFORT_SHIELD_ENCRYPTION_SHARE=shield_encryption_share
-
-# Payment Configuration
 PAY_TO_ADDRESS=0x...
-X402_NETWORK=base-sepolia           # or base
+X402_NETWORK=base-sepolia
 X402_RESOURCE=http://localhost:3007/api/protected-content
 X402_DESCRIPTION=Access to premium content
 X402_MIME_TYPE=application/json
-X402_MAX_AMOUNT=100000              # base units (6 decimals for USDC)
+X402_MAX_AMOUNT=100000
 X402_TIMEOUT=300
-X402_ASSET_ADDRESS=0x...            # token address for your network
+X402_ASSET_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
 X402_ASSET_NAME=USDC
 X402_ASSET_VERSION=1
-
-# CORS Configuration
 CORS_ORIGINS=http://localhost:5173,http://localhost:3007
 ```
 
-`backend/src/config.ts` centralises all parsing and validation so you only touch a single file to adjust networks, amounts, or destination addresses.
-
-## Integration Recipe
-
-1. **Configure the backend**
-   - Update `backend/.env.local` and/or `backend/src/config.ts` with your network, pay-to address, and custom messaging.
-   - The server exposes:
-     - `/api/protected-content` – returns a 402 response with x402 payment requirements or unlocks content after payment/on-chain proof.
-     - `/api/protected-create-encryption-session` – issues Openfort Shield recovery sessions.
-     - `/api/health` – quick readiness probe.
-
-2. **Embed providers once**
-   - `frontend/src/integrations/openfort/OpenfortProviders.tsx` wraps Wagmi, React Query, and the Openfort React SDK. Wrap your application root with `<OpenfortProviders>` so any page can opt into smart account flows.
-
-3. **Use the paywall experience**
-   - `frontend/src/features/paywall/PaywallExperience.tsx` orchestrates:
-     1. Fetching x402 requirements via `usePaymentRequirements`.
-     2. Openfort authentication + wallet activation.
-     3. On-chain USDC transfer (viem/wagmi) and monitoring the receipt.
-     4. Unlocking protected content once payment is final.
-   - Swap out any UI states by editing the components inside `frontend/src/features/paywall/components/`.
-
-4. **Share protocol helpers**
-   - `frontend/src/integrations/x402` exposes utilities for selecting requirements, encoding payloads, and reading USDC balances. Reuse these helpers inside other flows (e.g., a dashboard) without touching UI code.
-
-5. **Adjust business rules**
-   - Change the demo content response in `backend/src/routes.ts` (handleProtectedContent function).
-   - Modify payment validation logic in `backend/src/payment.ts`.
-   - Add custom authentication/authorisation before creating Shield sessions in `backend/src/routes.ts` (handleShieldSession function).
-
-## Feature Highlights
-
-- Modular Express.js + TypeScript server with environment-driven configuration.
-- Dedicated x402 helpers for payload selection and encoding.
-- Smart-account UX using the Openfort React SDK (providers, wallet creation, recovery flows).
-- React feature module for the entire paywall journey with explicit loading/error/auth/payment states.
-- Automatic USDC balance polling and Base/Base-Sepolia network switching.
-
-## Tooling
-
-- **Frontend**: React 18 + Vite + TypeScript
-- **Backend**: Express.js 5 + TypeScript
-- Wagmi & viem for blockchain interaction
-- Openfort React + Node SDKs
-- Biome for frontend formatting/linting (`pnpm check`, `pnpm format`)
-
-## Useful Scripts
-
-### Frontend
+## 3. Install & Start
 
 ```bash
-cd frontend
-pnpm dev         # Start Vite dev server
-pnpm build       # Production build
-pnpm preview     # Preview production build
-pnpm check       # Run Biome linter/formatter check
-pnpm format      # Format code with Biome
-```
-
-### Backend
-
-```bash
+# Install and start backend
 cd backend
-pnpm build       # Compile TypeScript to dist/
-pnpm start       # Start production server (runs compiled code)
-pnpm dev         # Build and start with --watch (auto-reload on changes)
+pnpm i
+pnpm dev
+
+# In a new terminal, install and start frontend
+cd frontend
+pnpm i
+pnpm dev
 ```
+
+Visit http://localhost:5173 to see the paywall in action.
+
+## Project Structure
+
+```
+x402/
+├─ backend/                      # Express.js API
+│  ├─ src/config.ts              # Environment & payment config
+│  ├─ src/routes.ts              # API endpoints
+│  └─ src/payment.ts             # Payment validation
+├─ frontend/
+│  ├─ src/features/paywall/      # Paywall UI & logic
+│  ├─ src/integrations/openfort/ # Openfort providers
+│  └─ src/integrations/x402/     # x402 protocol helpers
+```
+
+## Key Features
+
+- x402 payment protocol implementation
+- Openfort smart account integration
+- USDC payments on Base/Base Sepolia
+- Shield embedded wallets for easy onboarding
