@@ -3,14 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix",
-    "type-check": "tsc --noEmit",
-    "clean": "rm -rf .next && rm -rf node_modules/.cache",
-    "build:analyze": "ANALYZE=true next build"
+    "lint": "next lint"
   },
   "dependencies": {
     "@lifi/sdk": "^3.8.11",
@@ -32,8 +28,8 @@
     "react-dom": "19.1.1",
     "stream-browserify": "^3.0.0",
     "tailwind-merge": "^3.3.1",
-    "viem": "^2.33.3",
-    "wagmi": "^2.16.1"
+    "viem": "^2.38.3",
+    "wagmi": "^2.18.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",

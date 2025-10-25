@@ -7,7 +7,6 @@ import { SUPPORTED_CHAINS } from "../constants/network";
 import {
   getEthereumProviderPolicyId,
   getPublishableKey,
-  getShieldEncryptionKey,
   getShieldPublishableKey,
 } from "../utils/config";
 import { getEncryptionSessionFromEndpoint } from "../services/walletRecovery";
@@ -15,7 +14,6 @@ import { getEncryptionSessionFromEndpoint } from "../services/walletRecovery";
 function Providers() {
   const publishableKey = getPublishableKey();
   const shieldPublishableKey = getShieldPublishableKey();
-  const shieldEncryptionKey = getShieldEncryptionKey();
   const ethereumProviderPolicyId = getEthereumProviderPolicyId();
 
   return (

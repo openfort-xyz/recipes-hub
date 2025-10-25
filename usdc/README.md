@@ -1,86 +1,64 @@
 # USDC Transfer Demo
 
-## Quick Start
+React Native Expo app demonstrating embedded wallet creation, funding, and USDC transfers on Ethereum and Base Sepolia using Openfort Shield.
 
-```bash
-npx gitpick openfort-xyz/recipes-hub/tree/main/usdc openfort-usdc && cd openfort-usdc
+## 1. Setup
+
+```sh
+pnpx gitpick openfort-xyz/recipes-hub/tree/main/usdc openfort-usdc && cd openfort-usdc
 ```
 
-## Overview
-React Native Expo application demonstrating how to create, fund, and transfer between Openfort embedded wallets using USDC on Ethereum and Base Sepolia. The sample highlights wallet provisioning, faucet funding, and gas-sponsored ERC-20 transfers in a mobile-friendly flow.
+## 2. Prerequisites
 
-## Project Structure
-```
-usdc/
-├── app/               # Expo Router entrypoints and layout
-├── components/        # Authentication, onboarding, and transfer screens
-├── constants/         # Token and network configuration
-├── services/          # Shield recovery helpers and backend stubs
-├── utils/             # ERC-20 helpers, config, and formatting utilities
-├── assets/            # Fonts, images, and static resources
-├── types/             # Shared TypeScript definitions
-└── README.md          # Project documentation
-```
+- XCode for iOS with iOS Simulator
+- Android Studio for Android with Android Emulator (if targeting Android)
+- Openfort account with Shield configuration and provider policy
 
-## Features
-- Embedded wallet authentication and provisioning via Openfort Shield
-- Dual-wallet management with gas-sponsored USDC transfers
-- Faucet integration for Circle’s Sepolia USDC
-- Real-time balance polling across Ethereum and Base Sepolia networks
-- Wallet switching with responsive UI updates
+## 3. Backend Setup
 
-## Architecture
-- **Expo Router (`app/`)** – Wraps the app in `OpenfortProvider` and controls navigation.
-- **Screens (`components/`)** – Modular onboarding, faucet, and transfer interfaces.
-- **Services & utilities** – ERC-20 functions, environment readers, recovery helpers, and formatting utilities.
-- **Constants** – Centralised contract addresses, chain metadata, and transaction signatures.
+Set up the backend server required for Openfort Shield authentication:
 
-## Setup
-
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-- Expo CLI with an iOS Simulator or Android Emulator
-- Openfort dashboard project with Shield configuration and provider policy
-
-### Environment Configuration
-1. `cp .env.example .env.local`
-2. Populate the file with your credentials:
-   ```env
-   OPENFORT_PROJECT_PUBLISHABLE_KEY=pk_test_your_publishable_key
-   OPENFORT_SHIELD_PUBLISHABLE_KEY=pk_test_your_shield_key
-   OPENFORT_SHIELD_RECOVERY_BASE_URL=https://your-recovery-api.com
-   OPENFORT_ETHEREUM_PROVIDER_POLICY_ID=pol_your_policy_id
-   ```
-
-### Install & Run
-```bash
-npm install
-npm start           # Expo dev server
-npm run android     # Launch on Android emulator/device
-npm run ios         # Launch on iOS simulator
-npm run web         # Optional web preview
+```sh
+git clone https://github.com/openfort-xyz/openfort-backend-quickstart.git
+cd openfort-backend-quickstart
+cp .env.example .env
+# Add your Openfort credentials to .env
+pnpm install
+pnpm dev
 ```
 
-## Usage Flow
-1. Start Metro with `npm start`, then launch the app on a simulator or device.
-2. Authenticate via Openfort and create two embedded wallets.
-3. Use the faucet screen to fund wallets with Sepolia USDC from Circle.
-4. Initiate gas-sponsored transfers between wallets and monitor live balances.
+The backend runs on `http://localhost:3000` and provides the `/api/protected-create-encryption-session` endpoint. See the [Openfort Backend Quickstart](https://github.com/openfort-xyz/openfort-backend-quickstart) for details.
 
-## Development
-- Follow Expo Router and functional component conventions already in the project.
-- Keep Openfort state inside existing providers and contexts.
-- Run `npm run lint` (if configured) and monitor Metro logs for runtime warnings.
+## 4. Configure Environment
 
-## Troubleshooting
-- **Balance not loading** – Check network connectivity and RPC endpoints.
-- **Transfer fails** – Ensure sufficient USDC balance and that the provider policy covers the target chains.
-- **Wallet creation errors** – Verify Openfort API keys, Shield configuration, and recovery endpoint reachability.
-- **Faucet issues** – Use Circle’s official Sepolia faucet links exposed inside the app.
+```sh
+cp .env.example .env.local
+```
+
+Add your Openfort credentials to `.env.local`:
+
+```env
+OPENFORT_PROJECT_PUBLISHABLE_KEY=pk_test_your_publishable_key
+OPENFORT_SHIELD_PUBLISHABLE_KEY=pk_test_your_shield_key
+OPENFORT_SHIELD_RECOVERY_BASE_URL=http://localhost:3000
+OPENFORT_ETHEREUM_PROVIDER_POLICY_ID=pol_your_policy_id
+```
+
+## 5. Install & Run
+
+```sh
+pnpm install
+pnpm run ios     # Launch on iOS simulator
+pnpm run android # Launch on Android emulator
+```
+
+## Usage
+
+1. Authenticate and create two embedded wallets
+2. Fund wallets with Sepolia USDC from Circle's faucet
+3. Transfer USDC between wallets with gas sponsorship
 
 ## Resources
-- [Openfort Documentation](https://docs.openfort.io/)
+
+- [Openfort Documentation](https://openfort.io/docs)
 - [Circle USDC Faucet](https://faucet.circle.com/)
-- [Ethereum Sepolia Testnet](https://sepolia.etherscan.io/)
-- [Expo React Native](https://expo.dev/)
