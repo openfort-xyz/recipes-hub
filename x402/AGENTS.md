@@ -4,9 +4,9 @@ This document provides specific guidance for AI coding assistants working with t
 
 ## Quick Context
 
-You are working on a **React + Vite + Node.js** application that demonstrates x402 payment protocol integration with Openfort smart accounts. The stack includes:
+You are working on a **React + Vite + Express.js** application that demonstrates x402 payment protocol integration with Openfort smart accounts. The stack includes:
 - Frontend: React 18, TypeScript, Tailwind CSS v4, Wagmi, viem
-- Backend: Node.js (built-in http module), Openfort Node SDK
+- Backend: Express.js 5, TypeScript, Openfort Node SDK
 - Tools: Biome (not Prettier), pnpm (not npm), TypeScript 5.8
 
 ## Critical Rules
@@ -26,7 +26,7 @@ You are working on a **React + Vite + Node.js** application that demonstrates x4
 ### 3. Code Standards
 - NO `any` types without explicit justification
 - NO hardcoded addresses, amounts, or API keys
-- NO UI imports in `src/integrations/` code
+- NO UI imports in `frontend/src/integrations/` code
 - NO console.logs in production code paths
 - YES to explicit error handling
 - YES to TypeScript strict mode compliance
@@ -69,40 +69,38 @@ export function useMyFeature() {
 ```
 
 ### Environment Variables
-- Server-side: Access via `process.env.VARIABLE_NAME`
-- Client-side: Must have `VITE_` prefix
-- Always validate in `server/config/environment.js`
+- Server-side: Access via `process.env.VARIABLE_NAME` (configured in `backend/.env.local`)
+- Client-side: Must have `VITE_` prefix (configured in `frontend/.env.local`)
+- Always validate in `backend/src/config.ts`
 - Never inline values that should be configurable
 
 ## Common Task Patterns
 
 ### Adding an API Endpoint
 
-1. Create handler in `server/routes/newEndpoint.js`:
-```javascript
-export async function handleNewEndpoint(req, res) {
+1. Create handler in `backend/src/routes.ts`:
+```typescript
+export async function handleNewEndpoint(req: express.Request, res: express.Response) {
   try {
     // Implementation
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ success: true, data }));
+    res.status(200).json({ success: true, data });
   } catch (error) {
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: error.message }));
+    console.error("Error in handleNewEndpoint:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 }
 ```
 
-2. Register in `server/app.js`:
-```javascript
-import { handleNewEndpoint } from './routes/newEndpoint.js'
-// Add to the routing logic:
-} else if (pathname === "/api/new-endpoint" && req.method === "GET") {
-  await handleNewEndpoint(req, res);
+2. Register in `backend/src/server.ts`:
+```typescript
+import { handleNewEndpoint } from './routes.js'
+// Add route:
+app.get("/api/new-endpoint", handleNewEndpoint);
 ```
 
 ### Adding a UI Component
 
-1. Place in feature directory: `src/features/paywall/components/NewComponent.tsx`
+1. Place in feature directory: `frontend/src/features/paywall/components/NewComponent.tsx`
 2. Use this template:
 ```typescript
 interface NewComponentProps {
@@ -118,26 +116,26 @@ export function NewComponent({ }: NewComponentProps) {
 }
 ```
 
-3. Export from `src/features/paywall/index.ts`:
+3. Export from `frontend/src/features/paywall/index.ts`:
 ```typescript
 export { NewComponent } from './components/NewComponent'
 ```
 
 ### Adding x402 Protocol Logic
 
-Place in `src/integrations/x402/`:
+Place in `frontend/src/integrations/x402/`:
 - Pure TypeScript (no React)
 - Export typed functions
 - No side effects
-- Example location: `src/integrations/x402/myFeature.ts`
+- Example location: `frontend/src/integrations/x402/myFeature.ts`
 
 ### Modifying Payment Flow
 
 Key files:
-- Server validation: `server/services/paymentRequirements.js`
-- Client encoding: `src/integrations/x402/payments.ts`
-- UI orchestration: `src/features/paywall/PaywallExperience.tsx`
-- Balance checks: `src/features/paywall/hooks/useUsdcBalance.ts`
+- Server validation: `backend/src/payment.ts`
+- Client encoding: `frontend/src/integrations/x402/payments.ts`
+- UI orchestration: `frontend/src/features/paywall/PaywallExperience.tsx`
+- Balance checks: `frontend/src/features/paywall/hooks/useUsdcBalance.ts`
 
 ## Debugging Guidance
 
@@ -169,17 +167,23 @@ Key files:
 
 ### Command Patterns
 ```bash
-# Install dependencies
-pnpm install <package>
+# Install frontend dependencies
+cd frontend && pnpm install <package>
 
-# Type check
-pnpm tsc -b
+# Install backend dependencies
+cd backend && pnpm install <package>
 
-# Format/lint
-pnpm check
+# Type check frontend
+cd frontend && pnpm tsc -b
 
-# Run dev
-pnpm dev:all
+# Format/lint frontend
+cd frontend && pnpm check
+
+# Run frontend dev
+cd frontend && pnpm dev
+
+# Run backend dev
+cd backend && pnpm dev
 ```
 
 ## Performance Guidelines
@@ -202,11 +206,11 @@ pnpm dev:all
 - Public clients for read operations
 - Wallet clients for write operations
 
-### Node.js HTTP
-- Use `res.writeHead()` and `res.end()` for responses
-- Parse request body manually with stream listeners
-- Set CORS headers via `res.setHeader()`
-- Route via pathname matching in request handler
+### Express.js
+- Use `res.status().json()` for JSON responses
+- Use `express.json()` middleware to parse request body
+- Set CORS headers via middleware or `res.setHeader()`
+- Route via Express routing methods (`app.get()`, `app.post()`, etc.)
 
 ### Openfort SDK
 - Client components: `@openfort/react`
@@ -217,7 +221,7 @@ pnpm dev:all
 
 ❌ Importing UI components in integrations:
 ```typescript
-// BAD: src/integrations/x402/helper.ts
+// BAD: frontend/src/integrations/x402/helper.ts
 import { Button } from '@/features/paywall/components/Button'
 ```
 
@@ -239,32 +243,39 @@ function process(data: PaymentData) { }
 
 ❌ Mixing concerns:
 ```typescript
-// BAD: server/routes/payment.js
+// BAD: backend/src/routes.ts
 function PaymentUI() { return <div>...</div> }
 ```
 
 ## Architecture Overview
 
-### Server Layer (`server/`)
-- **app.js**: Main HTTP request handler
-- **config/**: Environment configuration
-- **integrations/**: External service clients (Openfort)
-- **routes/**: HTTP endpoints (402 responses, Shield sessions)
-- **services/**: Business logic (payment validation, x402 encoding)
+### Backend (`backend/`)
+- **src/**: TypeScript source files
+  - **server.ts**: Express server setup and middleware
+  - **config.ts**: Environment configuration
+  - **openfort.ts**: Openfort client initialization
+  - **routes.ts**: HTTP endpoints (402 responses, Shield sessions, health)
+  - **payment.ts**: Payment validation logic
+- **dist/**: Compiled JavaScript output
+- **package.json**: Backend dependencies
 
-### Client Layer (`src/`)
-- **features/paywall/**: Complete paywall feature module
-  - `PaywallExperience.tsx`: Main orchestrator
-  - `components/`: UI components for each state
-  - `hooks/`: Custom hooks for payment logic
-  - `utils/`: Pure utility functions
-- **integrations/**: Protocol helpers (x402, Openfort)
-- **types/**: TypeScript ambient declarations
+### Frontend (`frontend/`)
+- **src/**: React application
+  - **features/paywall/**: Complete paywall feature module
+    - `PaywallExperience.tsx`: Main orchestrator
+    - `components/`: UI components for each state
+    - `hooks/`: Custom hooks for payment logic
+    - `utils/`: Pure utility functions
+  - **integrations/**: Protocol helpers (x402, Openfort)
+  - **types/**: TypeScript ambient declarations
+- **index.html**: App entry point
+- **vite.config.ts**: Vite configuration
+- **package.json**: Frontend dependencies
 
 ## Key Integration Points
 
 ### x402 Protocol
-Custom implementation in `src/integrations/x402/`:
+Custom implementation in `frontend/src/integrations/x402/`:
 - `requirements.ts`: Parse and select payment requirements
 - `payments.ts`: Encode payment proofs
 - `balance.ts`: Check USDC balances
