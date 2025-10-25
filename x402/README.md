@@ -5,32 +5,22 @@ A structured, end-to-end reference that showcases how Openfort smart accounts po
 ## Directory Overview
 
 ```
-x402/
-├─ frontend/                     # React + Vite client application
-│  ├─ src/
-│  │  ├─ App.tsx                 # Mounts the paywall experience
-│  │  ├─ features/paywall/       # All paywall UI + hooks
-│  │  │  ├─ PaywallExperience.tsx # Orchestrates authentication → payment → unlock
-│  │  │  ├─ components/          # Auth, wallet, payment, success views
-│  │  │  └─ hooks/usePaymentRequirements.ts
-│  │  ├─ integrations/openfort/  # React providers & config helpers
-│  │  ├─ integrations/x402/      # Protocol helpers (types, encoding, balance)
-│  │  └─ types/                  # Global ambient types (window.x402, …)
-│  ├─ index.html
-│  ├─ vite.config.ts
-│  └─ package.json
-├─ backend/                      # Express.js + TypeScript API server
-│  ├─ src/                       # TypeScript source files
-│  │  ├─ server.ts               # Express server setup and middleware
-│  │  ├─ config.ts               # Environment parsing & payment defaults
-│  │  ├─ openfort.ts             # Openfort Node client creator
-│  │  ├─ routes.ts               # /api/protected-content, /shield-session, /health
-│  │  └─ payment.ts              # Payment validation logic
-│  ├─ dist/                      # Compiled JavaScript output
-│  └─ package.json
-├─ README.md
-├─ CLAUDE.md
-└─ AGENTS.md
+openfort_x402/
+├─ server/                       # Node.js API broken into config, routes, services
+│  ├─ app.js                     # Assembles middleware + routes
+│  ├─ config/environment.js      # Environment parsing & payment defaults
+│  ├─ integrations/openfort...   # Openfort Node client creator
+│  └─ routes/…                   # /api/protected-content, /protected-create-encryption-session, /health
+├─ src/
+│  ├─ App.tsx                    # Mounts the paywall experience
+│  ├─ features/paywall/          # All paywall UI + hooks
+│  │  ├─ PaywallExperience.tsx   # Orchestrates authentication → payment → unlock
+│  │  ├─ components/             # Auth, wallet, payment, success views
+│  │  └─ hooks/usePaymentRequirements.ts
+│  ├─ integrations/openfort/     # React providers & config helpers
+│  ├─ integrations/x402/         # Protocol helpers (types, encoding, balance)
+│  └─ types/                     # Global ambient types (window.x402, …)
+└─ server.js                     # Node entry that boots the HTTP server
 ```
 
 ## Quick Start
@@ -71,7 +61,7 @@ VITE_OPENFORT_PUBLISHABLE_KEY=pk_test_...
 VITE_SHIELD_PUBLISHABLE_KEY=shpk_test_...
 VITE_WALLET_CONNECT_PROJECT_ID=your-wallet-connect-project-id
 VITE_POLICY_ID=pol_...
-VITE_CREATE_ENCRYPTED_SESSION_ENDPOINT=http://localhost:3007/api/shield-session
+VITE_CREATE_ENCRYPTED_SESSION_ENDPOINT=http://localhost:3007/api/protected-create-encryption-session
 
 # Client-side X402 Defaults
 VITE_X402_RESOURCE_URL=http://localhost:3007/api/protected-content
@@ -116,7 +106,7 @@ CORS_ORIGINS=http://localhost:5173,http://localhost:3007
    - Update `backend/.env.local` and/or `backend/src/config.ts` with your network, pay-to address, and custom messaging.
    - The server exposes:
      - `/api/protected-content` – returns a 402 response with x402 payment requirements or unlocks content after payment/on-chain proof.
-     - `/api/shield-session` – issues Openfort Shield recovery sessions.
+     - `/api/protected-create-encryption-session` – issues Openfort Shield recovery sessions.
      - `/api/health` – quick readiness probe.
 
 2. **Embed providers once**

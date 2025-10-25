@@ -34,13 +34,6 @@ export function getShieldPublishableKey(): string {
   );
 }
 
-export function getShieldEncryptionKey(): string {
-  return ensureValue(
-    getExtraValue<string>("openfortShieldEncryptionKey"),
-    "[CONFIG] Missing Shield encryption key. Set OPENFORT_SHIELD_ENCRYPTION_KEY in .env or update app.config.js extra.openfortShieldEncryptionKey."
-  );
-}
-
 export function getShieldRecoveryBaseUrl(): string {
   return ensureValue(
     getExtraValue<string>("openfortShieldRecoveryBaseUrl"),

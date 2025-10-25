@@ -1,33 +1,32 @@
 # AGENTS.md
 
 ## Project overview
-- Openfort + Aave integration with a Vite React frontend and Express backend.
+- Openfort + Aave integration with a Vite React frontend.
 - Uses Shield to manage embedded wallets and sponsored lending transactions.
+- Requires external backend (openfort-backend-quickstart) for Shield authentication sessions.
 
 ## Setup commands
-- `cd backend && npm install`
-- `cd backend && cp .env.example .env`
-- `cd frontend && npm install`
-- `cd frontend && cp .env.example .env`
-- `cd backend && npm run dev` (starts API on `http://localhost:3001`)
-- `cd frontend && npm run dev` (serves UI on `http://localhost:5173`)
+- `pnpm i`
+- `cp .env.example .env`
+- `pnpm dev` (serves UI on `http://localhost:5173`)
+- Backend: Clone and run [openfort-backend-quickstart](https://github.com/openfort-xyz/openfort-backend-quickstart) on `http://localhost:3001`
 
 ## Environment
-- Backend `.env` must define `NEXT_PUBLIC_SHIELD_API_KEY`, `NEXTAUTH_SHIELD_SECRET_KEY`, `NEXTAUTH_SHIELD_ENCRYPTION_SHARE`, `FRONTEND_URL`, and `BACKEND_URL`.
-- Frontend `.env` must define `VITE_OPENFORT_PUBLISHABLE_KEY`, `VITE_OPENFORT_SHIELD_PUBLIC_KEY`, `VITE_OPENFORT_POLICY_ID`, and `VITE_BACKEND_URL`.
-- Populate both files with real Openfort credentials and policy IDs from the dashboard—placeholder values will fail.
-- Keep the policy ID and Shield credentials synced across backend and frontend when rotating keys.
+- Frontend `.env` must define `VITE_OPENFORT_PUBLISHABLE_KEY`, `VITE_OPENFORT_SHIELD_PUBLIC_KEY`, `VITE_OPENFORT_POLICY_ID` (optional), and `VITE_BACKEND_URL`.
+- Backend (external) `.env` must define `OPENFORT_SECRET_KEY` from Openfort dashboard.
+- Populate both files with real Openfort credentials from the dashboard—placeholder values will fail.
 
 ## Testing instructions
-- `cd frontend && npm run lint` (TypeScript + ESLint checks)
-- Verify both backend and frontend start without runtime errors after updating environment values.
+- `pnpm lint` (TypeScript + ESLint checks)
+- `pnpm build` (TypeScript compilation + Vite build)
+- Verify frontend starts without runtime errors after updating environment values.
 
 ## Code style
-- Frontend follows Vite + TypeScript defaults with ESLint (`eslint .`).
+- Follows Vite + TypeScript defaults with ESLint (`pnpm lint`).
 - Prefer functional React components and hooks; keep wallet state in React Query where possible.
-- Backend is Node 18+ Express with standard Prettier-style formatting (no enforced lint step).
+- Uses `@aave/react` SDK for Aave protocol interactions.
 
 ## PR instructions
 - Title format: `[aave] <summary>`.
-- Run the lint command above and verify backend bootstraps cleanly before requesting review.
+- Run `pnpm lint` and `pnpm build` before requesting review.
 - Document new env vars or contract addresses in `aave/README.md` when they change.

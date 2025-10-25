@@ -144,8 +144,8 @@ See [README.md](README.md) for complete environment variable documentation.
 ### Working with Smart Accounts
 
 - Openfort SDK handles account creation and recovery
-- Shield sessions are created server-side via `/api/shield-session`
-- Wallet activation happens in `frontend/src/features/paywall/PaywallExperience.tsx`
+- Shield sessions are created server-side via `/api/protected-create-encryption-session`
+- Wallet activation happens in `PaywallExperience.tsx`
 - Never expose Shield secret keys client-side
 
 ### Network Handling

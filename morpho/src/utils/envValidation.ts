@@ -4,7 +4,6 @@ interface EnvConfig {
   VITE_OPENFORT_SHIELD_PUBLIC_KEY: string;
   VITE_WALLET_CONNECT_PROJECT_ID: string;
   VITE_BACKEND_URL: string;
-  VITE_FRONTEND_URL: string;
 }
 
 interface ValidationError {
@@ -18,7 +17,6 @@ const ENV_DESCRIPTIONS = {
   VITE_OPENFORT_SHIELD_PUBLIC_KEY: "Shield public key for wallet encryption",
   VITE_WALLET_CONNECT_PROJECT_ID: "WalletConnect project ID for wallet connections",
   VITE_BACKEND_URL: "Backend API URL",
-  VITE_FRONTEND_URL: "Frontend application URL"
 };
 
 export function validateEnvironmentVariables(): ValidationError[] {
@@ -27,8 +25,7 @@ export function validateEnvironmentVariables(): ValidationError[] {
   const requiredVars: Array<keyof EnvConfig> = [
     'VITE_OPENFORT_PUBLISHABLE_KEY',
     'VITE_OPENFORT_SHIELD_PUBLIC_KEY',
-    'VITE_BACKEND_URL',
-    'VITE_FRONTEND_URL'
+    'VITE_BACKEND_URL'
   ];
 
   requiredVars.forEach(key => {
@@ -42,7 +39,7 @@ export function validateEnvironmentVariables(): ValidationError[] {
       return;
     }
 
-    if (key === 'VITE_BACKEND_URL' || key === 'VITE_FRONTEND_URL') {
+    if (key === 'VITE_BACKEND_URL') {
       try {
         new URL(value);
       } catch {

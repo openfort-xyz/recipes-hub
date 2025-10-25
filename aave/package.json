@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@aave/client": "^0.4.0",
+    "@aave/graphql": "^0.4.0",
     "@aave/react": "^0.4.0",
     "@metamask/sdk": "^0.33.1",
     "@openfort/react": "^0.0.34",
