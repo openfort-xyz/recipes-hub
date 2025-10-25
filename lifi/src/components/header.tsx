@@ -1,6 +1,5 @@
 import Link from "next/link";
 import OpenfortLogo from "@/features/openfort/components/logo";
-import LiFiLogo from "@/features/lifi/components/li-fi-logo";
 import { HamburgerMenu } from "./hamburger-menu";
 import OpenfortConnectButton from "@/features/openfort/components/connect-button";
 

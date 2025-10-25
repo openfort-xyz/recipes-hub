@@ -1,4 +1,4 @@
-import { useState, Component, ErrorInfo, ReactNode } from 'react';
+import { useState, Component, type ErrorInfo, type ReactNode } from 'react';
 
 interface EnvWarningProps {
   children: React.ReactNode;

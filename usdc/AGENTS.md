@@ -5,10 +5,10 @@
 - Handles wallet creation, faucet funding, and sponsored transfers via Shield.
 
 ## Setup commands
-- `npm install`
+- `pnpm install`
 - `cp .env.example .env.local`
-- `npm start` (Expo CLI)
-- `npm run ios` or `npm run android` to launch on a device/emulator
+- `pnpm start` (Expo CLI)
+- `pnpm run ios` or `pnpm run android` to launch on a device/emulator
 
 ## Environment
 - `.env.local` must define `OPENFORT_PROJECT_PUBLISHABLE_KEY`, `OPENFORT_SHIELD_PUBLISHABLE_KEY`, `OPENFORT_SHIELD_RECOVERY_BASE_URL`, and `OPENFORT_ETHEREUM_PROVIDER_POLICY_ID`.
@@ -26,4 +26,4 @@
 ## PR instructions
 - Title format: `[usdc] <summary>`.
 - Update `README.md` if onboarding, faucet steps, or required env vars change.
-- Confirm the Expo app launches from a clean `npm start` before opening a PR.
+- Confirm the Expo app launches from a clean `pnpm start` before opening a PR.

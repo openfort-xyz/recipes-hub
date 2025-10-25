@@ -10,8 +10,7 @@ import {
   getTokens,
 } from "@lifi/sdk";
 import { formatUnits, parseUnits } from "viem";
-import { switchChain } from "@wagmi/core";
-import { wagmiConfig } from "@/features/openfort/config/wagmi-config";
+import { useSwitchChain } from "wagmi";
 import { useOpenfortWallet } from "@/features/openfort/hooks/use-openfort-wallet";
 import { DEFAULT_SWAP_AMOUNT } from "../constants";
 import {
@@ -88,6 +87,7 @@ export const useSwapController = (): SwapController => {
     isReady,
     isStatusLoading,
   } = useOpenfortWallet();
+  const { switchChainAsync } = useSwitchChain();
 
   const [swapState, setSwapState] = useState<SwapState>(INITIAL_STATE);
   const [chains, setChains] = useState<Chain[]>([]);
@@ -368,11 +368,11 @@ export const useSwapController = (): SwapController => {
 
   const switchToChain = useCallback(async (targetChainId: number) => {
     try {
-      await switchChain(wagmiConfig, { chainId: targetChainId });
+      await switchChainAsync({ chainId: targetChainId });
     } catch (error) {
       throw error;
     }
-  }, []);
+  }, [switchChainAsync]);
 
   const handleGetRoutes = useCallback(async () => {
     const {
@@ -459,7 +459,7 @@ export const useSwapController = (): SwapController => {
         showExecutionDisplay: true,
       }));
 
-      const executionResult = await executeSwapRoute(selectedRoute, {
+      const _executionResult = await executeSwapRoute(selectedRoute, {
         updateRouteHook: (updatedRoute) => {
           monitorRouteExecution(updatedRoute);
 
@@ -511,8 +511,6 @@ Do you want to continue?`
         executeInBackground: false,
         disableMessageSigning: false,
       });
-
-      return executionResult;
     } catch (error) {
       setSwapState((prev) => ({
         ...prev,

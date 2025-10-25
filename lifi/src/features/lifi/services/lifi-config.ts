@@ -1,5 +1,5 @@
 import { ChainType, EVM, createConfig, getChains } from "@lifi/sdk";
-import { getWalletClient, switchChain } from "@wagmi/core";
+import { getWalletClient, switchChain } from "wagmi/actions";
 import type { Config } from "wagmi";
 
 export const initializeLiFiConfig = (wagmiConfig: Config) =>

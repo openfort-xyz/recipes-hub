@@ -3,18 +3,23 @@
   "main": "entrypoint.ts",
   "version": "1.0.0",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "start": "expo start --clear --dev-client --tunnel",
+    "android": "expo run:android",
+    "android-no-cache": "expo run:android --no-build-cache",
+    "ios": "expo run:ios",
+    "ios-no-cache": "expo run:ios --no-build-cache",
+    "web": "expo start --web",
+    "server": "bun --watch --hot ./server/index.ts",
+    "doctor": "pnpm dlx expo-doctor@latest --verbose --pnpm && pnpm expo install --fix --pnpm"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
-    "@openfort/react-native": "^0.1.9",
+    "@openfort/react-native": "^0.1.15",
     "@react-navigation/native": "^7.1.8",
     "expo": "~54.0.2",
     "expo-apple-authentication": "~8.0.7",
     "expo-application": "~7.0.7",
+    "expo-clipboard": "~8.0.7",
     "expo-constants": "~18.0.8",
     "expo-crypto": "~15.0.7",
     "expo-font": "~14.0.8",
@@ -32,8 +37,7 @@
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
     "react-native-web": "~0.21.0",
-    "react-native-worklets": "0.5.1",
-    "expo-clipboard": "~8.0.7"
+    "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",

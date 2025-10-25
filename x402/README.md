@@ -10,7 +10,7 @@ openfort_x402/
 │  ├─ app.js                     # Assembles middleware + routes
 │  ├─ config/environment.js      # Environment parsing & payment defaults
 │  ├─ integrations/openfort...   # Openfort Node client creator
-│  └─ routes/…                   # /api/protected-content, /shield-session, /health
+│  └─ routes/…                   # /api/protected-content, /protected-create-encryption-session, /health
 ├─ src/
 │  ├─ App.tsx                    # Mounts the paywall experience
 │  ├─ features/paywall/          # All paywall UI + hooks
@@ -47,7 +47,7 @@ VITE_OPENFORT_PUBLISHABLE_KEY=pk_test_...
 VITE_SHIELD_PUBLISHABLE_KEY=shpk_test_...
 VITE_WALLET_CONNECT_PROJECT_ID=your-wallet-connect-project-id
 VITE_POLICY_ID=pol_...
-VITE_CREATE_ENCRYPTED_SESSION_ENDPOINT=http://localhost:3007/api/shield-session
+VITE_CREATE_ENCRYPTED_SESSION_ENDPOINT=http://localhost:3007/api/protected-create-encryption-session
 
 # Server-side Openfort Keys
 OPENFORT_SECRET_KEY=sk_test_...
@@ -73,7 +73,7 @@ X402_ASSET_ADDRESS=0x...            # token address for your network
    - Update `.env.local` and/or `server/config/environment.js` with your network, pay-to address, and custom messaging.
    - The server exposes:
      - `/api/protected-content` – returns a 402 response with x402 payment requirements or unlocks content after payment/on-chain proof.
-     - `/api/shield-session` – issues Openfort Shield recovery sessions.
+     - `/api/protected-create-encryption-session` – issues Openfort Shield recovery sessions.
      - `/api/health` – quick readiness probe.
 
 2. **Embed providers once**

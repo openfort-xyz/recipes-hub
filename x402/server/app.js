@@ -51,7 +51,7 @@ export function createPaywallServer(runtimeConfig = defaultEnvironment) {
     try {
       if (pathname === "/api/health" && req.method === "GET") {
         await handleHealth(req, res);
-      } else if (pathname === "/api/shield-session" && req.method === "POST") {
+      } else if (pathname === "/api/protected-create-encryption-session" && req.method === "POST") {
         await handleShieldSession(req, res, { openfortClient, shieldConfig: env.openfort.shield });
       } else if (pathname === "/api/protected-content") {
         await handleProtectedContent(req, res, { paywall: env.paywall });

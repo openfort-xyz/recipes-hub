@@ -4,7 +4,8 @@ import { createConfig, http } from 'wagmi'
 // Configure the chains you want to use
 export const wagmiConfig = createConfig({
   chains: [sepolia],
+  ssr: true,
   transports: {
-    [sepolia.id]: http(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL!),
+    [sepolia.id]: http('https://ethereum-sepolia-rpc.publicnode.com'),
   },
 })

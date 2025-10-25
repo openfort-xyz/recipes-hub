@@ -292,7 +292,7 @@ Custom implementation in `src/integrations/x402/`:
 6. Unlock content with payment proof
 
 ### Shield Session Flow
-1. Client requests session from `/api/shield-session`
+1. Client requests session from `/api/protected-create-encryption-session`
 2. Server creates Openfort Shield session
 3. Client uses session for wallet recovery
 4. Wallet activated securely client-side
