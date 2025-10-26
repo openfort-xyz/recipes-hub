@@ -6,12 +6,12 @@ This repository contains comprehensive samples demonstrating how to integrate Op
 
 | Name | Description | Quick Start |
 |------|-------------|-------------|
-| **[Yield on Aave](./aave/)** | DeFi lending and borrowing with Aave protocol. Interact with lending pools, manage collateral, and execute transactions with gas sponsorship. | `pnpx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/aave openfort-aave && cd openfort-aave` |
-| **[Trade on Hyperliquid](./hyperliquid/)** | Mobile trading on Hyperliquid's DEX. Combines embedded wallets with perpetual trading, real-time price feeds, and order management. | `pnpx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/hyperliquid openfort-hyperliquid && cd openfort-hyperliquid` |
+| **[Yield on Aave](./aave/)** | DeFi lending and borrowing with Aave protocol. Interact with lending pools, manage collateral, and execute transactions with gas sponsorship. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/aave openfort-aave && cd openfort-aave` |
+| **[Trade on Hyperliquid](./hyperliquid/)** | Mobile trading on Hyperliquid's DEX. Combines embedded wallets with perpetual trading, real-time price feeds, and order management. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/hyperliquid openfort-hyperliquid && cd openfort-hyperliquid` |
 | **[Swap on LiFi](./lifi/)** | Cross-chain bridge and swap flows with LiFi routing engine. Multi-chain support across Ethereum, Polygon, Arbitrum, Optimism, Base, and Avalanche. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/lifi openfort-lifi && cd openfort-lifi` |
-| **[Yield on Morpho](./morpho/)** | Interact with Morpho Blue lending vaults on Base. Supply/withdraw operations with yield optimization strategies. | `pnpx gitpick openfort-xyz/openfort-react/tree/main/examples/quickstarts/morpho openfort-morpho && cd openfort-morpho` |
+| **[Yield on Morpho](./morpho/)** | Interact with Morpho Blue lending vaults on Base. Supply/withdraw operations with yield optimization strategies. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/morpho openfort-morpho && cd openfort-morpho` |
 | **[USDC Transfer](./usdc/)** | Basic ERC-20 token transfers with embedded wallets. Perfect for understanding wallet creation, faucet integration, and gasless transactions. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/usdc openfort-usdc && cd openfort-usdc` |
-| **[Permissionless 7702](./7702/)** | Openfort + Permissionless EIP-7702 authorization recipe with gas sponsorship via Pimlico. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/7702 openfort-permissionless-7702 && cd openfort-permissionless-7702` |
+| **[Permissionless 7702](./7702/)** | Openfort + Permissionless EIP-7702 authorization recipe with gas sponsorship via Pimlico. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/7702 openfort-7702 && cd openfort-7702` |
 | **[x402 Paywall](./x402/)** | End-to-end x402 payment protocol integration with Openfort smart accounts. Demonstrates content paywalls with USDC payments on Base/Base-Sepolia. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/x402 openfort-x402 && cd openfort-x402` |
 
 ## Getting Started

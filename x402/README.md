@@ -5,7 +5,7 @@ A structured, end-to-end reference that showcases how Openfort smart accounts po
 ## 1. Setup
 
 ```bash
-cd x402
+pnpx gitpick openfort-xyz/recipes-hub/tree/main/x402 openfort-x402 && cd openfort-x402
 ```
 
 ## 2. Get Credentials
