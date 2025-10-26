@@ -5,7 +5,7 @@ Interact with a Morpho Blue USDC vault on Base using Openfort embedded wallets a
 ## 1. Setup
 
 ```bash
-npx gitpick openfort-xyz/recipes-hub/tree/main/morpho openfort-morpho && cd openfort-morpho
+pnpx gitpick openfort-xyz/recipes-hub/tree/main/morpho openfort-morpho && cd openfort-morpho
 ```
 
 ## 2. Setup Backend
