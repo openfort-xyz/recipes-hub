@@ -14,7 +14,7 @@
     "@aave/graphql": "^0.4.0",
     "@aave/react": "^0.4.0",
     "@metamask/sdk": "^0.33.1",
-    "@openfort/react": "^0.0.34",
+    "@openfort/react": "https://pkg.pr.new/openfort-xyz/openfort-react/@openfort/react@50428f9",
     "@tanstack/react-query": "^5.85.5",
     "@wagmi/connectors": "^5.9.9",
     "lucide-react": "^0.542.0",

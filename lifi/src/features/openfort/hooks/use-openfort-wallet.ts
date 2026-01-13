@@ -29,8 +29,8 @@ export const useOpenfortWallet = (): OpenfortWalletState => {
     isStatusLoading: isLoadingWallets,
     isAuthenticated,
     playerName:
-      user?.player?.name ||
-      user?.linkedAccounts?.[0]?.email ||
-      user?.linkedAccounts?.[0]?.externalUserId,
+      user?.name ||
+      user?.email ||
+      user?.id,
   };
 };

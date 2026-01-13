@@ -11,7 +11,7 @@
   "dependencies": {
     "@lifi/sdk": "^3.8.11",
     "@lifi/wallet-management": "^3.14.1",
-    "@openfort/react": "^0.0.34",
+    "@openfort/react": "https://pkg.pr.new/openfort-xyz/openfort-react/@openfort/react@50428f9",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-slot": "^1.2.3",

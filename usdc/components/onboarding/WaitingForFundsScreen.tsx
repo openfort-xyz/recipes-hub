@@ -2,9 +2,8 @@ import React from "react";
 import { ActivityIndicator, ScrollView, Text, View, StyleSheet, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
-import { WalletData } from "@/types/wallet";
+import { UserWallet, WalletData } from "@/types/wallet";
 import { formatUSDC } from "../../utils/format";
-import { UserWallet } from "@openfort/react-native";
 import { ERC20_BALANCE_TIMEOUT_MS } from "../../constants/erc20";
 import { useUsdcBalance } from "../../utils/erc20";
 

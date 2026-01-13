@@ -1,10 +1,10 @@
 // app/index.tsx
 import LoginScreen from '../components/LoginScreen';
 import { UserScreen } from '../components/UserScreen';
-import { useOpenfort } from '@openfort/react-native';
+import { useUser } from '@openfort/react-native';
  
 export default function Index() {
-  const { user } = useOpenfort();
+  const { user } = useUser();
  
   if (user === null) {
     console.warn('Tried to fetch user from Openfort. The user is not authenticated yet.');

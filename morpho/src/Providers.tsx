@@ -36,7 +36,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             // Set the wallet configuration. In this example, we will be using the embedded wallet.
             walletConfig={{
               shieldPublishableKey: import.meta.env.VITE_OPENFORT_SHIELD_PUBLIC_KEY,
-              createEncryptedSessionEndpoint: `${import.meta.env.VITE_BACKEND_URL}/api/create-encryption-session`,
+              createEncryptedSessionEndpoint: `${import.meta.env.VITE_BACKEND_URL}/api/protected-create-encryption-session`,
               ethereumProviderPolicyId: import.meta.env.VITE_OPENFORT_POLICY_ID || undefined,
             }}
           >

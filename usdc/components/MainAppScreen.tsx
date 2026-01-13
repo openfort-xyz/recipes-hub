@@ -5,9 +5,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
 import { WalletData } from "@/types/wallet";
 import { formatUSDC } from "../utils/format";
-import { UserWallet } from "@openfort/react-native";
 import { transferUSDC } from "../utils/erc20";
 import { CHAIN_IDS, CHAIN_IDS_HEX } from "../constants/network";
+import { ConnectedEmbeddedEthereumWallet } from "@openfort/react-native";
 
 const CopyIcon = ({ size = 16, color = "#6772e5" }) => (
   <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
@@ -26,7 +26,7 @@ interface MainAppScreenProps {
   updateBalances: () => Promise<void>;
   logout: () => void;
   ethBalances: {[key: string]: string};
-  activeWallet: UserWallet | null;
+  activeWallet: ConnectedEmbeddedEthereumWallet | null;
   setActiveWallet: (options?: any) => Promise<any>;
 }
 
