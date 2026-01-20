@@ -38,8 +38,8 @@ const EnvWarning: React.FC<EnvWarningProps> = ({ children }) => {
   const [renderError, setRenderError] = useState<Error | null>(null);
 
   const requiredEnvVars = [
-    { key: 'VITE_OPENFORT_PUBLISHABLE_KEY', name: 'Openfort Publishable Key' },
-    { key: 'VITE_OPENFORT_SHIELD_PUBLIC_KEY', name: 'Openfort Shield Public Key' },
+    { key: 'VITE_OPENFORT_PUBLISHABLE_KEY', name: 'Openfort Project Publishable Key' },
+    { key: 'VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY', name: 'Openfort Shield Publishable Key' },
     { key: 'VITE_BACKEND_URL', name: 'Backend URL' },
     { key: 'VITE_OPENFORT_POLICY_ID', name: 'Openfort Policy ID' },
   ];
