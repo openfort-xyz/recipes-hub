@@ -1,3 +1,5 @@
+import { OpenfortProviderProps } from "@openfort/react-native";
+
 export const CHAIN_IDS = {
   ARBITRUM_SEPOLIA: 421614,
 } as const;
@@ -25,6 +27,6 @@ export const ARBITRUM_SEPOLIA_CHAIN = {
   },
 } as const;
 
-export const SUPPORTED_CHAINS = [ARBITRUM_SEPOLIA_CHAIN] as const;
+export const SUPPORTED_CHAINS = [ARBITRUM_SEPOLIA_CHAIN] as OpenfortProviderProps["supportedChains"];
 
-export type SupportedChainId = (typeof SUPPORTED_CHAINS)[number]["id"];
+export type SupportedChainId = NonNullable<typeof SUPPORTED_CHAINS>[number]["id"];

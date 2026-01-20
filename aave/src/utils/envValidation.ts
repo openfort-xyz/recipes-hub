@@ -1,6 +1,6 @@
 interface EnvConfig {
   VITE_OPENFORT_PUBLISHABLE_KEY: string;
-  VITE_OPENFORT_SHIELD_PUBLIC_KEY: string;
+  VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY: string;
   VITE_OPENFORT_POLICY_ID: string;
   VITE_BACKEND_URL: string;
 }
@@ -11,8 +11,8 @@ interface ValidationError {
 }
 
 const ENV_DESCRIPTIONS = {
-  VITE_OPENFORT_PUBLISHABLE_KEY: "Openfort publishable key for client-side authentication",
-  VITE_OPENFORT_SHIELD_PUBLIC_KEY: "Shield public key for wallet encryption",
+  VITE_OPENFORT_PUBLISHABLE_KEY: "Openfort project publishable key for client-side authentication",
+  VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY: "Openfort Shield publishable key for wallet encryption",
   VITE_OPENFORT_POLICY_ID: "Policy ID for Aave protocol configuration",
   VITE_BACKEND_URL: "Backend API URL for Aave operations"
 };
@@ -22,7 +22,7 @@ export function validateEnvironmentVariables(): ValidationError[] {
 
   const requiredVars: Array<keyof EnvConfig> = [
     'VITE_OPENFORT_PUBLISHABLE_KEY',
-    'VITE_OPENFORT_SHIELD_PUBLIC_KEY',
+    'VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY',
     'VITE_BACKEND_URL'
   ];
 

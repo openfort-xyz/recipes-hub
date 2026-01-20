@@ -1,6 +1,13 @@
 import Openfort from '@openfort/openfort-node'
 import { type NextRequest, NextResponse } from 'next/server'
 
+/**
+ * Creates an encryption session for AUTOMATIC embedded wallet recovery.
+ * This endpoint is required when using automatic wallet recovery with Openfort Shield.
+ *
+ * @see https://www.openfort.io/docs/products/embedded-wallet/react-native/quickstart/automatic
+ * @see https://github.com/openfort-xyz/openfort-backend-quickstart
+ */
 export async function POST(_req: NextRequest) {
   // Optional: Add your own authentication middleware here
   // For now, we'll allow authenticated Openfort users
@@ -9,8 +16,8 @@ export async function POST(_req: NextRequest) {
     // Initialize the Openfort client
     const openfort = new Openfort(process.env.OPENFORT_SECRET_KEY as string)
 
-    const session = await openfort.registerRecoverySession(
-      process.env.NEXT_PUBLIC_SHIELD_PUBLISHABLE_KEY as string,
+    const session = await openfort.createEncryptionSession(
+      process.env.NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY as string,
       process.env.OPENFORT_SHIELD_SECRET_KEY as string,
       process.env.OPENFORT_SHIELD_ENCRYPTION_SHARE as string
     )

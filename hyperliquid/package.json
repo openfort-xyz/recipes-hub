@@ -16,7 +16,7 @@
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
     "@nktkas/hyperliquid": "^0.24.3",
-    "@openfort/react-native": "latest",
+    "@openfort/react-native": "^1.0.1",
     "@peculiar/webcrypto": "^1.5.0",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",

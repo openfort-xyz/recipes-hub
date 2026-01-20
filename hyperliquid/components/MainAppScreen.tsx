@@ -10,7 +10,6 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { UserWallet } from "@openfort/react-native";
 
 import { CustomButton, GradientButton } from "./ui";
 import { transactionHandlers } from "../utils/transactions";
@@ -36,7 +35,7 @@ type SwapResult = {
 };
 
 interface MainAppScreenProps {
-  activeWallet: UserWallet | null;
+  activeWallet: any | null;
   openfortClient: any;
   walletBalance: number | null;
   walletBalanceLoading: boolean;
@@ -460,8 +459,8 @@ export const MainAppScreen: React.FC<MainAppScreenProps> = ({
                   orderId: result.orderId,
                   requestedPrice: result.requestedPrice,
                   requestedSize: result.requestedSize,
-                  avgPrice: result.avgPrice,
-                  totalSize: result.totalSize,
+                  // avgPrice: result.avgPrice,
+                  // totalSize: result.totalSize,
                 });
                 setSwapAmount("");
                 setFlowStep("result");
@@ -506,8 +505,8 @@ export const MainAppScreen: React.FC<MainAppScreenProps> = ({
                   orderId: result.orderId,
                   requestedPrice: result.requestedPrice,
                   requestedSize: result.requestedSize,
-                  avgPrice: result.avgPrice,
-                  totalSize: result.totalSize,
+                  // avgPrice: result.avgPrice,
+                  // totalSize: result.totalSize,
                 });
                 setSwapAmount("");
                 setFlowStep("result");

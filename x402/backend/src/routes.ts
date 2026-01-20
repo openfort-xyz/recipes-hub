@@ -10,6 +10,13 @@ export async function handleHealth(_req: Request, res: Response): Promise<void> 
   });
 }
 
+/**
+ * Creates an encryption session for AUTOMATIC embedded wallet recovery.
+ * This endpoint is required when using automatic wallet recovery with Openfort Shield.
+ *
+ * @see https://www.openfort.io/docs/products/embedded-wallet/react-native/quickstart/automatic
+ * @see https://github.com/openfort-xyz/openfort-backend-quickstart
+ */
 export async function handleShieldSession(
   _req: Request,
   res: Response,
@@ -30,7 +37,7 @@ export async function handleShieldSession(
   }
 
   try {
-    const sessionId = await openfortClient.registerRecoverySession(
+    const sessionId = await openfortClient.createEncryptionSession(
       shieldConfig.publishableKey,
       shieldConfig.secretKey,
       shieldConfig.encryptionShare,
@@ -39,7 +46,7 @@ export async function handleShieldSession(
   } catch (error) {
     console.error("Shield session error:", error);
     res.status(500).json({
-      error: "Failed to create recovery session",
+      error: "Failed to create encryption session",
       details: error instanceof Error ? error.message : "Unknown error",
     });
   }

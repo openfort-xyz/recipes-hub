@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useOpenfort, useOpenfortClient, useUser, useWallets } from "@openfort/react-native";
+import { useEmbeddedEthereumWallet, useOpenfort, useOpenfortClient, useSignOut, useUser } from "@openfort/react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 
@@ -18,11 +18,11 @@ const TOTAL_STEP_COUNT = ONBOARDING_SCREENS.length;
 
 export const UserScreen: React.FC = () => {
   const { user } = useUser();
-  const { logout } = useOpenfort();
   const openfortClient = useOpenfortClient();
-  const wallets = useWallets({ throwOnError: true });
-  const { activeWallet, isCreating } = wallets;
+  const wallets = useEmbeddedEthereumWallet();
+  const { activeWallet } = wallets;
   const insets = useSafeAreaInsets();
+  const { signOut } = useSignOut();
 
   const [currentScreen, setCurrentScreen] = useState<Screen>("create-wallet");
   const [hasRequestedWalletCreation, setHasRequestedWalletCreation] = useState(false);
@@ -67,7 +67,7 @@ export const UserScreen: React.FC = () => {
   const handleCreateWallet = useCallback(() => {
     setWalletCreationError(null);
     setHasRequestedWalletCreation(true);
-    wallets.createWallet({
+    wallets.create({
       recoveryPassword: "password",
       onError: (error: any) => {
         const message = error?.message ?? "Please try again later.";
@@ -97,7 +97,6 @@ export const UserScreen: React.FC = () => {
     if (
       currentScreen === "create-wallet" &&
       !activeWallet &&
-      !isCreating &&
       !hasRequestedWalletCreation
     ) {
       handleCreateWallet();
@@ -105,7 +104,6 @@ export const UserScreen: React.FC = () => {
   }, [
     currentScreen,
     activeWallet,
-    isCreating,
     hasRequestedWalletCreation,
     handleCreateWallet,
   ]);
@@ -126,7 +124,7 @@ export const UserScreen: React.FC = () => {
   }, []);
 
   const logoutButton = (
-    <TouchableOpacity onPress={logout} style={[styles.logoutButton, { top: insets.top + 10 }]}>
+    <TouchableOpacity onPress={() => signOut()} style={[styles.logoutButton, { top: insets.top + 10 }]}>
       <Text style={styles.logoutText}>Logout</Text>
     </TouchableOpacity>
   );
@@ -141,7 +139,7 @@ export const UserScreen: React.FC = () => {
         <View style={styles.screenWrapper}>
           {logoutButton}
           <CreateWalletScreen
-            isCreating={isCreating}
+            isCreating={false}
             step={onboardingStep}
             totalSteps={TOTAL_STEP_COUNT}
             walletOwnerAddress={activeWallet?.ownerAddress}

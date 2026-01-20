@@ -1,6 +1,5 @@
 // components/UserScreen.tsx
 import { useCallback, useEffect, useState } from "react";
-import { useOpenfort, useWallets } from "@openfort/react-native";
 import { CreateWalletsScreen } from "./onboarding/CreateWalletsScreen";
 import { FaucetScreen } from "./onboarding/FaucetScreen";
 import { WaitingForFundsScreen } from "./onboarding/WaitingForFundsScreen";
@@ -8,11 +7,14 @@ import { MainAppScreen } from "./MainAppScreen";
 import { WalletData } from "@/types/wallet";
 import { USDC_CONTRACT_ADDRESS, ERC20_BALANCE_TIMEOUT_MS } from "../constants/erc20";
 import { getErc20Balance } from "../utils/erc20";
+import { useEmbeddedEthereumWallet, useSignOut, useUser } from "@openfort/react-native";
 
 export const UserScreen = () => {
   type Screen = 'create-wallets' | 'faucet' | 'waiting-for-funds' | 'main-app';
-  const { user, logout } = useOpenfort();
-  const { activeWallet, setActiveWallet, createWallet, isCreating } = useWallets({ throwOnError: true });
+  const { activeWallet, setActive: setActiveWallet, create: createWallet } = useEmbeddedEthereumWallet();
+  const { user } = useUser();
+  const { signOut: logout } = useSignOut();
+  const isCreating = false;
   
   const [currentScreen, setCurrentScreen] = useState<Screen>('create-wallets');
   const [walletA, setWalletA] = useState<WalletData | null>(null);
@@ -33,7 +35,7 @@ export const UserScreen = () => {
       });
       
       // Convert from hex to decimal and format (ETH has 18 decimals)
-      const balance = parseInt(result, 16);
+      const balance = parseInt(result as string, 16);
       return (balance / 1e18).toFixed(6);
     } catch (error) {
       console.error("Error fetching ETH balance:", error);

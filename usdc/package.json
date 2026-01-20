@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
-    "@openfort/react-native": "^0.1.15",
+    "@openfort/react-native": "^1.0.1",
     "@react-navigation/native": "^7.1.8",
     "expo": "~54.0.2",
     "expo-apple-authentication": "~8.0.7",

@@ -3,7 +3,7 @@ import Constants from "expo-constants";
 const PLACEHOLDER_VALUES = new Set([
   "YOUR_PROJECT_PUBLISHABLE_KEY",
   "YOUR_SHIELD_PUBLISHABLE_KEY",
-  "YOUR_SHIELD_ENCRYPTION_KEY",
+  "YOUR_SHIELD_ENCRYPTION_SHARE",
   "YOUR_GAS_SPONSORSHIP_POLICY_ID",
   "https://your-recovery-endpoint.example.com",
   "",
