@@ -1,10 +1,10 @@
 import "event-target-polyfill";
 
 if (!globalThis.CustomEvent) {
-    globalThis.CustomEvent = function (type, params) {
+    (globalThis as any).CustomEvent = function (type: string, params?: CustomEventInit) {
         params = params || {};
-        const event = new Event(type, params);
-        event.detail = params.detail || null;
+        const event = new Event(type, params) as CustomEvent;
+        (event as any).detail = params.detail || null;
         return event;
     };
 }
@@ -18,9 +18,10 @@ if (!AbortSignal.timeout) {
 }
 
 if (!Promise.withResolvers) {
-    Promise.withResolvers = function () {
-        let resolve, reject;
-        const promise = new Promise((res, rej) => {
+    Promise.withResolvers = function <T>(): PromiseWithResolvers<T> {
+        let resolve!: (value: T | PromiseLike<T>) => void;
+        let reject!: (reason?: any) => void;
+        const promise = new Promise<T>((res, rej) => {
             resolve = res;
             reject = rej;
         });

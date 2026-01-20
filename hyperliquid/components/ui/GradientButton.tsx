@@ -15,15 +15,15 @@ export const GradientButton: React.FC<GradientButtonProps> = ({
   disabled,
   variant = 'primary'
 }) => {
-  const getColors = () => {
-    if (disabled) return ['#4A5568', '#2D3748'];
-    
+  const getColors = (): readonly [string, string] => {
+    if (disabled) return ['#4A5568', '#2D3748'] as const;
+
     switch (variant) {
       case 'danger':
-        return ['#EF4444', '#DC2626'];
+        return ['#EF4444', '#DC2626'] as const;
       case 'primary':
       default:
-        return ['#00D4AA', '#00B894'];
+        return ['#00D4AA', '#00B894'] as const;
     }
   };
 
