@@ -30,7 +30,7 @@ export async function handleShieldSession(
   }
 
   try {
-    const sessionId = await openfortClient.registerRecoverySession(
+    const sessionId = await openfortClient.createEncryptionSession(
       shieldConfig.publishableKey,
       shieldConfig.secretKey,
       shieldConfig.encryptionShare,
@@ -39,7 +39,7 @@ export async function handleShieldSession(
   } catch (error) {
     console.error("Shield session error:", error);
     res.status(500).json({
-      error: "Failed to create recovery session",
+      error: "Failed to create encryption session",
       details: error instanceof Error ? error.message : "Unknown error",
     });
   }

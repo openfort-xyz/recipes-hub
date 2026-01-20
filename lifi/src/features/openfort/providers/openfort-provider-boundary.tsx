@@ -55,7 +55,7 @@ export const OpenfortProviderBoundary = ({
           defaultMethod: RecoveryMethod.PASSKEY,
         },
         authProviders: [
-          AuthProvider.EMAIL,
+          AuthProvider.EMAIL_PASSWORD,
           AuthProvider.GOOGLE,
           AuthProvider.WALLET,
         ],

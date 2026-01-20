@@ -30,7 +30,7 @@ export function OpenfortProviders({ children }: { children: React.ReactNode }) {
 
           uiConfig={{
             authProviders: [
-              AuthProvider.EMAIL,
+              AuthProvider.EMAIL_PASSWORD,
               AuthProvider.GUEST,
               AuthProvider.GOOGLE,
               AuthProvider.WALLET,

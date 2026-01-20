@@ -22,7 +22,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             accountType: AccountTypeEnum.EOA,
           }}
           uiConfig={{
-            authProviders: [AuthProvider.EMAIL, AuthProvider.GUEST, AuthProvider.GOOGLE],
+            authProviders: [AuthProvider.EMAIL_PASSWORD, AuthProvider.GUEST, AuthProvider.GOOGLE],
           }}
         >
           {children}

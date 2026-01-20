@@ -9,7 +9,7 @@ export async function POST(_req: NextRequest) {
     // Initialize the Openfort client
     const openfort = new Openfort(process.env.OPENFORT_SECRET_KEY as string)
 
-    const session = await openfort.registerRecoverySession(
+    const session = await openfort.createEncryptionSession(
       process.env.NEXT_PUBLIC_SHIELD_PUBLISHABLE_KEY as string,
       process.env.OPENFORT_SHIELD_SECRET_KEY as string,
       process.env.OPENFORT_SHIELD_ENCRYPTION_SHARE as string
