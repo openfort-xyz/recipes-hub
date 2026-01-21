@@ -58,7 +58,7 @@ Update `.env` with your credentials:
 
 ```env
 VITE_OPENFORT_PUBLISHABLE_KEY=pk_your_publishable_key
-VITE_OPENFORT_SHIELD_PUBLIC_KEY=pk_your_shield_public_key
+VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY=pk_your_shield_publishable_key
 VITE_OPENFORT_POLICY_ID=pol_optional_policy
 VITE_WALLET_CONNECT_PROJECT_ID=your_walletconnect_project_id
 VITE_BACKEND_URL=http://localhost:3000

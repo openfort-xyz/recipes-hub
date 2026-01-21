@@ -32,7 +32,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.get("/api/health", handleHealth);
-app.post("/api/shield-session", (req, res) => handleShieldSession(req, res, openfortClient, env.openfort.shield));
+app.post("/api/protected-create-encryption-session", (req, res) => handleShieldSession(req, res, openfortClient, env.openfort.shield));
 app.all("/api/protected-content", (req, res) => handleProtectedContent(req, res, env.paywall));
 
 // 404 handler
