@@ -217,7 +217,6 @@ export const Balance = () => {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Airdrop failed')
       setAirdropSuccess(true)
-      setTimeout(() => refetchBalance(), 3000)
     } catch (err) {
       setAirdropError(err instanceof Error ? err.message : 'Airdrop failed')
     } finally {
@@ -275,6 +274,18 @@ export const Balance = () => {
         const txData = encodeExecute([registerCall, updateCall])
         await sendTransactionAsync({ to: address, data: txData })
         setDcaExpiresAt(expiration * 1000) // store as ms
+
+        // Trigger the first DCA execution immediately
+        try {
+          await fetch('/api/dca/execute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+            body: JSON.stringify({ address }),
+          })
+          await fetchDcaStatus()
+        } catch {
+          // Non-blocking — cron will pick it up on next run if this fails
+        }
       } else if (!enabling) {
         setDcaExpiresAt(null)
       }
@@ -380,21 +391,22 @@ export const Balance = () => {
             </p>
           )}
 
-          {/* DCA Purchase History */}
-          {dcaStatus?.purchases && dcaStatus.purchases.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold">Purchase History</h3>
-              <div className="max-h-48 overflow-y-auto space-y-1">
-                {dcaStatus.purchases.map((p, i) => (
-                  <div key={`${p.timestamp}-${i}`} className="text-xs p-2 bg-muted/30 rounded flex justify-between">
-                    <span>{new Date(p.timestamp).toLocaleTimeString()}</span>
-                    <span>-{p.usdcSpent} USDC</span>
-                    <span>+{p.wethReceived} WETH</span>
-                  </div>
-                ))}
+        </div>
+      )}
+
+      {/* DCA Purchase History */}
+      {dcaStatus?.purchases && dcaStatus.purchases.length > 0 && (
+        <div className="p-4 border border-border rounded-lg space-y-2">
+          <h3 className="text-sm font-semibold">Purchase History</h3>
+          <div className="max-h-48 overflow-y-auto space-y-1">
+            {dcaStatus.purchases.map((p, i) => (
+              <div key={`${p.timestamp}-${i}`} className="text-xs p-2 bg-muted/30 rounded flex justify-between">
+                <span>{new Date(p.timestamp).toLocaleTimeString()}</span>
+                <span>-{p.usdcSpent} USDC</span>
+                <span>+{p.wethReceived} WETH</span>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       )}
 

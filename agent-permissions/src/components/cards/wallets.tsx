@@ -155,48 +155,33 @@ export const Wallets = () => {
               const needsPassword = wallet.recoveryMethod === RecoveryMethod.PASSWORD
               return (
                 <div key={wallet.id + wallet.address} className="p-3 border border-border rounded space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium font-mono">{truncateAddress(wallet.address)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Recovery:{' '}
-                        {wallet.recoveryMethod === RecoveryMethod.PASSKEY
-                          ? 'passkey'
-                          : wallet.recoveryMethod === RecoveryMethod.PASSWORD
-                            ? 'password'
-                            : 'automatic'}
-                      </p>
-                    </div>
-                    {!needsPassword && (
-                      <button
-                        type="button"
-                        className="btn text-sm"
-                        disabled={isConnecting}
-                        onClick={() => handleRecover(wallet)}
-                      >
-                        {wallet.isConnecting ? 'Recovering...' : 'Recover'}
-                      </button>
-                    )}
+                  <div>
+                    <p className="font-medium font-mono">{truncateAddress(wallet.address)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Recovery:{' '}
+                      {wallet.recoveryMethod === RecoveryMethod.PASSKEY
+                        ? 'passkey'
+                        : wallet.recoveryMethod === RecoveryMethod.PASSWORD
+                          ? 'password'
+                          : 'automatic'}
+                    </p>
                   </div>
                   {needsPassword && (
-                    <div className="flex gap-2">
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Recovery password"
-                        className="flex-1"
-                      />
-                      <button
-                        type="button"
-                        className="btn text-sm"
-                        disabled={isConnecting || !password}
-                        onClick={() => handleRecover(wallet)}
-                      >
-                        {wallet.isConnecting ? 'Recovering...' : 'Recover'}
-                      </button>
-                    </div>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Recovery password"
+                    />
                   )}
+                  <button
+                    type="button"
+                    className="btn text-sm w-full"
+                    disabled={isConnecting || (needsPassword && !password)}
+                    onClick={() => handleRecover(wallet)}
+                  >
+                    {wallet.isConnecting ? 'Recovering...' : 'Recover'}
+                  </button>
                 </div>
               )
             })}

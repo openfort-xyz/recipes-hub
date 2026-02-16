@@ -4,6 +4,7 @@ import { type Address, createClient, encodeFunctionData, erc20Abi, http, padHex,
 import { createBundlerClient, createPaymasterClient } from 'viem/account-abstraction'
 import { toAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'
+import { AuthError, authenticateRequest } from '@/lib/auth'
 import { createCaliburSessionAccount, getCaliburKeySettings, getRegisteredKeys, hashKey, KeyType } from '@/lib/calibur'
 import { dcaStore } from '@/lib/dcaStore'
 
@@ -240,4 +241,137 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({ executed: results.length, results })
+}
+
+/**
+ * POST — Trigger immediate DCA execution for a single user (called after enabling DCA).
+ * Authenticated via the user's Bearer token (not CRON_SECRET).
+ */
+export async function POST(request: NextRequest) {
+  try {
+    await authenticateRequest(request)
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  let body: Record<string, unknown>
+  try {
+    body = (await request.json()) as Record<string, unknown>
+  } catch {
+    return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
+  }
+
+  const { address } = body
+  if (typeof address !== 'string' || address.length === 0) {
+    return NextResponse.json({ error: 'Missing address' }, { status: 400 })
+  }
+
+  const userAddress = address.toLowerCase()
+  const config = await dcaStore.get(userAddress)
+  if (!config?.agentId || !config?.agentAddress) {
+    return NextResponse.json({ error: 'No DCA agent configured' }, { status: 400 })
+  }
+
+  const now = Date.now()
+  const openfort = getOpenfort()
+  const viemClient = getViemClient()
+  const agentAddress = config.agentAddress as Address
+
+  // Verify the agent key is active onchain
+  const enabled = await isAgentEnabledOnchain(viemClient, userAddress as Address, agentAddress)
+  if (!enabled) {
+    return NextResponse.json({ error: 'Agent key not active onchain' }, { status: 400 })
+  }
+
+  try {
+    const amount = config.amount ?? DEFAULT_AMOUNT
+
+    const agent = await openfort.accounts.evm.backend.get({ id: config.agentId })
+    const viemAccount = toAccount({
+      address: agent.address,
+      sign: async ({ hash }) => agent.sign({ hash }),
+      signMessage: async ({ message }) => agent.signMessage({ message }),
+      signTransaction: async (tx) => agent.signTransaction(tx),
+      signTypedData: async (typedData) => agent.signTypedData(typedData),
+    })
+
+    const agentKey = {
+      keyType: KeyType.Secp256k1,
+      publicKey: padHex(agentAddress, { size: 32 }),
+    }
+    const keyHash = hashKey(agentKey)
+
+    const sessionAccount = await createCaliburSessionAccount({
+      client: viemClient,
+      signer: viemAccount,
+      accountAddress: userAddress as Address,
+      keyHash,
+    })
+
+    const rpcUrl = getOpenfortRpcUrl()
+    const rpcHeaders = getRpcHeaders()
+    const rpcTransport = http(rpcUrl, { fetchOptions: { headers: rpcHeaders } })
+    const paymasterClient = createPaymasterClient({ transport: rpcTransport })
+
+    const bundlerClient = createBundlerClient({
+      account: sessionAccount,
+      paymaster: paymasterClient,
+      client: viemClient,
+      paymasterContext: {
+        policyId: process.env.NEXT_PUBLIC_POLICY_ID,
+      },
+      transport: rpcTransport,
+    })
+
+    const usdcAmount = parseUnits(amount, 6)
+    const price = getSimulatedWethPrice()
+    const wethReceivedStr = (Number.parseFloat(amount) / price).toFixed(8)
+    const mockTokenAmount = parseUnits(wethReceivedStr, 18)
+
+    const userOpHash = await bundlerClient.sendUserOperation({
+      account: sessionAccount,
+      calls: [
+        {
+          to: USDC_ADDRESS,
+          value: BigInt(0),
+          data: encodeFunctionData({
+            abi: erc20Abi,
+            functionName: 'transfer',
+            args: [WETH_TREASURY, usdcAmount],
+          }),
+        },
+        {
+          to: MOCK_ERC20_ADDRESS,
+          value: BigInt(0),
+          data: encodeFunctionData({
+            abi: mintAbi,
+            functionName: 'mint',
+            args: [userAddress as Address, mockTokenAmount],
+          }),
+        },
+      ],
+    })
+
+    const receipt = await bundlerClient.waitForUserOperationReceipt({ hash: userOpHash })
+    const purchase = {
+      timestamp: new Date(now).toISOString(),
+      usdcSpent: amount,
+      wethReceived: wethReceivedStr,
+      price: price.toFixed(2),
+      txHash: receipt.receipt.transactionHash,
+    }
+
+    config.purchases.push(purchase)
+    config.lastPurchase = now
+    await dcaStore.set(userAddress, config)
+
+    return NextResponse.json({ success: true, userOpHash, purchase })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Execution failed'
+    console.error(`[DCA] Immediate execution failed for ${userAddress}:`, message)
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
 }
