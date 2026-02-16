@@ -37,6 +37,7 @@ export const Wallets = () => {
     setActiveWallet,
     isConnecting,
     createWallet,
+    error: walletError,
     isCreating,
   } = useWallets()
   const { user, isAuthenticated } = useUser()
@@ -133,13 +134,13 @@ export const Wallets = () => {
             Passkeys are not available on this device. Using password recovery.
           </p>
         )}
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+        {(error || walletError) && <p className="text-red-500 text-sm">{error || walletError?.message}</p>}
       </div>
     )
   }
 
-  // Has wallets but none connected — recover
-  if (!isConnected) {
+  // Has wallets but none active — recover
+  if (!isConnected || !activeWallet) {
     return (
       <div className="space-y-4">
         {wallets.length > 0 && (
@@ -188,7 +189,7 @@ export const Wallets = () => {
           </div>
         )}
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+        {(error || walletError) && <p className="text-red-500 text-sm">{error || walletError?.message}</p>}
 
         <div className={wallets.length > 0 ? 'border-t border-border pt-4 space-y-3' : 'space-y-3'}>
           {wallets.length > 0 && <p className="text-sm text-muted-foreground">Or create a new wallet:</p>}
