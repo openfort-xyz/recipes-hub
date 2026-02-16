@@ -1,6 +1,6 @@
 'use client'
 
-import { useSignOut } from '@openfort/react'
+import { useSignOut, useUser } from '@openfort/react'
 import { useCallback, useEffect, useState } from 'react'
 import { type Address, type Hex, erc20Abi, formatUnits, getAddress, padHex } from 'viem'
 import { useAccount, useBlockNumber, useReadContract, useSendTransaction } from 'wagmi'
@@ -16,6 +16,7 @@ const USDC_ADDRESS = '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as const
 const MOCK_ERC20_ADDRESS = '0xbabe0001489722187FbaF0689C47B2f5E97545C5' as const
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address
 const DCA_DURATION_SECONDS = 5 * 60 // 5 minutes
+const DCA_FREQUENCY_SECONDS = 60 // matches the Vercel cron interval
 const EXPLORER_URL = 'https://sepolia.basescan.org/address'
 
 function truncateAddress(addr: string) {
@@ -64,21 +65,21 @@ interface DcaPurchase {
 interface DcaStatus {
   enabled: boolean
   amount: string
-  frequency: number
   purchases: DcaPurchase[]
   agentAddress?: string
   lastPurchase?: number
+  expiresAt?: number | null
 }
 
 export const Balance = () => {
   const { address } = useAccount()
   const { signOut } = useSignOut()
+  const { getAccessToken } = useUser()
   const [isAirdropping, setIsAirdropping] = useState(false)
   const [airdropError, setAirdropError] = useState<string | null>(null)
   const [airdropSuccess, setAirdropSuccess] = useState(false)
 
-  const [dcaAmount, setDcaAmount] = useState('1')
-  const [dcaFrequency, setDcaFrequency] = useState(30)
+  const [dcaAmount, setDcaAmount] = useState('0.1')
   const [dcaStatus, setDcaStatus] = useState<DcaStatus | null>(null)
   const [isDcaLoading, setIsDcaLoading] = useState(false)
   const [dcaError, setDcaError] = useState<string | null>(null)
@@ -86,6 +87,12 @@ export const Balance = () => {
   const [expiryCountdown, setExpiryCountdown] = useState<string | null>(null)
 
   const { sendTransactionAsync } = useSendTransaction()
+
+  const authHeaders = useCallback(async (): Promise<Record<string, string>> => {
+    const token = await getAccessToken()
+    if (!token) return {}
+    return { Authorization: `Bearer ${token}` }
+  }, [getAccessToken])
 
   const {
     data: balance,
@@ -129,15 +136,22 @@ export const Balance = () => {
   const fetchDcaStatus = useCallback(async () => {
     if (!address) return
     try {
-      const res = await fetch(`/api/dca?address=${address}`)
+      const headers = await authHeaders()
+      const res = await fetch(`/api/dca?address=${address}`, { headers })
       if (res.ok) {
         const data = await res.json()
         setDcaStatus(data)
+        // Sync expiry from backend (onchain truth) so countdown survives refresh
+        if (data.enabled && data.expiresAt) {
+          setDcaExpiresAt(data.expiresAt)
+        } else if (!data.enabled) {
+          setDcaExpiresAt(null)
+        }
       }
     } catch {
       // ignore
     }
-  }, [address])
+  }, [address, authHeaders])
 
   useEffect(() => {
     fetchDcaStatus()
@@ -152,25 +166,30 @@ export const Balance = () => {
     return () => clearInterval(interval)
   }, [dcaStatus?.enabled, fetchDcaStatus])
 
-  // Countdown timer
+  // Countdown timer for next DCA execution
+  // The cron runs every DCA_FREQUENCY_SECONDS. Next execution is lastPurchase + frequency.
   useEffect(() => {
-    if (!dcaStatus?.enabled || !dcaStatus.lastPurchase || !dcaStatus.frequency) {
+    if (!dcaStatus?.enabled || !dcaStatus.lastPurchase) {
       setCountdown(null)
       return
     }
     const tick = () => {
+      if (dcaExpiresAt && dcaExpiresAt <= Date.now()) {
+        setCountdown(null)
+        return
+      }
       const remaining = Math.max(
         0,
-        Math.ceil((dcaStatus.lastPurchase! + dcaStatus.frequency * 1000 - Date.now()) / 1000),
+        Math.ceil((dcaStatus.lastPurchase! + DCA_FREQUENCY_SECONDS * 1000 - Date.now()) / 1000),
       )
       setCountdown(remaining)
     }
     tick()
     const interval = setInterval(tick, 1000)
     return () => clearInterval(interval)
-  }, [dcaStatus?.enabled, dcaStatus?.lastPurchase, dcaStatus?.frequency])
+  }, [dcaStatus?.enabled, dcaStatus?.lastPurchase, dcaExpiresAt])
 
-  // DCA expiry countdown
+  // DCA expiry countdown — re-fetch status when expired so UI reflects onchain state
   useEffect(() => {
     if (!dcaExpiresAt || !dcaStatus?.enabled) {
       setExpiryCountdown(null)
@@ -180,6 +199,8 @@ export const Balance = () => {
       const remaining = Math.max(0, Math.ceil((dcaExpiresAt - Date.now()) / 1000))
       if (remaining <= 0) {
         setExpiryCountdown('Expired')
+        // Refetch status — backend checks onchain and will return enabled: false
+        fetchDcaStatus()
         return
       }
       const m = Math.floor(remaining / 60)
@@ -189,7 +210,7 @@ export const Balance = () => {
     tick()
     const interval = setInterval(tick, 1000)
     return () => clearInterval(interval)
-  }, [dcaExpiresAt, dcaStatus?.enabled])
+  }, [dcaExpiresAt, dcaStatus?.enabled, fetchDcaStatus])
 
   const handleAirdrop = async () => {
     if (!address) return
@@ -199,7 +220,7 @@ export const Balance = () => {
     try {
       const res = await fetch('/api/airdrop', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({ address }),
       })
       const data = await res.json()
@@ -219,13 +240,23 @@ export const Balance = () => {
     setDcaError(null)
     try {
       const enabling = !dcaStatus?.enabled
+
+      if (enabling) {
+        const amt = Number(dcaAmount)
+        const currentBalance = balance !== undefined ? Number(formatUnits(balance, 6)) : 0
+        if (amt > currentBalance) {
+          setDcaError(`Amount per purchase ($${dcaAmount}) exceeds your USDC balance ($${currentBalance}).`)
+          setIsDcaLoading(false)
+          return
+        }
+      }
+
       const res = await fetch('/api/dca', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({
           address,
           amount: dcaAmount,
-          frequency: dcaFrequency,
           enabled: enabling,
         }),
       })
@@ -322,19 +353,7 @@ export const Balance = () => {
                   value={dcaAmount}
                   onChange={(e) => setDcaAmount(e.target.value)}
                 />
-              </div>
-              <div>
-                <label htmlFor="dca-frequency" className="block text-sm font-medium mb-1">
-                  Frequency (seconds)
-                </label>
-                <input
-                  id="dca-frequency"
-                  type="number"
-                  min="30"
-                  step="10"
-                  value={dcaFrequency}
-                  onChange={(e) => setDcaFrequency(Number(e.target.value))}
-                />
+                <p className="text-xs text-muted-foreground mt-1">Executes once per minute</p>
               </div>
             </div>
           )}
@@ -345,7 +364,11 @@ export const Balance = () => {
           {dcaError && <p className="text-red-500 text-sm mt-2">{dcaError}</p>}
           {dcaStatus?.enabled && countdown !== null && (
             <p className="text-sm text-muted-foreground mt-2">
-              Next DCA execution in <span className="font-mono font-semibold">{countdown}s</span>
+              {countdown === 0 ? (
+                <>Next DCA execution <span className="font-mono font-semibold">any moment...</span></>
+              ) : (
+                <>Next DCA execution in <span className="font-mono font-semibold">{countdown}s</span></>
+              )}
             </p>
           )}
           {dcaStatus?.enabled && expiryCountdown && (
