@@ -1,4 +1,5 @@
 import Openfort from '@openfort/openfort-node'
+import { getAddress } from 'viem'
 
 function getOpenfort() {
   const key = process.env.OPENFORT_SECRET_KEY
@@ -28,6 +29,26 @@ export async function authenticateRequest(req: Request) {
     console.error('[auth] iam.getSession failed:', err)
     throw new AuthError('Invalid or expired session', 401)
   }
+}
+
+/**
+ * Authenticate the request and verify the user owns the given wallet address.
+ * Checks the user's embedded EVM accounts via Openfort to confirm ownership.
+ */
+export async function authorizeAddress(req: Request, address: string) {
+  const { session, user } = await authenticateRequest(req)
+
+  const openfort = getOpenfort()
+  const { data: accounts } = await openfort.accounts.evm.embedded.list({
+    user: user.id,
+    address: getAddress(address),
+  })
+
+  if (accounts.length === 0) {
+    throw new AuthError('Address not owned by authenticated user', 403)
+  }
+
+  return { session, user }
 }
 
 export class AuthError extends Error {

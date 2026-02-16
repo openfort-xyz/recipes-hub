@@ -2,7 +2,7 @@ import Openfort, { createBackendWallet } from '@openfort/openfort-node'
 import { NextResponse } from 'next/server'
 import { type Address, createClient, http, publicActions } from 'viem'
 import { baseSepolia } from 'viem/chains'
-import { AuthError, authenticateRequest } from '@/lib/auth'
+import { AuthError, authorizeAddress } from '@/lib/auth'
 import { getCaliburKeySettings, getRegisteredKeys, KeyType } from '@/lib/calibur'
 import { type DcaConfig, type DcaResponse, dcaStore, toResponse } from '@/lib/dcaStore'
 
@@ -31,20 +31,20 @@ function getViemClient() {
 }
 
 export async function GET(req: Request) {
-  try {
-    await authenticateRequest(req)
-  } catch (err) {
-    if (err instanceof AuthError) {
-      return NextResponse.json({ error: err.message }, { status: err.status })
-    }
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
   const { searchParams } = new URL(req.url)
   const address = searchParams.get('address')
 
   if (!address) {
     return NextResponse.json({ error: 'Missing address' }, { status: 400 })
+  }
+
+  try {
+    await authorizeAddress(req, address)
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const cached = await dcaStore.get(address.toLowerCase())
@@ -83,8 +83,25 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  let body: Record<string, unknown>
   try {
-    await authenticateRequest(req)
+    const parsed: unknown = await req.json()
+    if (typeof parsed !== 'object' || parsed === null) {
+      return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
+    }
+    body = parsed as Record<string, unknown>
+  } catch {
+    return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
+  }
+
+  const { address, amount, enabled } = body
+
+  if (typeof address !== 'string' || address.length === 0) {
+    return NextResponse.json({ error: 'Missing address' }, { status: 400 })
+  }
+
+  try {
+    await authorizeAddress(req, address)
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status })
@@ -93,15 +110,6 @@ export async function POST(req: Request) {
   }
 
   try {
-    const body: unknown = await req.json()
-    if (typeof body !== 'object' || body === null) {
-      return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
-    }
-    const { address, amount, enabled } = body as Record<string, unknown>
-
-    if (typeof address !== 'string' || address.length === 0) {
-      return NextResponse.json({ error: 'Missing address' }, { status: 400 })
-    }
     const parsedAmount = typeof amount === 'string' ? amount : undefined
 
     const key = address.toLowerCase()

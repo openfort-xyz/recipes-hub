@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { type Address, createWalletClient, erc20Abi, http, parseUnits } from 'viem'
 import { toAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'
-import { AuthError, authenticateRequest } from '@/lib/auth'
+import { AuthError, authorizeAddress } from '@/lib/auth'
 
 const USDC_ADDRESS = '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as const
 const AIRDROP_AMOUNT = parseUnits('1', 6) // 1 USDC
@@ -17,8 +17,19 @@ function getOpenfort() {
 }
 
 export async function POST(req: Request) {
+  let address: string
   try {
-    await authenticateRequest(req)
+    const body = await req.json()
+    address = body.address
+    if (!address || typeof address !== 'string') {
+      return NextResponse.json({ error: 'Missing address' }, { status: 400 })
+    }
+  } catch {
+    return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
+  }
+
+  try {
+    await authorizeAddress(req, address)
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status })
@@ -27,10 +38,6 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { address } = await req.json()
-    if (!address || typeof address !== 'string') {
-      return NextResponse.json({ error: 'Missing address' }, { status: 400 })
-    }
 
     const openfort = getOpenfort()
 

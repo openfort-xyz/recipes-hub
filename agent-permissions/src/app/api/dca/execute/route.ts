@@ -4,7 +4,7 @@ import { type Address, createClient, encodeFunctionData, erc20Abi, http, padHex,
 import { createBundlerClient, createPaymasterClient } from 'viem/account-abstraction'
 import { toAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'
-import { AuthError, authenticateRequest } from '@/lib/auth'
+import { AuthError, authorizeAddress } from '@/lib/auth'
 import { createCaliburSessionAccount, getCaliburKeySettings, getRegisteredKeys, hashKey, KeyType } from '@/lib/calibur'
 import { dcaStore } from '@/lib/dcaStore'
 
@@ -248,15 +248,6 @@ export async function GET(request: NextRequest) {
  * Authenticated via the user's Bearer token (not CRON_SECRET).
  */
 export async function POST(request: NextRequest) {
-  try {
-    await authenticateRequest(request)
-  } catch (err) {
-    if (err instanceof AuthError) {
-      return NextResponse.json({ error: err.message }, { status: err.status })
-    }
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
   let body: Record<string, unknown>
   try {
     body = (await request.json()) as Record<string, unknown>
@@ -267,6 +258,15 @@ export async function POST(request: NextRequest) {
   const { address } = body
   if (typeof address !== 'string' || address.length === 0) {
     return NextResponse.json({ error: 'Missing address' }, { status: 400 })
+  }
+
+  try {
+    await authorizeAddress(request, address)
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const userAddress = address.toLowerCase()
@@ -371,7 +371,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, userOpHash, purchase })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Execution failed'
-    console.error(`[DCA] Immediate execution failed for ${userAddress}:`, message)
+    console.error('[DCA] Immediate execution failed for %s: %s', userAddress, message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
