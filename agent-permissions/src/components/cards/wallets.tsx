@@ -29,7 +29,16 @@ function useIsPasskeyAvailable() {
 }
 
 export const Wallets = () => {
-  const { wallets, isLoadingWallets, activeWallet, availableWallets, setActiveWallet, isConnecting, createWallet, isCreating } = useWallets()
+  const {
+    wallets,
+    isLoadingWallets,
+    activeWallet,
+    availableWallets,
+    setActiveWallet,
+    isConnecting,
+    createWallet,
+    isCreating,
+  } = useWallets()
   const { user, isAuthenticated } = useUser()
   const { isConnected } = useAccount()
   const isPasskeyAvailable = useIsPasskeyAvailable()
@@ -52,9 +61,10 @@ export const Wallets = () => {
       }
       await createWallet({
         accountType: AccountTypeEnum.DELEGATED_ACCOUNT,
-        recovery: recoveryMethod === RecoveryMethod.PASSKEY
-          ? { recoveryMethod: RecoveryMethod.PASSKEY }
-          : { recoveryMethod: RecoveryMethod.PASSWORD, password },
+        recovery:
+          recoveryMethod === RecoveryMethod.PASSKEY
+            ? { recoveryMethod: RecoveryMethod.PASSKEY }
+            : { recoveryMethod: RecoveryMethod.PASSWORD, password },
       })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Wallet creation failed'
@@ -77,11 +87,12 @@ export const Wallets = () => {
       await setActiveWallet({
         walletId: 'xyz.openfort',
         address: wallet.address,
-        recovery: wallet.recoveryMethod === RecoveryMethod.PASSKEY
-          ? { recoveryMethod: RecoveryMethod.PASSKEY }
-          : wallet.recoveryMethod === RecoveryMethod.PASSWORD
-            ? { recoveryMethod: RecoveryMethod.PASSWORD, password }
-            : undefined,
+        recovery:
+          wallet.recoveryMethod === RecoveryMethod.PASSKEY
+            ? { recoveryMethod: RecoveryMethod.PASSKEY }
+            : wallet.recoveryMethod === RecoveryMethod.PASSWORD
+              ? { recoveryMethod: RecoveryMethod.PASSWORD, password }
+              : undefined,
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Recovery failed')
@@ -118,7 +129,9 @@ export const Wallets = () => {
               : 'Create wallet with password'}
         </button>
         {!isPasskeyAvailable && (
-          <p className="text-xs text-muted-foreground">Passkeys are not available on this device. Using password recovery.</p>
+          <p className="text-xs text-muted-foreground">
+            Passkeys are not available on this device. Using password recovery.
+          </p>
         )}
         {error && <p className="text-red-500 text-sm">{error}</p>}
       </div>
@@ -146,7 +159,12 @@ export const Wallets = () => {
                     <div>
                       <p className="font-medium font-mono">{truncateAddress(wallet.address)}</p>
                       <p className="text-xs text-muted-foreground">
-                        Recovery: {wallet.recoveryMethod === RecoveryMethod.PASSKEY ? 'passkey' : wallet.recoveryMethod === RecoveryMethod.PASSWORD ? 'password' : 'automatic'}
+                        Recovery:{' '}
+                        {wallet.recoveryMethod === RecoveryMethod.PASSKEY
+                          ? 'passkey'
+                          : wallet.recoveryMethod === RecoveryMethod.PASSWORD
+                            ? 'password'
+                            : 'automatic'}
                       </p>
                     </div>
                     {!needsPassword && (
@@ -188,9 +206,7 @@ export const Wallets = () => {
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
         <div className={wallets.length > 0 ? 'border-t border-border pt-4 space-y-3' : 'space-y-3'}>
-          {wallets.length > 0 && (
-            <p className="text-sm text-muted-foreground">Or create a new wallet:</p>
-          )}
+          {wallets.length > 0 && <p className="text-sm text-muted-foreground">Or create a new wallet:</p>}
           {wallets.length === 0 && (
             <>
               <h1>Create a wallet</h1>

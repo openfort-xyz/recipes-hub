@@ -17,6 +17,26 @@ export interface DcaConfig {
   agentId?: string
 }
 
+export interface DcaResponse {
+  enabled: boolean
+  amount: string
+  purchases: DcaPurchase[]
+  lastPurchase: number
+  agentAddress?: string
+  expiresAt?: number | null
+}
+
+export function toResponse(config: DcaConfig | null, overrides?: Partial<DcaResponse>): DcaResponse {
+  return {
+    enabled: false,
+    amount: config?.amount ?? '0',
+    purchases: config?.purchases ?? [],
+    lastPurchase: config?.lastPurchase ?? 0,
+    agentAddress: config?.agentAddress,
+    ...overrides,
+  }
+}
+
 const PREFIX = 'dca:'
 const AGENTS_SET = 'dca:agents'
 
@@ -37,6 +57,11 @@ export const dcaStore = {
     const redis = getRedis()
     await redis.set(`${PREFIX}${key}`, value)
     await redis.sadd(AGENTS_SET, key)
+  },
+  async remove(key: string): Promise<void> {
+    const redis = getRedis()
+    await redis.del(`${PREFIX}${key}`)
+    await redis.srem(AGENTS_SET, key)
   },
   /** Returns all registered user addresses (lowercase). */
   async listAgents(): Promise<string[]> {

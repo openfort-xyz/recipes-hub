@@ -2,15 +2,9 @@
 
 import { useSignOut, useUser } from '@openfort/react'
 import { useCallback, useEffect, useState } from 'react'
-import { type Address, type Hex, erc20Abi, formatUnits, getAddress, padHex } from 'viem'
+import { type Address, erc20Abi, formatUnits, getAddress, type Hex, padHex } from 'viem'
 import { useAccount, useBlockNumber, useReadContract, useSendTransaction } from 'wagmi'
-import {
-  KeyType,
-  encodeExecute,
-  encodeRegisterKey,
-  encodeUpdateKeySettings,
-  hashKey,
-} from '@/lib/calibur'
+import { encodeExecute, encodeRegisterKey, encodeUpdateKeySettings, hashKey, KeyType } from '@/lib/calibur'
 
 const USDC_ADDRESS = '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as const
 const MOCK_ERC20_ADDRESS = '0xbabe0001489722187FbaF0689C47B2f5E97545C5' as const
@@ -106,10 +100,7 @@ export const Balance = () => {
     query: { enabled: !!address },
   })
 
-  const {
-    data: mockBalance,
-    refetch: refetchMockBalance,
-  } = useReadContract({
+  const { data: mockBalance, refetch: refetchMockBalance } = useReadContract({
     address: MOCK_ERC20_ADDRESS,
     abi: erc20Abi,
     functionName: 'balanceOf',
@@ -180,7 +171,7 @@ export const Balance = () => {
       }
       const remaining = Math.max(
         0,
-        Math.ceil((dcaStatus.lastPurchase! + DCA_FREQUENCY_SECONDS * 1000 - Date.now()) / 1000),
+        Math.ceil((dcaStatus.lastPurchase! + DCA_FREQUENCY_SECONDS * 1000 - Date.now()) / 1000)
       )
       setCountdown(remaining)
     }
@@ -300,9 +291,7 @@ export const Balance = () => {
     <div className="space-y-6">
       <div>
         <h1>Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {address ? <AddressLink addr={address} /> : ''}
-        </p>
+        <p className="text-sm text-muted-foreground mt-1">{address ? <AddressLink addr={address} /> : ''}</p>
       </div>
 
       {/* USDC Balance */}
@@ -326,7 +315,12 @@ export const Balance = () => {
         {airdropSuccess && <p className="text-green-500 text-sm mt-2">Airdrop sent! Balance will update shortly.</p>}
         <p className="text-xs text-muted-foreground mt-2">
           Or get USDC from the{' '}
-          <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+          <a
+            href="https://faucet.circle.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground"
+          >
             Circle Faucet
           </a>{' '}
           on Base Sepolia.
@@ -365,9 +359,13 @@ export const Balance = () => {
           {dcaStatus?.enabled && countdown !== null && (
             <p className="text-sm text-muted-foreground mt-2">
               {countdown === 0 ? (
-                <>Next DCA execution <span className="font-mono font-semibold">any moment...</span></>
+                <>
+                  Next DCA execution <span className="font-mono font-semibold">any moment...</span>
+                </>
               ) : (
-                <>Next DCA execution in <span className="font-mono font-semibold">{countdown}s</span></>
+                <>
+                  Next DCA execution in <span className="font-mono font-semibold">{countdown}s</span>
+                </>
               )}
             </p>
           )}
@@ -401,7 +399,11 @@ export const Balance = () => {
       )}
 
       {/* Sign Out */}
-      <button type="button" className="btn bg-muted text-foreground hover:bg-muted-foreground/20" onClick={() => signOut()}>
+      <button
+        type="button"
+        className="btn bg-muted text-foreground hover:bg-muted-foreground/20"
+        onClick={() => signOut()}
+      >
         Sign out
       </button>
     </div>
