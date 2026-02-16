@@ -13,6 +13,7 @@ import {
 } from '@/lib/calibur'
 import { dcaStore } from '@/lib/dcaStore'
 
+const DCA_FREQUENCY_SECONDS = 60 // matches the Vercel cron interval
 const USDC_ADDRESS = '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as Address
 const MOCK_ERC20_ADDRESS = '0xbabe0001489722187FbaF0689C47B2f5E97545C5' as Address
 // Demo recipient — in production this would be a DEX router
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
   const pending: typeof dcaAgents = []
   for (const agent of dcaAgents) {
     const cached = await dcaStore.get(agent.userAddress)
-    const frequencyMs = (cached?.frequency || 30) * 1000
+    const frequencyMs = DCA_FREQUENCY_SECONDS * 1000
     const lastPurchase = cached?.lastPurchase || 0
     if (now - lastPurchase < frequencyMs) {
       console.log(`[DCA] Skipping ${agent.userAddress}: too soon (${now - lastPurchase}ms < ${frequencyMs}ms)`)

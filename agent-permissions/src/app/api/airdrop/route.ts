@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { type Address, createWalletClient, erc20Abi, http, parseUnits } from 'viem'
 import { toAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'
+import { AuthError, authenticateRequest } from '@/lib/auth'
 
 const USDC_ADDRESS = '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as const
 const AIRDROP_AMOUNT = parseUnits('1', 6) // 1 USDC
@@ -16,6 +17,15 @@ function getOpenfort() {
 }
 
 export async function POST(req: Request) {
+  try {
+    await authenticateRequest(req)
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const { address } = await req.json()
     if (!address || typeof address !== 'string') {

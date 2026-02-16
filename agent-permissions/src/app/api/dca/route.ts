@@ -8,6 +8,9 @@ import {
   getCaliburKeySettings,
 } from '@/lib/calibur'
 import { type DcaConfig, dcaStore } from '@/lib/dcaStore'
+import { AuthError, authenticateRequest } from '@/lib/auth'
+
+const DCA_FREQUENCY_SECONDS = 60 // matches the Vercel cron interval
 
 function getOpenfort() {
   const key = process.env.OPENFORT_SECRET_KEY
@@ -25,6 +28,15 @@ function getViemClient() {
 }
 
 export async function GET(req: Request) {
+  try {
+    await authenticateRequest(req)
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { searchParams } = new URL(req.url)
   const address = searchParams.get('address')
 
@@ -42,6 +54,7 @@ export async function GET(req: Request) {
     const now = Math.floor(Date.now() / 1000)
     let agentAddress: string | undefined
     let enabled = false
+    let expiresAt: number | null = null
 
     for (const { key, keyHash } of keys) {
       if (key.keyType !== KeyType.Secp256k1) continue
@@ -53,23 +66,25 @@ export async function GET(req: Request) {
       // Decode the address from the publicKey (it's abi.encode(address) = left-padded 32 bytes)
       agentAddress = `0x${key.publicKey.slice(26)}` as Address
       enabled = true
+      if (settings.expiration > 0) {
+        expiresAt = settings.expiration * 1000 // convert to ms for frontend
+      }
       break
     }
 
     return NextResponse.json({
       enabled,
       amount: cached?.amount || '0',
-      frequency: cached?.frequency || 30,
       purchases: cached?.purchases || [],
       agentAddress,
       lastPurchase: cached?.lastPurchase || 0,
+      expiresAt,
     })
   } catch {
     // If onchain read fails (e.g. account not a Calibur account yet), fall back to cache
     return NextResponse.json({
       enabled: false,
       amount: cached?.amount || '0',
-      frequency: cached?.frequency || 30,
       purchases: cached?.purchases || [],
       agentAddress: cached?.agentAddress,
       lastPurchase: cached?.lastPurchase || 0,
@@ -79,7 +94,16 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { address, amount, frequency, enabled } = await req.json()
+    await authenticateRequest(req)
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    const { address, amount, enabled } = await req.json()
 
     if (!address || typeof address !== 'string') {
       return NextResponse.json({ error: 'Missing address' }, { status: 400 })
@@ -97,7 +121,7 @@ export async function POST(req: Request) {
 
       const config: DcaConfig = {
         amount: amount || existing?.amount || '1',
-        frequency: frequency || existing?.frequency || 30,
+        frequency: DCA_FREQUENCY_SECONDS,
         purchases: existing?.purchases || [],
         lastPurchase: existing?.lastPurchase || Date.now(),
         agentAddress: agent.address,
@@ -108,7 +132,6 @@ export async function POST(req: Request) {
       return NextResponse.json({
         enabled: true,
         amount: config.amount,
-        frequency: config.frequency,
         purchases: config.purchases,
         agentAddress: agent.address,
         lastPurchase: config.lastPurchase,
@@ -120,14 +143,13 @@ export async function POST(req: Request) {
       return NextResponse.json({
         enabled: false,
         amount: existing.amount,
-        frequency: existing.frequency,
         purchases: existing.purchases,
         agentAddress: existing.agentAddress,
         lastPurchase: existing.lastPurchase || 0,
       })
     }
 
-    return NextResponse.json({ enabled: false, amount: '0', frequency: 30, purchases: [], lastPurchase: 0 })
+    return NextResponse.json({ enabled: false, amount: '0', purchases: [], lastPurchase: 0 })
   } catch (err) {
     console.error('DCA error:', err)
     const message = err instanceof Error ? err.message : 'Unknown error'

@@ -19,7 +19,7 @@ function useStep(): Step {
   if (isAuthenticated && (isLoadingWallets || isConnecting)) return 'loading'
 
   if (!isAuthenticated) return 'auth'
-  if (!isConnected || (!activeWallet && availableWallets.length === 0)) return 'wallet'
+  if (!isConnected || !activeWallet) return 'wallet'
   return 'dashboard'
 }
 
