@@ -79,7 +79,7 @@ export const Balance = () => {
   const [airdropError, setAirdropError] = useState<string | null>(null)
   const [airdropSuccess, setAirdropSuccess] = useState(false)
 
-  const [dcaAmount, setDcaAmount] = useState('1')
+  const [dcaAmount, setDcaAmount] = useState('0.1')
   const [dcaStatus, setDcaStatus] = useState<DcaStatus | null>(null)
   const [isDcaLoading, setIsDcaLoading] = useState(false)
   const [dcaError, setDcaError] = useState<string | null>(null)

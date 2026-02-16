@@ -14,6 +14,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <OpenfortProvider
           publishableKey={process.env.NEXT_PUBLIC_OPENFORT_PUBLISHABLE_KEY!}
           walletConfig={{
+            accountType: AccountTypeEnum.EOA,
             shieldPublishableKey: process.env.NEXT_PUBLIC_SHIELD_PUBLISHABLE_KEY!,
             ethereumProviderPolicyId: process.env.NEXT_PUBLIC_POLICY_ID,
           }}

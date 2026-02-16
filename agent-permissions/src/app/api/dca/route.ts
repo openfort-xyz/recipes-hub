@@ -120,7 +120,7 @@ export async function POST(req: Request) {
       })
 
       const config: DcaConfig = {
-        amount: amount || existing?.amount || '1',
+        amount: amount || existing?.amount || '0.1',
         frequency: DCA_FREQUENCY_SECONDS,
         purchases: existing?.purchases || [],
         lastPurchase: existing?.lastPurchase || Date.now(),
