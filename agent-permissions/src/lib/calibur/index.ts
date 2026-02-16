@@ -1,42 +1,43 @@
 import {
-    type Address,
-    type Chain,
-    type Client,
-    type Hex,
-    type LocalAccount,
-    type PrivateKeyAccount,
-    type Transport,
-    type Prettify,
-    encodeAbiParameters,
-    encodeFunctionData,
-    getAddress,
-    keccak256,
-    numberToHex,
-    parseAbiParameters,
-} from "viem";
+  type Address,
+  type Chain,
+  type Client,
+  encodeAbiParameters,
+  encodeFunctionData,
+  getAddress,
+  type Hex,
+  keccak256,
+  type LocalAccount,
+  numberToHex,
+  type Prettify,
+  type PrivateKeyAccount,
+  parseAbiParameters,
+  type Transport,
+} from 'viem'
 import {
-    type SmartAccount,
-    type SmartAccountImplementation,
-    entryPoint08Abi,
-    entryPoint08Address,
-    getUserOperationTypedData,
-    toSmartAccount,
-} from "viem/account-abstraction";
-import { getChainId, readContract } from "viem/actions";
-import { getAction, parseAbi } from "viem/utils";
+  entryPoint08Abi,
+  entryPoint08Address,
+  getUserOperationTypedData,
+  type SmartAccount,
+  type SmartAccountImplementation,
+  toSmartAccount,
+} from 'viem/account-abstraction'
+import { getChainId, readContract } from 'viem/actions'
+import { getAction, parseAbi } from 'viem/utils'
 
 // =============================================================================
 // Constants
 // =============================================================================
 
 // Calibur v0.8 implementation
-const CALIBUR_ADDRESS = "0x000000009b1d0af20d8c6d0a44e162d11f9b8f00" as Address;
+const CALIBUR_ADDRESS = '0x000000009b1d0af20d8c6d0a44e162d11f9b8f00' as Address
 
 // Root key hash (owner EOA sentinel)
-const ROOT_KEY = "0x0000000000000000000000000000000000000000000000000000000000000000" as Hex;
+const ROOT_KEY = '0x0000000000000000000000000000000000000000000000000000000000000000' as Hex
 
 // Stub signature for gas estimation
-const STUB_SIG = "0xfffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c" as Hex;
+const STUB_SIG =
+  '0xfffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c' as Hex
 
 // Calibur key management ABI (register/update/revoke are onlyThis self-calls)
 const caliburAbi = parseAbi([
@@ -79,28 +80,26 @@ export type SelfCall = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CaliburAccountConfig = {
-    client: Client<Transport, Chain | undefined, any>;
-    owner: LocalAccount;
-};
+  client: Client<Transport, Chain | undefined, any>
+  owner: LocalAccount
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CaliburSessionConfig = {
-    client: Client<Transport, Chain | undefined, any>;
-    signer: LocalAccount;
-    accountAddress: Address;
-    keyHash: Hex;
-};
+  client: Client<Transport, Chain | undefined, any>
+  signer: LocalAccount
+  accountAddress: Address
+  keyHash: Hex
+}
 
 export type CaliburSmartAccountImplementation = SmartAccountImplementation<
-    typeof entryPoint08Abi,
-    "0.8",
-    { owner: PrivateKeyAccount },
-    true // EIP-7702
->;
+  typeof entryPoint08Abi,
+  '0.8',
+  { owner: PrivateKeyAccount },
+  true // EIP-7702
+>
 
-export type CaliburSmartAccountReturnType = Prettify<
-    SmartAccount<CaliburSmartAccountImplementation>
->;
+export type CaliburSmartAccountReturnType = Prettify<SmartAccount<CaliburSmartAccountImplementation>>
 
 // =============================================================================
 // Main Function
@@ -118,191 +117,175 @@ export type CaliburSmartAccountReturnType = Prettify<
  * ```
  */
 export async function createCaliburAccount(config: CaliburAccountConfig): Promise<CaliburSmartAccountReturnType> {
-    const { client, owner } = config;
-    const localOwner = owner as PrivateKeyAccount;
+  const { client, owner } = config
+  const localOwner = owner as PrivateKeyAccount
 
-    const entryPoint = {
-        address: entryPoint08Address,
-        abi: entryPoint08Abi,
-        version: "0.8" as const,
-    };
+  const entryPoint = {
+    address: entryPoint08Address,
+    abi: entryPoint08Abi,
+    version: '0.8' as const,
+  }
 
-    let chainId: number;
-    const getChainIdCached = async () => {
-        if (chainId) return chainId;
-        chainId = client.chain?.id ?? await getAction(client, getChainId, "getChainId")({});
-        return chainId;
-    };
+  let chainId: number
+  const getChainIdCached = async () => {
+    if (chainId) return chainId
+    chainId = client.chain?.id ?? (await getAction(client, getChainId, 'getChainId')({}))
+    return chainId
+  }
 
-    return toSmartAccount({
-        client,
-        entryPoint,
-        authorization: { address: CALIBUR_ADDRESS, account: localOwner },
-        getFactoryArgs: async () => ({ factory: "0x7702" as Address, factoryData: "0x" as Hex }),
+  return toSmartAccount({
+    client,
+    entryPoint,
+    authorization: { address: CALIBUR_ADDRESS, account: localOwner },
+    getFactoryArgs: async () => ({ factory: '0x7702' as Address, factoryData: '0x' as Hex }),
 
-        async getAddress() {
-            return localOwner.address;
-        },
+    async getAddress() {
+      return localOwner.address
+    },
 
-        async encodeCalls(calls) {
-            const callTuples = calls.map(c => [c.to, c.value ?? BigInt(0), c.data ?? "0x"] as const);
-            const encoded = encodeAbiParameters(
-                parseAbiParameters("((address,uint256,bytes)[],bool)"),
-                [[callTuples, true]],
-            );
-            return `0x8dd7712f${encoded.slice(2)}` as Hex; // executeUserOp selector
-        },
+    async encodeCalls(calls) {
+      const callTuples = calls.map((c) => [c.to, c.value ?? BigInt(0), c.data ?? '0x'] as const)
+      const encoded = encodeAbiParameters(parseAbiParameters('((address,uint256,bytes)[],bool)'), [[callTuples, true]])
+      return `0x8dd7712f${encoded.slice(2)}` as Hex // executeUserOp selector
+    },
 
-        async getNonce({ key = BigInt(0) } = {}) {
-            return readContract(client, {
-                abi: parseAbi(["function getNonce(address, uint192) pure returns (uint256)"]),
-                address: entryPoint.address,
-                functionName: "getNonce",
-                args: [localOwner.address, key],
-            });
-        },
+    async getNonce({ key = BigInt(0) } = {}) {
+      return readContract(client, {
+        abi: parseAbi(['function getNonce(address, uint192) pure returns (uint256)']),
+        address: entryPoint.address,
+        functionName: 'getNonce',
+        args: [localOwner.address, key],
+      })
+    },
 
-        async getStubSignature() {
-            return encodeAbiParameters(
-                parseAbiParameters("bytes32,bytes,bytes"),
-                [ROOT_KEY, STUB_SIG, "0x"],
-            );
-        },
+    async getStubSignature() {
+      return encodeAbiParameters(parseAbiParameters('bytes32,bytes,bytes'), [ROOT_KEY, STUB_SIG, '0x'])
+    },
 
-        async sign({ hash }) {
-            return localOwner.signMessage({ message: hash });
-        },
+    async sign({ hash }) {
+      return localOwner.signMessage({ message: hash })
+    },
 
-        async signMessage({ message }) {
-            return localOwner.signMessage({ message });
-        },
+    async signMessage({ message }) {
+      return localOwner.signMessage({ message })
+    },
 
-        async signTypedData(params) {
-            return localOwner.signTypedData(params as Parameters<typeof localOwner.signTypedData>[0]);
-        },
+    async signTypedData(params) {
+      return localOwner.signTypedData(params as Parameters<typeof localOwner.signTypedData>[0])
+    },
 
-        async signUserOperation(params) {
-            const chainIdValue = params.chainId ?? await getChainIdCached();
+    async signUserOperation(params) {
+      const chainIdValue = params.chainId ?? (await getChainIdCached())
 
-            const typedData = getUserOperationTypedData({
-                chainId: chainIdValue,
-                entryPointAddress: entryPoint.address,
-                userOperation: { ...params, sender: localOwner.address, signature: "0x" },
-            });
+      const typedData = getUserOperationTypedData({
+        chainId: chainIdValue,
+        entryPointAddress: entryPoint.address,
+        userOperation: { ...params, sender: localOwner.address, signature: '0x' },
+      })
 
-            const sig = await localOwner.signTypedData(typedData);
+      const sig = await localOwner.signTypedData(typedData)
 
-            return encodeAbiParameters(
-                parseAbiParameters("bytes32,bytes,bytes"),
-                [ROOT_KEY, sig, "0x"],
-            );
-        },
-    }) as unknown as Promise<CaliburSmartAccountReturnType>;
+      return encodeAbiParameters(parseAbiParameters('bytes32,bytes,bytes'), [ROOT_KEY, sig, '0x'])
+    },
+  }) as unknown as Promise<CaliburSmartAccountReturnType>
 }
 
 /**
  * Create a Calibur session account — a registered key executing on behalf of another account.
  * Used by backend wallets to send sponsored UserOperations through the user's Calibur account.
  */
-export async function createCaliburSessionAccount(config: CaliburSessionConfig): Promise<CaliburSmartAccountReturnType> {
-    const { client, signer, accountAddress, keyHash } = config;
-    const localSigner = signer as PrivateKeyAccount;
+export async function createCaliburSessionAccount(
+  config: CaliburSessionConfig
+): Promise<CaliburSmartAccountReturnType> {
+  const { client, signer, accountAddress, keyHash } = config
+  const localSigner = signer as PrivateKeyAccount
 
-    const entryPoint = {
-        address: entryPoint08Address,
-        abi: entryPoint08Abi,
-        version: "0.8" as const,
-    };
+  const entryPoint = {
+    address: entryPoint08Address,
+    abi: entryPoint08Abi,
+    version: '0.8' as const,
+  }
 
-    let chainId: number;
-    const getChainIdCached = async () => {
-        if (chainId) return chainId;
-        chainId = client.chain?.id ?? await getAction(client, getChainId, "getChainId")({});
-        return chainId;
-    };
+  let chainId: number
+  const getChainIdCached = async () => {
+    if (chainId) return chainId
+    chainId = client.chain?.id ?? (await getAction(client, getChainId, 'getChainId')({}))
+    return chainId
+  }
 
-    return toSmartAccount({
-        client,
-        entryPoint,
-        getFactoryArgs: async () => ({ factory: "0x7702" as Address, factoryData: "0x" as Hex }),
+  return toSmartAccount({
+    client,
+    entryPoint,
+    getFactoryArgs: async () => ({ factory: '0x7702' as Address, factoryData: '0x' as Hex }),
 
-        async getAddress() {
-            return accountAddress;
-        },
+    async getAddress() {
+      return accountAddress
+    },
 
-        async encodeCalls(calls) {
-            const callTuples = calls.map(c => [c.to, c.value ?? BigInt(0), c.data ?? "0x"] as const);
-            const encoded = encodeAbiParameters(
-                parseAbiParameters("((address,uint256,bytes)[],bool)"),
-                [[callTuples, true]],
-            );
-            return `0x8dd7712f${encoded.slice(2)}` as Hex; // executeUserOp selector
-        },
+    async encodeCalls(calls) {
+      const callTuples = calls.map((c) => [c.to, c.value ?? BigInt(0), c.data ?? '0x'] as const)
+      const encoded = encodeAbiParameters(parseAbiParameters('((address,uint256,bytes)[],bool)'), [[callTuples, true]])
+      return `0x8dd7712f${encoded.slice(2)}` as Hex // executeUserOp selector
+    },
 
-        async getNonce({ key = BigInt(0) } = {}) {
-            return readContract(client, {
-                abi: parseAbi(["function getNonce(address, uint192) pure returns (uint256)"]),
-                address: entryPoint.address,
-                functionName: "getNonce",
-                args: [accountAddress, key],
-            });
-        },
+    async getNonce({ key = BigInt(0) } = {}) {
+      return readContract(client, {
+        abi: parseAbi(['function getNonce(address, uint192) pure returns (uint256)']),
+        address: entryPoint.address,
+        functionName: 'getNonce',
+        args: [accountAddress, key],
+      })
+    },
 
-        async getStubSignature() {
-            return encodeAbiParameters(
-                parseAbiParameters("bytes32,bytes,bytes"),
-                [keyHash, STUB_SIG, "0x"],
-            );
-        },
+    async getStubSignature() {
+      return encodeAbiParameters(parseAbiParameters('bytes32,bytes,bytes'), [keyHash, STUB_SIG, '0x'])
+    },
 
-        async sign({ hash }) {
-            return localSigner.signMessage({ message: hash });
-        },
+    async sign({ hash }) {
+      return localSigner.signMessage({ message: hash })
+    },
 
-        async signMessage({ message }) {
-            return localSigner.signMessage({ message });
-        },
+    async signMessage({ message }) {
+      return localSigner.signMessage({ message })
+    },
 
-        async signTypedData(params) {
-            return localSigner.signTypedData(params as Parameters<typeof localSigner.signTypedData>[0]);
-        },
+    async signTypedData(params) {
+      return localSigner.signTypedData(params as Parameters<typeof localSigner.signTypedData>[0])
+    },
 
-        async signUserOperation(params) {
-            const chainIdValue = params.chainId ?? await getChainIdCached();
+    async signUserOperation(params) {
+      const chainIdValue = params.chainId ?? (await getChainIdCached())
 
-            const typedData = getUserOperationTypedData({
-                chainId: chainIdValue,
-                entryPointAddress: entryPoint.address,
-                userOperation: { ...params, sender: accountAddress, signature: "0x" },
-            });
+      const typedData = getUserOperationTypedData({
+        chainId: chainIdValue,
+        entryPointAddress: entryPoint.address,
+        userOperation: { ...params, sender: accountAddress, signature: '0x' },
+      })
 
-            const sig = normalizeSignature(await localSigner.signTypedData(typedData));
+      const sig = normalizeSignature(await localSigner.signTypedData(typedData))
 
-            return encodeAbiParameters(
-                parseAbiParameters("bytes32,bytes,bytes"),
-                [keyHash, sig, "0x"],
-            );
-        },
-    }) as unknown as Promise<CaliburSmartAccountReturnType>;
+      return encodeAbiParameters(parseAbiParameters('bytes32,bytes,bytes'), [keyHash, sig, '0x'])
+    },
+  }) as unknown as Promise<CaliburSmartAccountReturnType>
 }
 
 // =============================================================================
 // Key Helpers
 // =============================================================================
 
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as Address
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address
 
 /**
  * Normalize an ECDSA signature so v is 27 or 28.
  * Some signers return v as 0 or 1 (compact form).
  */
 function normalizeSignature(sig: Hex): Hex {
-    if (sig.length !== 132) return sig // not 65 bytes
-    const v = parseInt(sig.slice(130, 132), 16)
-    if (v < 27) {
-        return `${sig.slice(0, 130)}${(v + 27).toString(16).padStart(2, "0")}` as Hex
-    }
-    return sig
+  if (sig.length !== 132) return sig // not 65 bytes
+  const v = parseInt(sig.slice(130, 132), 16)
+  if (v < 27) {
+    return `${sig.slice(0, 130)}${(v + 27).toString(16).padStart(2, '0')}` as Hex
+  }
+  return sig
 }
 
 /**
@@ -310,12 +293,7 @@ function normalizeSignature(sig: Hex): Hex {
  * `keccak256(abi.encode(keyType, keccak256(publicKey)))`
  */
 export function hashKey(key: CaliburKey): Hex {
-  return keccak256(
-    encodeAbiParameters(
-      parseAbiParameters("uint8, bytes32"),
-      [key.keyType, keccak256(key.publicKey)],
-    ),
-  )
+  return keccak256(encodeAbiParameters(parseAbiParameters('uint8, bytes32'), [key.keyType, keccak256(key.publicKey)]))
 }
 
 /**
@@ -353,7 +331,7 @@ export function encodeRegisterKey(key: CaliburKey): SelfCall {
     value: BigInt(0),
     data: encodeFunctionData({
       abi: caliburAbi,
-      functionName: "register",
+      functionName: 'register',
       args: [{ keyType: key.keyType, publicKey: key.publicKey }],
     }),
   }
@@ -368,7 +346,7 @@ export function encodeUpdateKeySettings(keyHash: Hex, settings: KeySettings): Se
     value: BigInt(0),
     data: encodeFunctionData({
       abi: caliburAbi,
-      functionName: "update",
+      functionName: 'update',
       args: [keyHash, packSettings(settings)],
     }),
   }
@@ -383,7 +361,7 @@ export function encodeRevokeKey(keyHash: Hex): SelfCall {
     value: BigInt(0),
     data: encodeFunctionData({
       abi: caliburAbi,
-      functionName: "revoke",
+      functionName: 'revoke',
       args: [keyHash],
     }),
   }
@@ -399,15 +377,15 @@ export function encodeRevokeKey(keyHash: Hex): SelfCall {
 export async function getCaliburKey(
   client: Client<Transport, Chain | undefined>,
   account: Address,
-  keyHash: Hex,
+  keyHash: Hex
 ): Promise<CaliburKey> {
   const result = await readContract(client, {
     abi: caliburAbi,
     address: account,
-    functionName: "getKey",
+    functionName: 'getKey',
     args: [keyHash],
   })
-  return { keyType: result.keyType as CaliburKey["keyType"], publicKey: result.publicKey }
+  return { keyType: result.keyType as CaliburKey['keyType'], publicKey: result.publicKey }
 }
 
 /**
@@ -416,12 +394,12 @@ export async function getCaliburKey(
 export async function getCaliburKeySettings(
   client: Client<Transport, Chain | undefined>,
   account: Address,
-  keyHash: Hex,
+  keyHash: Hex
 ): Promise<KeySettings> {
   const packed = await readContract(client, {
     abi: caliburAbi,
     address: account,
-    functionName: "getKeySettings",
+    functionName: 'getKeySettings',
     args: [keyHash],
   })
   return unpackSettings(packed)
@@ -432,12 +410,12 @@ export async function getCaliburKeySettings(
  */
 export async function getRegisteredKeys(
   client: Client<Transport, Chain | undefined>,
-  account: Address,
+  account: Address
 ): Promise<Array<{ key: CaliburKey; keyHash: Hex }>> {
   const count = await readContract(client, {
     abi: caliburAbi,
     address: account,
-    functionName: "keyCount",
+    functionName: 'keyCount',
   })
 
   const results: Array<{ key: CaliburKey; keyHash: Hex }> = []
@@ -445,10 +423,10 @@ export async function getRegisteredKeys(
     const result = await readContract(client, {
       abi: caliburAbi,
       address: account,
-      functionName: "keyAt",
+      functionName: 'keyAt',
       args: [i],
     })
-    const key: CaliburKey = { keyType: result.keyType as CaliburKey["keyType"], publicKey: result.publicKey }
+    const key: CaliburKey = { keyType: result.keyType as CaliburKey['keyType'], publicKey: result.publicKey }
     results.push({ key, keyHash: hashKey(key) })
   }
   return results
@@ -460,12 +438,12 @@ export async function getRegisteredKeys(
 export async function isCaliburKeyRegistered(
   client: Client<Transport, Chain | undefined>,
   account: Address,
-  keyHash: Hex,
+  keyHash: Hex
 ): Promise<boolean> {
   return readContract(client, {
     abi: caliburAbi,
     address: account,
-    functionName: "isRegistered",
+    functionName: 'isRegistered',
     args: [keyHash],
   })
 }
@@ -494,4 +472,4 @@ export function encodeExecute(calls: SelfCall[], revertOnFailure = true): Hex {
 // Re-exports
 // =============================================================================
 
-export { CALIBUR_ADDRESS };
+export { CALIBUR_ADDRESS }

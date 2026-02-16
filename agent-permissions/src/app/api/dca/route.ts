@@ -2,15 +2,18 @@ import Openfort, { createBackendWallet } from '@openfort/openfort-node'
 import { NextResponse } from 'next/server'
 import { type Address, createClient, http, publicActions } from 'viem'
 import { baseSepolia } from 'viem/chains'
-import {
-  KeyType,
-  getRegisteredKeys,
-  getCaliburKeySettings,
-} from '@/lib/calibur'
-import { type DcaConfig, dcaStore } from '@/lib/dcaStore'
 import { AuthError, authenticateRequest } from '@/lib/auth'
+import { getCaliburKeySettings, getRegisteredKeys, KeyType } from '@/lib/calibur'
+import { type DcaConfig, type DcaResponse, dcaStore, toResponse } from '@/lib/dcaStore'
 
 const DCA_FREQUENCY_SECONDS = 60 // matches the Vercel cron interval
+
+const DEFAULT_RESPONSE: DcaResponse = {
+  enabled: false,
+  amount: '0',
+  purchases: [],
+  lastPurchase: 0,
+}
 
 function getOpenfort() {
   const key = process.env.OPENFORT_SECRET_KEY
@@ -72,23 +75,10 @@ export async function GET(req: Request) {
       break
     }
 
-    return NextResponse.json({
-      enabled,
-      amount: cached?.amount || '0',
-      purchases: cached?.purchases || [],
-      agentAddress,
-      lastPurchase: cached?.lastPurchase || 0,
-      expiresAt,
-    })
+    return NextResponse.json(toResponse(cached, { enabled, agentAddress, expiresAt }))
   } catch {
     // If onchain read fails (e.g. account not a Calibur account yet), fall back to cache
-    return NextResponse.json({
-      enabled: false,
-      amount: cached?.amount || '0',
-      purchases: cached?.purchases || [],
-      agentAddress: cached?.agentAddress,
-      lastPurchase: cached?.lastPurchase || 0,
-    })
+    return NextResponse.json(toResponse(cached))
   }
 }
 
@@ -103,11 +93,16 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { address, amount, enabled } = await req.json()
+    const body: unknown = await req.json()
+    if (typeof body !== 'object' || body === null) {
+      return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
+    }
+    const { address, amount, enabled } = body as Record<string, unknown>
 
-    if (!address || typeof address !== 'string') {
+    if (typeof address !== 'string' || address.length === 0) {
       return NextResponse.json({ error: 'Missing address' }, { status: 400 })
     }
+    const parsedAmount = typeof amount === 'string' ? amount : undefined
 
     const key = address.toLowerCase()
     const existing = await dcaStore.get(key)
@@ -120,36 +115,24 @@ export async function POST(req: Request) {
       })
 
       const config: DcaConfig = {
-        amount: amount || existing?.amount || '0.1',
+        amount: parsedAmount ?? existing?.amount ?? '0.1',
         frequency: DCA_FREQUENCY_SECONDS,
-        purchases: existing?.purchases || [],
-        lastPurchase: existing?.lastPurchase || Date.now(),
+        purchases: existing?.purchases ?? [],
+        lastPurchase: existing?.lastPurchase ?? 0,
         agentAddress: agent.address,
         agentId: agent.id,
       }
       await dcaStore.set(key, config)
 
-      return NextResponse.json({
-        enabled: true,
-        amount: config.amount,
-        purchases: config.purchases,
-        agentAddress: agent.address,
-        lastPurchase: config.lastPurchase,
-      })
+      return NextResponse.json(toResponse(config, { enabled: true, agentAddress: agent.address }))
     }
 
     // Disable DCA — the actual revocation happens onchain via the client
     if (existing) {
-      return NextResponse.json({
-        enabled: false,
-        amount: existing.amount,
-        purchases: existing.purchases,
-        agentAddress: existing.agentAddress,
-        lastPurchase: existing.lastPurchase || 0,
-      })
+      return NextResponse.json(toResponse(existing))
     }
 
-    return NextResponse.json({ enabled: false, amount: '0', purchases: [], lastPurchase: 0 })
+    return NextResponse.json(DEFAULT_RESPONSE)
   } catch (err) {
     console.error('DCA error:', err)
     const message = err instanceof Error ? err.message : 'Unknown error'

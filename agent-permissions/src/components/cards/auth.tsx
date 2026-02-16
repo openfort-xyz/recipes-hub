@@ -59,7 +59,6 @@ const EmailOtpForm = () => {
         value={otp}
         onChange={(e) => setOtp(e.target.value)}
         required
-        autoFocus
       />
       {error && <p className="text-red-500 text-sm">{error.message}</p>}
       <button type="submit" className="btn mt-2" disabled={isLoading}>

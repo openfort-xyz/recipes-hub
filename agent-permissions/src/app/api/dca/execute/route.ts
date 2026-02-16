@@ -1,16 +1,10 @@
 import Openfort from '@openfort/openfort-node'
 import { type NextRequest, NextResponse } from 'next/server'
 import { type Address, createClient, encodeFunctionData, erc20Abi, http, padHex, parseUnits, publicActions } from 'viem'
-import { toAccount } from 'viem/accounts'
 import { createBundlerClient, createPaymasterClient } from 'viem/account-abstraction'
+import { toAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'
-import {
-  KeyType,
-  createCaliburSessionAccount,
-  getCaliburKeySettings,
-  getRegisteredKeys,
-  hashKey,
-} from '@/lib/calibur'
+import { createCaliburSessionAccount, getCaliburKeySettings, getRegisteredKeys, hashKey, KeyType } from '@/lib/calibur'
 import { dcaStore } from '@/lib/dcaStore'
 
 const DCA_FREQUENCY_SECONDS = 60 // matches the Vercel cron interval
@@ -71,7 +65,7 @@ function getViemClient() {
 async function isAgentEnabledOnchain(
   client: ReturnType<typeof getViemClient>,
   userAddress: Address,
-  agentAddress: Address,
+  agentAddress: Address
 ): Promise<boolean> {
   try {
     const keys = await getRegisteredKeys(client, userAddress)
@@ -125,18 +119,19 @@ export async function GET(request: NextRequest) {
     const cached = await dcaStore.get(agent.userAddress)
     const frequencyMs = DCA_FREQUENCY_SECONDS * 1000
     const lastPurchase = cached?.lastPurchase || 0
-    if (now - lastPurchase < frequencyMs) {
+    if (now - lastPurchase < frequencyMs * 0.8) {
       console.log(`[DCA] Skipping ${agent.userAddress}: too soon (${now - lastPurchase}ms < ${frequencyMs}ms)`)
       continue
     }
 
-    const enabled = await isAgentEnabledOnchain(
-      viemClient,
-      agent.userAddress as Address,
-      agent.agentAddress,
-    )
+    const enabled = await isAgentEnabledOnchain(viemClient, agent.userAddress as Address, agent.agentAddress)
     console.log(`[DCA] Agent ${agent.agentAddress} for ${agent.userAddress}: onchain enabled=${enabled}`)
-    if (enabled) pending.push(agent)
+    if (enabled) {
+      pending.push(agent)
+    } else {
+      await dcaStore.remove(agent.userAddress)
+      console.log(`[DCA] Removed disabled agent ${agent.userAddress} from store`)
+    }
   }
   console.log(`[DCA] ${pending.length} agents pending execution`)
 
@@ -148,7 +143,7 @@ export async function GET(request: NextRequest) {
   for (const { userAddress, agentId, agentAddress } of pending) {
     try {
       const cached = await dcaStore.get(userAddress)
-      const amount = cached?.amount || DEFAULT_AMOUNT
+      const amount = cached?.amount ?? DEFAULT_AMOUNT
 
       // Retrieve the backend wallet from Openfort and wrap as viem account
       const agent = await openfort.accounts.evm.backend.get({ id: agentId })
