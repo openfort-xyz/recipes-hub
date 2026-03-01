@@ -15,6 +15,11 @@ interface PaymentSummaryProps {
   onSwitchNetwork: () => void
   onSubmitPayment: () => void
   statusMessage?: string
+  /** Recipient (PAY_TO_ADDRESS) for one-line display */
+  recipientAddress?: string
+  recipientBalanceLabel?: string
+  isRefreshingRecipientBalance?: boolean
+  onRefreshRecipientBalance?: () => void
 }
 
 export function PaymentSummary({
@@ -31,6 +36,10 @@ export function PaymentSummary({
   onSwitchNetwork,
   onSubmitPayment,
   statusMessage,
+  recipientAddress,
+  recipientBalanceLabel,
+  isRefreshingRecipientBalance,
+  onRefreshRecipientBalance,
 }: PaymentSummaryProps) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-900 px-4 text-white">
@@ -93,6 +102,38 @@ export function PaymentSummary({
               <span className="text-zinc-400">Amount due:</span>
               <span>${amountDue} USDC</span>
             </div>
+            {recipientAddress != null ? (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-zinc-400">Recipient:</span>
+                <span className="truncate max-w-[10rem]" title={recipientAddress}>
+                  {recipientAddress.slice(0, 6)}…{recipientAddress.slice(-4)}
+                </span>
+                <span className="text-white">{recipientBalanceLabel ?? '…'}</span>
+                {onRefreshRecipientBalance ? (
+                  <button
+                    onClick={onRefreshRecipientBalance}
+                    disabled={isRefreshingRecipientBalance}
+                    type="button"
+                    className="text-zinc-400 transition-colors hover:text-white disabled:opacity-50"
+                    title="Refresh recipient balance"
+                  >
+                    <svg
+                      className={`h-4 w-4 ${isRefreshingRecipientBalance ? 'animate-spin' : ''}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
             <div className="flex justify-between">
               <span className="text-zinc-400">Network:</span>
               <span>{chainName}</span>

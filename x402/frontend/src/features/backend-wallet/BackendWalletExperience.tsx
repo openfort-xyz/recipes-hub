@@ -337,56 +337,6 @@ export function BackendWalletExperience() {
           </p>
         </div>
 
-        {/* Recipient (from PAY_TO_ADDRESS) */}
-        {status?.payToAddress && status.payToAddress.toLowerCase() !== payerAddress?.toLowerCase() ? (
-          <section className="rounded-lg border border-zinc-700 bg-zinc-800 p-6 shadow-xl">
-            <h2 className="text-lg font-medium">Recipient (PAY_TO_ADDRESS)</h2>
-            <div className="mt-4 space-y-2 rounded border border-zinc-700 bg-zinc-900 p-4">
-              <AddressRow
-                label="Address:"
-                value={status.payToAddress}
-                explorerUrl={getExplorerAddressUrl(status.payToAddress, status?.network)}
-                copied={copied}
-                copyLabel="payTo"
-                onCopy={copyToClipboard}
-              />
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-400">Recipient balance:</span>
-                <span className="font-mono">
-                  {merchantBalanceLoading ? '…' : `$${formatUnits(merchantBalance, USDC_DECIMALS)} USDC`}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => void fetchMerchantBalance()}
-                  disabled={merchantBalanceLoading}
-                  className="rounded bg-zinc-600 px-2 py-1 text-xs hover:bg-zinc-500 disabled:opacity-50"
-                >
-                  ↻
-                </button>
-              </div>
-              <p className="text-xs text-zinc-500">
-                Fund recipient:{' '}
-                <a href={USDC_FAUCET_URL} target="_blank" rel="noopener noreferrer" className="underline">
-                  Get USDC (faucet)
-                </a>
-                {' · '}
-                <a
-                  href={getExplorerAddressUrl(status.payToAddress, status?.network)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  View on Explorer
-                </a>
-              </p>
-            </div>
-          </section>
-        ) : status?.payToAddress ? null : (
-          <p className="text-sm text-zinc-400">
-            Set <code className="rounded bg-zinc-700 px-1">PAY_TO_ADDRESS</code> in backend <code className="rounded bg-zinc-700 px-1">.env.local</code> (create one in the <strong>Pay-to address</strong> tab) and restart.
-          </p>
-        )}
-
         {/* Backend wallet setup or wallets + pay */}
         <section className="rounded-lg border border-zinc-700 bg-zinc-800 p-6 shadow-xl">
           <h2 className="text-lg font-medium">1. Backend wallet</h2>
@@ -436,6 +386,30 @@ export function BackendWalletExperience() {
                     ↻
                   </button>
                 </div>
+                {status?.payToAddress && status.payToAddress.toLowerCase() !== payerAddress?.toLowerCase() ? (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-400">Recipient:</span>
+                    <span className="font-mono truncate max-w-[12rem]" title={status.payToAddress}>
+                      {status.payToAddress.slice(0, 6)}…{status.payToAddress.slice(-4)}
+                    </span>
+                    <span className="font-mono">
+                      {merchantBalanceLoading ? '…' : `$${formatUnits(merchantBalance, USDC_DECIMALS)} USDC`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void fetchMerchantBalance()}
+                      disabled={merchantBalanceLoading}
+                      className="rounded bg-zinc-600 px-2 py-1 text-xs hover:bg-zinc-500 disabled:opacity-50"
+                      title="Refresh recipient balance"
+                    >
+                      ↻
+                    </button>
+                  </div>
+                ) : status?.payToAddress ? null : (
+                  <div className="text-sm text-zinc-500">
+                    Recipient: Not set (use Pay-to address tab)
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-zinc-400">Amount:</span>
                   <span className="font-mono">${requiredAmountFormatted} USDC</span>

@@ -1,6 +1,6 @@
 import { type UserWallet, useUser, useWallets } from '@openfort/react'
-import { useCallback, useMemo } from 'react'
-import { createPublicClient, erc20Abi, http } from 'viem'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPublicClient, erc20Abi, formatUnits, http } from 'viem'
 import { base, baseSepolia } from 'viem/chains'
 import { useAccount, useSwitchChain, useWriteContract } from 'wagmi'
 
@@ -24,6 +24,7 @@ import {
 } from './utils/paymentGuards'
 
 const BALANCE_REFRESH_INTERVAL_MS = 3000
+const USDC_DECIMALS = 6
 
 export function PaywallExperience() {
   const initialNetwork: SupportedNetwork =
@@ -77,6 +78,32 @@ export function PaywallExperience() {
     publicClient,
     refreshIntervalMs: BALANCE_REFRESH_INTERVAL_MS,
   })
+
+  const [recipientBalance, setRecipientBalance] = useState<bigint>(0n)
+  const [recipientBalanceLoading, setRecipientBalanceLoading] = useState(false)
+  const fetchRecipientBalance = useCallback(async () => {
+    const payTo = paymentRequirements?.payTo
+    if (!payTo || !publicClient) {
+      setRecipientBalance(0n)
+      return
+    }
+    setRecipientBalanceLoading(true)
+    try {
+      const balance = await getUSDCBalance(
+        publicClient as Parameters<typeof getUSDCBalance>[0],
+        payTo,
+      )
+      setRecipientBalance(balance)
+    } catch {
+      setRecipientBalance(0n)
+    } finally {
+      setRecipientBalanceLoading(false)
+    }
+  }, [paymentRequirements?.payTo, publicClient])
+  useEffect(() => {
+    if (!paymentRequirements?.payTo) return
+    void fetchRecipientBalance()
+  }, [paymentRequirements?.payTo, fetchRecipientBalance])
 
   const { writeContractAsync, isPending: isWritePending } = useWriteContract()
 
@@ -225,6 +252,14 @@ export function PaywallExperience() {
     paymentState === 'unlocking' ||
     isWritePending
 
+  const payTo = paymentRequirements?.payTo
+  const recipientBalanceLabel =
+    recipientBalanceLoading
+      ? '…'
+      : payTo
+        ? `$${formatUnits(recipientBalance, USDC_DECIMALS)} USDC`
+        : undefined
+
   return (
     <PaymentSummary
       walletAddress={address}
@@ -244,6 +279,10 @@ export function PaywallExperience() {
       onSwitchNetwork={handleSwitchChain}
       onSubmitPayment={handlePayment}
       statusMessage={statusMessage}
+      recipientAddress={payTo}
+      recipientBalanceLabel={recipientBalanceLabel}
+      isRefreshingRecipientBalance={recipientBalanceLoading}
+      onRefreshRecipientBalance={payTo ? () => void fetchRecipientBalance() : undefined}
     />
   )
 }
