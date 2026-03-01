@@ -43,14 +43,14 @@ export function PaymentSummary({
           </p>
           {testnet ? (
             <p className="text-xs text-zinc-400">
-              Need Base Sepolia USDC?{' '}
+              Fund your wallet (Payer):{' '}
               <a
                 href="https://faucet.circle.com/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline"
               >
-                Get some here.
+                Get USDC (faucet)
               </a>
             </p>
           ) : null}

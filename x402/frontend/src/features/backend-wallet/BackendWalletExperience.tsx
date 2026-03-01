@@ -332,7 +332,60 @@ export function BackendWalletExperience() {
             Create a server-side wallet and test the x402 payment flow without a
             browser wallet.
           </p>
+          <p className="mt-2 text-xs text-zinc-500">
+            Use a <strong>separate</strong> recipient address (not your backend or embedded wallet). Create one in the <strong>Pay-to address</strong> tab, copy to <code className="rounded bg-zinc-700 px-1">PAY_TO_ADDRESS</code> in backend <code className="rounded bg-zinc-700 px-1">.env.local</code>, restart, then fund Payer and pay from each tab.
+          </p>
         </div>
+
+        {/* Recipient (from PAY_TO_ADDRESS) */}
+        {status?.payToAddress && status.payToAddress.toLowerCase() !== payerAddress?.toLowerCase() ? (
+          <section className="rounded-lg border border-zinc-700 bg-zinc-800 p-6 shadow-xl">
+            <h2 className="text-lg font-medium">Recipient (PAY_TO_ADDRESS)</h2>
+            <div className="mt-4 space-y-2 rounded border border-zinc-700 bg-zinc-900 p-4">
+              <AddressRow
+                label="Address:"
+                value={status.payToAddress}
+                explorerUrl={getExplorerAddressUrl(status.payToAddress, status?.network)}
+                copied={copied}
+                copyLabel="payTo"
+                onCopy={copyToClipboard}
+              />
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-zinc-400">Recipient balance:</span>
+                <span className="font-mono">
+                  {merchantBalanceLoading ? '…' : `$${formatUnits(merchantBalance, USDC_DECIMALS)} USDC`}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void fetchMerchantBalance()}
+                  disabled={merchantBalanceLoading}
+                  className="rounded bg-zinc-600 px-2 py-1 text-xs hover:bg-zinc-500 disabled:opacity-50"
+                >
+                  ↻
+                </button>
+              </div>
+              <p className="text-xs text-zinc-500">
+                Fund recipient:{' '}
+                <a href={USDC_FAUCET_URL} target="_blank" rel="noopener noreferrer" className="underline">
+                  Get USDC (faucet)
+                </a>
+                {' · '}
+                <a
+                  href={getExplorerAddressUrl(status.payToAddress, status?.network)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  View on Explorer
+                </a>
+              </p>
+            </div>
+          </section>
+        ) : status?.payToAddress ? null : (
+          <p className="text-sm text-zinc-400">
+            Set <code className="rounded bg-zinc-700 px-1">PAY_TO_ADDRESS</code> in backend <code className="rounded bg-zinc-700 px-1">.env.local</code> (create one in the <strong>Pay-to address</strong> tab) and restart.
+          </p>
+        )}
 
         {/* Backend wallet setup or wallets + pay */}
         <section className="rounded-lg border border-zinc-700 bg-zinc-800 p-6 shadow-xl">
@@ -343,6 +396,9 @@ export function BackendWalletExperience() {
                 Payer is configured. Fund with USDC.
               </p>
               <div className="space-y-2 rounded border border-zinc-700 bg-zinc-900 p-4">
+                <p className="text-xs text-zinc-500">
+                  Balances below are for the USDC transfer (Payer → Recipient). On the block explorer the tx may show a different &quot;From&quot; (bundler); the 0.1 USDC is debited from Payer and credited to Recipient.
+                </p>
                 <AddressRow
                   label="Payer (fund this):"
                   value={payerAddress}
@@ -351,17 +407,21 @@ export function BackendWalletExperience() {
                   copyLabel="payer"
                   onCopy={copyToClipboard}
                 />
-                {status?.payToAddress &&
-                status.payToAddress.toLowerCase() !== payerAddress?.toLowerCase() ? (
-                  <AddressRow
-                    label="Recipient:"
-                    value={status.payToAddress}
-                    explorerUrl={getExplorerAddressUrl(status.payToAddress ?? '', status?.network)}
-                    copied={copied}
-                    copyLabel="payTo"
-                    onCopy={copyToClipboard}
-                  />
-                ) : null}
+                <p className="text-xs text-zinc-500">
+                  Fund Payer:{' '}
+                  <a href={USDC_FAUCET_URL} target="_blank" rel="noopener noreferrer" className="underline">
+                    Get USDC (faucet)
+                  </a>
+                  {' · '}
+                  <a
+                    href={getExplorerAddressUrl(payerAddress ?? '', status?.network)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    Explorer
+                  </a>
+                </p>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-zinc-400">Payer balance:</span>
                   <span className="font-mono">
@@ -376,22 +436,6 @@ export function BackendWalletExperience() {
                     ↻
                   </button>
                 </div>
-                {status?.payToAddress ? (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-zinc-400">Recipient balance:</span>
-                    <span className="font-mono">
-                      {merchantBalanceLoading ? '…' : `$${formatUnits(merchantBalance, USDC_DECIMALS)} USDC`}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => void fetchMerchantBalance()}
-                      disabled={merchantBalanceLoading}
-                      className="rounded bg-zinc-600 px-2 py-1 text-xs hover:bg-zinc-500 disabled:opacity-50"
-                    >
-                      ↻
-                    </button>
-                  </div>
-                ) : null}
                 <div className="flex justify-between text-sm">
                   <span className="text-zinc-400">Amount:</span>
                   <span className="font-mono">${requiredAmountFormatted} USDC</span>

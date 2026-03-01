@@ -290,6 +290,14 @@ export async function createBackendWalletPayment(
   const encoded = Buffer.from(JSON.stringify(payload), "utf-8").toString(
     "base64",
   );
+  if (process.env.DEBUG_BACKEND_WALLET === "1") {
+    console.log(
+      "[backend-wallet] createBackendWalletPayment: from (payer)",
+      account.address,
+      "→ to (recipient)",
+      getAddress(requirements.payTo),
+    );
+  }
   console.log(
     "[backend-wallet] createBackendWalletPayment: signed, returning base64",
   );

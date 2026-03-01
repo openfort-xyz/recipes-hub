@@ -136,6 +136,7 @@ Key files:
 - Client encoding: `frontend/src/integrations/x402/payments.ts`
 - UI orchestration: `frontend/src/features/paywall/PaywallExperience.tsx`
 - Balance checks: `frontend/src/features/paywall/hooks/useUsdcBalance.ts`
+- Backend wallet UI (pay-to address creation, funding links): `frontend/src/features/backend-wallet/BackendWalletExperience.tsx`
 
 ## Debugging Guidance
 
@@ -154,6 +155,18 @@ Key files:
 - Check: USDC balance sufficient?
 - Check: Correct network selected?
 - Check: Policy ID matches environment?
+
+**Problem**: Backend wallet (Option B): Payer vs Recipient
+- **Payer** = backend wallet address (fund this with USDC). Shown as "Payer (fund this)" in the UI.
+- **Recipient** = `PAY_TO_ADDRESS` in backend `.env.local`; receives the USDC. Can be the same as the payer (transfer to self) or any other address.
+- On-chain: USDC is debited from Payer and credited to Recipient. The transaction "From" on the explorer may show the bundler; the token transfer is Payer → Recipient.
+- If the transaction fails when `PAY_TO_ADDRESS` is set to a different address: restart the backend after changing env; ensure `PAY_TO_ADDRESS` is a valid EVM address; check the Openfort fee sponsorship policy for any recipient/calldata restrictions.
+
+**Create pay-to address (Backend wallet tab):**
+- In the Backend wallet tab, use "Create pay-to address" to create a new Base Sepolia address. Copy it and set `PAY_TO_ADDRESS=<address>` in backend `.env.local`, then restart the backend. Both Backend wallet and Embedded wallet tabs send USDC to this address; check the recipient balance on the block explorer to see it increase from both flows.
+
+**Funding:**
+- Use "Fund Payer" (Backend wallet tab) or "Fund your wallet" (Embedded wallet tab) to get USDC for the payer. Use "Fund recipient" in the Pay-to address section to optionally fund the pay-to address.
 
 **Problem**: Shield session fails
 - Check: Server secrets configured?

@@ -1,6 +1,6 @@
 import type { Openfort } from "@openfort/openfort-node";
 import type { Request, Response } from "express";
-import { getAddress } from "viem";
+import { getAddress, isAddress } from "viem";
 import type { Config } from "./config.js";
 import {
   getBackendWalletAccount,
@@ -287,8 +287,15 @@ export async function handleBackendWalletTestPayment(
     });
     return;
   }
-  if (!env.paywall.payToAddress) {
+  const payToRaw = env.paywall.payToAddress?.trim();
+  if (!payToRaw) {
     res.status(400).json({ error: "PAY_TO_ADDRESS not set in backend/.env.local." });
+    return;
+  }
+  if (!isAddress(payToRaw)) {
+    res.status(400).json({
+      error: "Invalid PAY_TO_ADDRESS in backend/.env.local (must be a valid EVM address).",
+    });
     return;
   }
 
@@ -299,6 +306,14 @@ export async function handleBackendWalletTestPayment(
       res.status(500).json({ error: "Failed to load backend wallet account." });
       return;
     }
+
+    const payTo = getAddress(payToRaw);
+    console.log(
+      "[backend-wallet] test-payment: USDC transfer payer (fund this) → payTo (recipient):",
+      account.address,
+      "→",
+      payTo,
+    );
 
     const requirements = buildPaymentRequirementsFromPaywall(env.paywall);
     const paymentHeader = await createBackendWalletPayment(account, requirements);
