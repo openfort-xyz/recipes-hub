@@ -1,14 +1,18 @@
-import type { UserWallet } from "@openfort/react";
+import type { UserWallet } from '@openfort/react'
 
-import { Spinner } from "./Spinner";
+import { Spinner } from './Spinner'
 
 interface WalletSelectorProps {
-  wallets: UserWallet[];
-  isConnecting: boolean;
-  onSelect: (wallet: UserWallet) => void;
+  wallets: UserWallet[]
+  isConnecting: boolean
+  onSelect: (wallet: UserWallet) => void
 }
 
-export function WalletSelector({ wallets, isConnecting, onSelect }: WalletSelectorProps) {
+export function WalletSelector({
+  wallets,
+  isConnecting,
+  onSelect,
+}: WalletSelectorProps) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-900 text-white">
       <div className="w-full max-w-lg space-y-6 rounded-lg border border-zinc-700 bg-zinc-800 p-8 shadow-xl">
@@ -17,7 +21,7 @@ export function WalletSelector({ wallets, isConnecting, onSelect }: WalletSelect
           Select a wallet to connect and continue with your payment.
         </p>
         <div className="space-y-3">
-          {wallets.map(wallet => (
+          {wallets.map((wallet) => (
             <button
               key={wallet.id + wallet.address}
               className="w-full rounded border border-zinc-700 bg-zinc-900 px-4 py-3 text-left transition-colors hover:border-zinc-500 hover:bg-zinc-800 disabled:opacity-60"
@@ -40,5 +44,5 @@ export function WalletSelector({ wallets, isConnecting, onSelect }: WalletSelect
         ) : null}
       </div>
     </div>
-  );
+  )
 }

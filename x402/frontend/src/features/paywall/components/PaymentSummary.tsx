@@ -1,20 +1,20 @@
-import { Spinner } from "./Spinner";
-import { StatusBanner } from "./StatusBanner";
+import { Spinner } from './Spinner'
+import { StatusBanner } from './StatusBanner'
 
 interface PaymentSummaryProps {
-  walletAddress: string;
-  balanceLabel: string;
-  amountDue: number;
-  chainName: string;
-  description?: string;
-  testnet: boolean;
-  isCorrectChain: boolean | null;
-  isWorking: boolean;
-  isRefreshingBalance: boolean;
-  onRefreshBalance: () => void;
-  onSwitchNetwork: () => void;
-  onSubmitPayment: () => void;
-  statusMessage?: string;
+  walletAddress: string
+  balanceLabel: string
+  amountDue: number
+  chainName: string
+  description?: string
+  testnet: boolean
+  isCorrectChain: boolean | null
+  isWorking: boolean
+  isRefreshingBalance: boolean
+  onRefreshBalance: () => void
+  onSwitchNetwork: () => void
+  onSubmitPayment: () => void
+  statusMessage?: string
 }
 
 export function PaymentSummary({
@@ -38,11 +38,12 @@ export function PaymentSummary({
         <div className="space-y-2">
           <h1 className="text-3xl font-semibold">Payment Required</h1>
           <p className="text-sm text-zinc-300">
-            {description ? `${description}. ` : ""}To access this content, please pay ${amountDue} {chainName} USDC.
+            {description ? `${description}. ` : ''}To access this content,
+            please pay ${amountDue} {chainName} USDC.
           </p>
           {testnet ? (
             <p className="text-xs text-zinc-400">
-              Need Base Sepolia USDC?{" "}
+              Need Base Sepolia USDC?{' '}
               <a
                 href="https://faucet.circle.com/"
                 target="_blank"
@@ -73,7 +74,7 @@ export function PaymentSummary({
                   title="Refresh balance"
                 >
                   <svg
-                    className={`h-4 w-4 ${isRefreshingBalance ? "animate-spin" : ""}`}
+                    className={`h-4 w-4 ${isRefreshingBalance ? 'animate-spin' : ''}`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -105,7 +106,7 @@ export function PaymentSummary({
               disabled={isWorking}
               type="button"
             >
-              {isWorking ? <Spinner /> : "Pay now"}
+              {isWorking ? <Spinner /> : 'Pay now'}
             </button>
           ) : (
             <button
@@ -120,5 +121,5 @@ export function PaymentSummary({
         {statusMessage ? <StatusBanner message={statusMessage} /> : null}
       </div>
     </div>
-  );
+  )
 }

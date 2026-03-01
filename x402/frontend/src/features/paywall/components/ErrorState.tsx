@@ -1,11 +1,16 @@
 interface ErrorStateProps {
-  title: string;
-  message: string;
-  actionLabel?: string;
-  onAction?: () => void;
+  title: string
+  message: string
+  actionLabel?: string
+  onAction?: () => void
 }
 
-export function ErrorState({ title, message, actionLabel, onAction }: ErrorStateProps) {
+export function ErrorState({
+  title,
+  message,
+  actionLabel,
+  onAction,
+}: ErrorStateProps) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-900 text-white">
       <div className="w-full max-w-md space-y-6 rounded-lg border border-red-700 bg-zinc-800 p-8 text-center shadow-xl">
@@ -22,5 +27,5 @@ export function ErrorState({ title, message, actionLabel, onAction }: ErrorState
         ) : null}
       </div>
     </div>
-  );
+  )
 }

@@ -1,51 +1,51 @@
-import type { Address, Hex } from "viem";
+import type { Address, Hex } from 'viem'
 
-import type { SupportedNetwork } from "./networks";
+import type { SupportedNetwork } from './networks'
 
 export interface PaymentRequirements {
-  scheme: "exact";
-  network: SupportedNetwork;
-  maxAmountRequired: string;
-  resource: string;
-  description: string;
-  mimeType: string;
-  outputSchema?: Record<string, unknown>;
-  payTo: Address;
-  maxTimeoutSeconds: number;
-  asset: Address;
+  scheme: 'exact'
+  network: SupportedNetwork
+  maxAmountRequired: string
+  resource: string
+  description: string
+  mimeType: string
+  outputSchema?: Record<string, unknown>
+  payTo: Address
+  maxTimeoutSeconds: number
+  asset: Address
   extra?: {
-    name?: string;
-    version?: string;
-  };
+    name?: string
+    version?: string
+  }
 }
 
 export interface ExactEvmPayloadAuthorization {
-  from: Address;
-  to: Address;
-  value: string;
-  validAfter: string;
-  validBefore: string;
-  nonce: Hex;
+  from: Address
+  to: Address
+  value: string
+  validAfter: string
+  validBefore: string
+  nonce: Hex
 }
 
 export interface ExactEvmPayload {
-  signature: Hex;
-  authorization: ExactEvmPayloadAuthorization;
+  signature: Hex
+  authorization: ExactEvmPayloadAuthorization
 }
 
 export interface PaymentPayload {
-  x402Version: number;
-  scheme: "exact";
-  network: SupportedNetwork;
-  payload: ExactEvmPayload;
+  x402Version: number
+  scheme: 'exact'
+  network: SupportedNetwork
+  payload: ExactEvmPayload
 }
 
 export interface UnsignedPaymentPayload {
-  x402Version: number;
-  scheme: "exact";
-  network: SupportedNetwork;
+  x402Version: number
+  scheme: 'exact'
+  network: SupportedNetwork
   payload: {
-    signature: undefined;
-    authorization: ExactEvmPayloadAuthorization;
-  };
+    signature: undefined
+    authorization: ExactEvmPayloadAuthorization
+  }
 }

@@ -10,9 +10,10 @@
     "dev": "tsc && node --watch dist/server.js"
   },
   "dependencies": {
-    "@openfort/openfort-node": "^0.7.3",
+    "@openfort/openfort-node": "^0.9.2",
     "dotenv": "^16.3.1",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "viem": "^2.46.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.4",
