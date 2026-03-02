@@ -93,8 +93,6 @@ export class PaymentVerificationError extends Error {
 const usedNonces = new Set<string>();
 const usedTxHashes = new Set<string>();
 
-// ---- On-chain verification (Option A: Embedded Wallet) ----
-
 export async function verifyOnChainPayment(
   txHash: string,
   paywall: Config["paywall"],
@@ -149,8 +147,6 @@ export async function verifyOnChainPayment(
 
   usedTxHashes.add(normalizedHash);
 }
-
-// ---- Off-chain verification (Option B: Backend Wallet) ----
 
 export async function verifyOffChainPayment(
   encoded: string,
