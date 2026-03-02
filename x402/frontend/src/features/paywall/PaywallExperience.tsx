@@ -90,7 +90,7 @@ export function PaywallExperience() {
     setRecipientBalanceLoading(true)
     try {
       const balance = await getUSDCBalance(
-        publicClient as Parameters<typeof getUSDCBalance>[0],
+        publicClient,
         payTo,
       )
       setRecipientBalance(balance)
@@ -129,7 +129,7 @@ export function PaywallExperience() {
     const requiredAmount = getRequiredAmount(validRequirements)
 
     try {
-      const balance = await getUSDCBalance(publicClient as any, address)
+      const balance = await getUSDCBalance(publicClient, address)
       if (!hasSufficientBalance(balance, requiredAmount)) {
         throw new Error(
           `Insufficient balance. Make sure you have USDC on ${chainName}.`,

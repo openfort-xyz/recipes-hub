@@ -33,7 +33,7 @@ interface UsePaymentFlowValue {
   amount: number
   statusMessage: string
   error?: Error
-  successContent?: any
+  successContent?: unknown
 
   // Actions
   initiatePayment: (hash: `0x${string}`) => void
@@ -112,7 +112,7 @@ export function usePaymentFlow({
   const [statusMessage, setStatusMessage] = useState('')
   const [error, setError] = useState<Error | undefined>()
   const [paymentHash, setPaymentHash] = useState<`0x${string}` | undefined>()
-  const [successContent, setSuccessContent] = useState<any>(null)
+  const [successContent, setSuccessContent] = useState<unknown>(null)
 
   // Fetch payment requirements
   const fetchRequirements = useCallback(async () => {

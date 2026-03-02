@@ -68,7 +68,7 @@ export function loadConfig(): Config {
     port: toNumber(process.env.PORT) ?? 3001,
     allowedOrigins: parseOrigins(process.env.CORS_ORIGINS),
     paywall: {
-      payToAddress: process.env.PAY_TO_ADDRESS ?? process.env.ADDRESS ?? "",
+      payToAddress: process.env.PAY_TO_ADDRESS ?? "",
       rpcUrl: resolveRpcUrl(process.env.X402_RPC_URL, network),
       payment: {
         scheme: "exact",

@@ -520,7 +520,8 @@ async function getDelegatedAccountAuth(
         "message" in updateErr
           ? String((updateErr as { message: unknown }).message)
           : String(updateErr);
-      // Account already exist → resolve via API; other errors → fall through to API
+      console.error("Error updating backend wallet to delegated account", msg);
+      // Account` already exist → resolve via API; other errors → fall through to API
     }
   }
 
