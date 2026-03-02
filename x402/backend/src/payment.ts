@@ -136,9 +136,8 @@ export async function verifyOnChainPayment(
   const payTo = getAddress(paywall.payToAddress);
   const requiredAmount = BigInt(paywall.payment.maxAmountRequired);
 
-  const matchingLog = logs.find(
-    (log) =>
-      getAddress(log.args.to) === payTo && log.args.value >= requiredAmount,
+  const matchingLog = logs.find((log: any) =>
+    getAddress(log.args.to) === payTo && log.args.value >= requiredAmount,
   );
 
   if (!matchingLog) {

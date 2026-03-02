@@ -1,4 +1,5 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { config } from "dotenv";
 import { loadConfig } from "./config.js";
 import { createOpenfortClient, resolveBackendWalletAddress } from "./openfort.js";
@@ -20,6 +21,20 @@ const env = loadConfig();
 const openfortClient = createOpenfortClient(env.openfort.secretKey, env.openfort.walletSecret || undefined);
 
 const app = express();
+
+// Rate limiters for auth/payment routes (mitigates DoS)
+const rateLimitProtectedContent = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: "Too many requests, try again later." },
+  standardHeaders: true,
+});
+const rateLimitTestPayment = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { error: "Too many requests, try again later." },
+  standardHeaders: true,
+});
 
 // Middleware
 app.use(express.json());
@@ -53,27 +68,27 @@ async function resolvePayToAddress(): Promise<void> {
 resolvePayToAddress().then(() => {
   // Routes
   app.get("/api/health", handleHealth);
-  app.post("/api/protected-create-encryption-session", (req, res) =>
+  app.post("/api/protected-create-encryption-session", (req: express.Request, res: express.Response) =>
     handleShieldSession(req, res, openfortClient, env.openfort.shield),
   );
-  app.all("/api/protected-content", (req, res) =>
+  app.all("/api/protected-content", rateLimitProtectedContent, (req: express.Request, res: express.Response) =>
     handleProtectedContent(req, res, env.paywall),
   );
-  app.get("/api/backend-wallet/status", (_req, res) =>
+  app.get("/api/backend-wallet/status", (_req: express.Request, res: express.Response) =>
     handleBackendWalletStatus(_req, res, openfortClient, env),
   );
-  app.post("/api/backend-wallet/create", (_req, res) =>
+  app.post("/api/backend-wallet/create", (_req: express.Request, res: express.Response) =>
     handleBackendWalletCreate(_req, res, openfortClient, env),
   );
-  app.post("/api/backend-wallet/upgrade", (_req, res) =>
+  app.post("/api/backend-wallet/upgrade", (_req: express.Request, res: express.Response) =>
     handleBackendWalletUpgrade(_req, res, openfortClient, env),
   );
-  app.get("/api/backend-wallet/test-payment", (_req, res) =>
+  app.get("/api/backend-wallet/test-payment", rateLimitTestPayment, (_req: express.Request, res: express.Response) =>
     handleBackendWalletTestPayment(_req, res, openfortClient, env),
   );
 
   // 404 handler
-  app.use((_req, res) => {
+  app.use((_req: express.Request, res: express.Response) => {
     res.status(404).json({ error: "Not Found" });
   });
 
