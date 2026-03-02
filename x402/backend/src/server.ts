@@ -44,21 +44,10 @@ app.use((req, res, next) => {
 });
 
 async function resolvePayToAddress(): Promise<void> {
-  if (!openfortClient) {
-    console.log("ℹ️  Backend wallet: skipped (OPENFORT_SECRET_KEY required)");
-    return;
-  }
-  if (!env.openfort.walletSecret) {
-    console.log("ℹ️  Backend wallet: skipped (OPENFORT_WALLET_SECRET required for backend.get)");
-    return;
-  }
+  if (!openfortClient || !env.openfort.walletSecret) return;
   const walletId = env.openfort.walletId.trim();
   if (!walletId) return;
-  const address = await resolveBackendWalletAddress(openfortClient, walletId);
-  if (address) {
-    // Backend wallet is the payer; payTo stays from PAY_TO_ADDRESS (recipient)
-    console.log(`🔑 Backend wallet (payer) resolved: ${address}`);
-  }
+  await resolveBackendWalletAddress(openfortClient, walletId);
 }
 
 resolvePayToAddress().then(() => {

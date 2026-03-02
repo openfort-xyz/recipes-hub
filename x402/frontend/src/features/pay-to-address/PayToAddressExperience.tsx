@@ -19,7 +19,8 @@ interface BackendWalletStatus {
 }
 
 function getExplorerAddressUrl(address: string, network?: string): string {
-  const base = network === 'base' ? 'https://basescan.org' : BASE_SEPOLIA_EXPLORER
+  const base =
+    network === 'base' ? 'https://basescan.org' : BASE_SEPOLIA_EXPLORER
   return `${base}/address/${address}`
 }
 
@@ -27,7 +28,9 @@ export function PayToAddressExperience() {
   const baseUrl = getApiBaseUrl()
   const [status, setStatus] = useState<BackendWalletStatus | null>(null)
   const [statusLoading, setStatusLoading] = useState(true)
-  const [createdAddress, setCreatedAddress] = useState<CreatedWallet | null>(null)
+  const [createdAddress, setCreatedAddress] = useState<CreatedWallet | null>(
+    null,
+  )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -128,9 +131,12 @@ export function PayToAddressExperience() {
         <div>
           <h1 className="text-2xl font-semibold">Pay-to address</h1>
           <p className="mt-1 text-sm text-zinc-400">
-            Create a <strong>separate</strong> recipient address (not your backend or embedded wallet). Copy it to{' '}
-            <code className="rounded bg-zinc-700 px-1">PAY_TO_ADDRESS</code> in backend{' '}
-            <code className="rounded bg-zinc-700 px-1">.env.local</code> and restart. Both Embedded and Backend wallet tabs send USDC to this address.
+            Create a <strong>separate</strong> recipient address (not your
+            backend or embedded wallet). Copy it to{' '}
+            <code className="rounded bg-zinc-700 px-1">PAY_TO_ADDRESS</code> in
+            backend <code className="rounded bg-zinc-700 px-1">.env.local</code>{' '}
+            and restart. Both Embedded and Backend wallet tabs send USDC to this
+            address.
           </p>
         </div>
 
@@ -141,7 +147,10 @@ export function PayToAddressExperience() {
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-2 text-sm">
                 <span className="text-zinc-400">Address:</span>
-                <code className="truncate flex-1 text-right" title={payToAddress}>
+                <code
+                  className="truncate flex-1 text-right"
+                  title={payToAddress}
+                >
                   {payToAddress.slice(0, 6)}…{payToAddress.slice(-4)}
                 </code>
                 <button
@@ -155,7 +164,9 @@ export function PayToAddressExperience() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-zinc-400">Balance:</span>
                 <span className="font-mono">
-                  {balanceLoading ? '…' : `$${formatUnits(balance, USDC_DECIMALS)} USDC`}
+                  {balanceLoading
+                    ? '…'
+                    : `$${formatUnits(balance, USDC_DECIMALS)} USDC`}
                 </span>
                 <button
                   type="button"
@@ -168,7 +179,10 @@ export function PayToAddressExperience() {
                 </button>
               </div>
               <a
-                href={getExplorerAddressUrl(payToAddress, status?.network ?? 'base-sepolia')}
+                href={getExplorerAddressUrl(
+                  payToAddress,
+                  status?.network ?? 'base-sepolia',
+                )}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-zinc-400 underline"
@@ -179,7 +193,9 @@ export function PayToAddressExperience() {
           ) : createdAddress ? (
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2 rounded border border-zinc-600 bg-zinc-900 p-3">
-                <code className="flex-1 truncate text-sm">{createdAddress.address}</code>
+                <code className="flex-1 truncate text-sm">
+                  {createdAddress.address}
+                </code>
                 <button
                   type="button"
                   onClick={() => copyAddress(createdAddress.address)}
@@ -189,7 +205,10 @@ export function PayToAddressExperience() {
                 </button>
               </div>
               <a
-                href={getExplorerAddressUrl(createdAddress.address, 'base-sepolia')}
+                href={getExplorerAddressUrl(
+                  createdAddress.address,
+                  'base-sepolia',
+                )}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-zinc-400 underline"
@@ -197,8 +216,11 @@ export function PayToAddressExperience() {
                 View on Explorer
               </a>
               <p className="text-xs text-zinc-500">
-                Paste this address as <code className="rounded bg-zinc-700 px-1">PAY_TO_ADDRESS</code> in backend{' '}
-                <code className="rounded bg-zinc-700 px-1">.env.local</code> and restart the server.
+                Paste this address as{' '}
+                <code className="rounded bg-zinc-700 px-1">PAY_TO_ADDRESS</code>{' '}
+                in backend{' '}
+                <code className="rounded bg-zinc-700 px-1">.env.local</code> and
+                restart the server.
               </p>
             </div>
           ) : (

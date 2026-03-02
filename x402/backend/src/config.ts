@@ -29,7 +29,6 @@ interface OpenfortConfig {
   secretKey: string;
   walletSecret: string;
   walletId: string;
-  /** Optional: Delegated Account API ID (acc_...) for gasless. When set, skips the PUT /v2/accounts/backend/{id} upgrade call. */
   delegatedAccountId: string;
   policyId: string;
   shield: ShieldConfig;

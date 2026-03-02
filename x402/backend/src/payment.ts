@@ -290,17 +290,6 @@ export async function createBackendWalletPayment(
   const encoded = Buffer.from(JSON.stringify(payload), "utf-8").toString(
     "base64",
   );
-  if (process.env.DEBUG_BACKEND_WALLET === "1") {
-    console.log(
-      "[backend-wallet] createBackendWalletPayment: from (payer)",
-      account.address,
-      "→ to (recipient)",
-      getAddress(requirements.payTo),
-    );
-  }
-  console.log(
-    "[backend-wallet] createBackendWalletPayment: signed, returning base64",
-  );
   return encoded;
 }
 
@@ -404,17 +393,6 @@ async function openfortBackendUpdateToDelegated(
   });
 
   const bodyText = await res.text();
-  if (
-    process.env.DEBUG_BACKEND_WALLET === "1" &&
-    (res.status === 409 || !res.ok)
-  ) {
-    console.log(
-      "[backend-wallet] openfort API response",
-      res.status,
-      "body:",
-      bodyText.slice(0, 300),
-    );
-  }
   let parsed: unknown;
   try {
     parsed = bodyText ? JSON.parse(bodyText) : {};
@@ -429,22 +407,12 @@ async function openfortBackendUpdateToDelegated(
 
   if (res.status === 409) {
     const id = parseDelegatedAccountId(parsed);
-    if (id) {
-      if (process.env.DEBUG_BACKEND_WALLET === "1") {
-        console.log(
-          "[backend-wallet] PUT 409: using delegated account id from response",
-        );
-      }
-      return { delegatedAccountId: id };
-    }
+    if (id) return { delegatedAccountId: id };
     const getRes = await fetch(url, {
       method: "GET",
       headers: { Authorization: `Bearer ${apiSecretKey}` },
     });
     const getText = await getRes.text();
-    if (process.env.DEBUG_BACKEND_WALLET === "1" && getRes.ok) {
-      console.log("[backend-wallet] GET response body:", getText.slice(0, 300));
-    }
     if (getRes.ok) {
       let getParsed: unknown;
       try {
@@ -453,26 +421,11 @@ async function openfortBackendUpdateToDelegated(
         getParsed = {};
       }
       const getId = parseDelegatedAccountId(getParsed);
-      if (getId) {
-        if (process.env.DEBUG_BACKEND_WALLET === "1") {
-          console.log(
-            "[backend-wallet] PUT 409: got delegated account id from GET",
-          );
-        }
-        return { delegatedAccountId: getId };
-      }
+      if (getId) return { delegatedAccountId: getId };
     }
-    console.warn(
-      "[backend-wallet] PUT 409 but could not obtain delegatedAccount.id; set OPENFORT_DELEGATED_ACCOUNT_ID in .env.local for gas-sponsored tx",
-    );
     return null;
   }
 
-  console.warn(
-    "[backend-wallet] openfort PUT /v2/accounts/backend/{id} failed:",
-    res.status,
-    bodyText.slice(0, 200),
-  );
   return null;
 }
 
@@ -567,19 +520,7 @@ async function getDelegatedAccountAuth(
         "message" in updateErr
           ? String((updateErr as { message: unknown }).message)
           : String(updateErr);
-      if (
-        msg.includes("Account already exist") ||
-        msg.includes("already exist")
-      ) {
-        console.log(
-          "[backend-wallet] SDK backend.update returned already-exist; resolving delegated id via API",
-        );
-      } else {
-        console.warn(
-          "[backend-wallet] SDK backend.update failed:",
-          msg.slice(0, 120),
-        );
-      }
+      // Account already exist → resolve via API; other errors → fall through to API
     }
   }
 
@@ -653,13 +594,6 @@ export async function submitTransferWithAuthorizationGasless(
     );
   }
 
-  const debug = process.env.DEBUG_BACKEND_WALLET === "1";
-  if (debug) {
-    console.log(
-      `[backend-wallet] gasless: using Delegated Account (EIP-7702) ${delegatedAccountId.slice(0, 12)}...`,
-    );
-  }
-
   // Project-scoped fee sponsorship: omit policy so Openfort auto-discovers. Transaction-scoped: send policy.
   const createParams = {
     chainId,
@@ -678,12 +612,6 @@ export async function submitTransferWithAuthorizationGasless(
       >[0],
     );
   } catch (err) {
-    if (debug) {
-      console.error(
-        "[backend-wallet] gasless: transactionIntents.create failed",
-        JSON.stringify({ ...toErrorJson(err) }),
-      );
-    }
     const msg = openfortErrorMessage(err);
     const invalidPol =
       typeof msg === "string" &&
@@ -693,31 +621,6 @@ export async function submitTransferWithAuthorizationGasless(
       invalidPol
         ? `${msg} Use a fee sponsorship policy from the Fee sponsorships tab (not a backend wallet policy). For project-scoped gas sponsorship, leave OPENFORT_POLICY_ID empty.`
         : msg,
-    );
-  }
-
-  if (debug) {
-    logIntentDiagnostics(
-      "after create",
-      intent as unknown as IntentDiagnosticShape,
-    );
-    const nextActionHashDbg = (
-      intent.nextAction?.payload as { signableHash?: string } | undefined
-    )?.signableHash;
-    const detailsHashDbg = (
-      intent.details as { userOperationHash?: string } | null | undefined
-    )?.userOperationHash;
-    const playerId = (intent as { player?: { id?: string } }).player?.id;
-    console.log(
-      "[backend-wallet] gasless: hash source",
-      JSON.stringify({
-        hasNextActionSignableHash: Boolean(nextActionHashDbg),
-        hasDetailsUserOperationHash: Boolean(detailsHashDbg),
-        using: nextActionHashDbg
-          ? "nextAction.payload.signableHash"
-          : "details.userOperationHash",
-        intentPlayerId: playerId ?? null,
-      }),
     );
   }
 
@@ -750,22 +653,11 @@ export async function submitTransferWithAuthorizationGasless(
     const signableHex = hashToSign.startsWith("0x")
       ? hashToSign
       : `0x${hashToSign}`;
-    if (debug) {
-      console.log(
-        `[backend-wallet] gasless: signing userOpHash ${signableHex.slice(0, 10)}... with backend EOA`,
-      );
-    }
 
     let sig: string;
     try {
       sig = await account.sign({ hash: signableHex as Hex });
     } catch (signErr) {
-      if (debug) {
-        console.error(
-          "[backend-wallet] gasless: account.sign failed",
-          JSON.stringify(toErrorJson(signErr)),
-        );
-      }
       throw new PaymentVerificationError(
         "TX_BROADCAST_FAILED",
         `Backend sign failed: ${signErr instanceof Error ? signErr.message : String(signErr)}`,
@@ -775,14 +667,6 @@ export async function submitTransferWithAuthorizationGasless(
     // Openfort docs pass raw signature; use yParity only if OPENFORT_SIGNATURE_YPARITY=1 (for debugging).
     const useYParity = process.env.OPENFORT_SIGNATURE_YPARITY === "1";
     const signatureForApi = useYParity ? signatureToYParityFormat(sig) : sig;
-    if (debug) {
-      console.log(
-        `[backend-wallet] gasless: submitting signature (${(signatureForApi.length - 2) / 2} bytes) format=${useYParity ? "yParity" : "raw"} to intent ${intent.id.slice(0, 12)}...`,
-      );
-      console.log(
-        `[backend-wallet] gasless: hash signed ${signableHex.slice(0, 10)}...`,
-      );
-    }
 
     // EOA (backend wallet) signs userOpHash; delegated account (same address, with code) is the UserOp sender.
     // Use SDK so Openfort receives the signature in the format it expects (matches docs: transactionIntents.signature(txIntent.id, { signature })).
@@ -794,34 +678,14 @@ export async function submitTransferWithAuthorizationGasless(
         signature: signatureForApi,
       });
     } catch (sigApiErr) {
-      if (process.env.DEBUG_BACKEND_WALLET === "1") {
-        console.error(
-          "[backend-wallet] gasless: transactionIntents.signature failed",
-          JSON.stringify({
-            context: "transactionIntents.signature",
-            ...toErrorJson(sigApiErr),
-          }),
-        );
-      }
       const msg = openfortErrorMessage(sigApiErr);
       throw new PaymentVerificationError("TX_BROADCAST_FAILED", msg);
-    }
-    if (debug) {
-      logIntentDiagnostics(
-        "after signature",
-        signed as unknown as IntentDiagnosticShape,
-      );
     }
     txHash = signed.response?.transactionHash;
   }
 
   // Openfort may broadcast asynchronously — poll up to 10s for the transaction hash.
   if (!txHash) {
-    if (debug) {
-      console.log(
-        "[backend-wallet] gasless: txHash not yet available, polling...",
-      );
-    }
     for (let attempt = 0; attempt < 5; attempt++) {
       await new Promise((r) => setTimeout(r, 2000));
       const pollRes = await fetch(
@@ -832,11 +696,6 @@ export async function submitTransferWithAuthorizationGasless(
         const polled = (await pollRes.json()) as IntentDiagnosticShape;
         txHash = (polled.response as { transactionHash?: string } | undefined)
           ?.transactionHash;
-        if (debug) {
-          console.log(
-            `[backend-wallet] gasless: poll attempt ${attempt + 1}, txHash: ${txHash ?? "pending"}`,
-          );
-        }
         if (txHash) break;
       }
     }
@@ -848,7 +707,6 @@ export async function submitTransferWithAuthorizationGasless(
       `Openfort intent ${intent.id} created but no transactionHash. Check fee sponsorship (${policyId ? `policy ${policyId}` : "project-scoped policy"}) in Openfort dashboard. See server logs for intent/response details.`,
     );
   }
-  console.log("[backend-wallet] gasless: success, tx", txHash);
   return txHash as Hex;
 }
 
@@ -866,31 +724,6 @@ type IntentDiagnosticShape = {
   nextAction?: { type?: string; payload?: Record<string, unknown> };
   status?: unknown;
 };
-
-/** Log intent shape so we can see why tx might not complete (response, nextAction, status). */
-function logIntentDiagnostics(
-  label: string,
-  intent: IntentDiagnosticShape,
-): void {
-  const nextAction = intent.nextAction;
-  const payload = nextAction?.payload;
-  console.log(
-    "[backend-wallet] gasless: intent",
-    label,
-    JSON.stringify({
-      id: intent.id,
-      hasResponse: Boolean(intent.response),
-      responseKeys:
-        intent.response != null ? Object.keys(intent.response as object) : [],
-      transactionHash:
-        (intent.response as { transactionHash?: string } | undefined)
-          ?.transactionHash ?? null,
-      nextActionType: nextAction?.type ?? null,
-      nextActionPayloadKeys: payload != null ? Object.keys(payload) : [],
-      status: intent.status,
-    }),
-  );
-}
 
 // ---- Helpers ----
 

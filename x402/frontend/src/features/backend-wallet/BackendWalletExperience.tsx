@@ -3,6 +3,7 @@ import { createPublicClient, formatUnits, http } from 'viem'
 import { baseSepolia } from 'viem/chains'
 import type { BalanceClient } from '../../integrations/x402'
 import { getUSDCBalance } from '../../integrations/x402'
+import { PaymentSuccess } from '../paywall/components/PaymentSuccess'
 import { getApiBaseUrl } from './getApiBaseUrl'
 
 const DEFAULT_AMOUNT_USDC = 0.1
@@ -27,12 +28,14 @@ interface CreatedWallet {
 }
 
 function getExplorerAddressUrl(address: string, network?: string): string {
-  const base = network === 'base' ? 'https://basescan.org' : BASE_SEPOLIA_EXPLORER
+  const base =
+    network === 'base' ? 'https://basescan.org' : BASE_SEPOLIA_EXPLORER
   return `${base}/address/${address}`
 }
 
 function getExplorerTxUrl(txHash: string, network?: string): string {
-  const base = network === 'base' ? 'https://basescan.org' : BASE_SEPOLIA_EXPLORER
+  const base =
+    network === 'base' ? 'https://basescan.org' : BASE_SEPOLIA_EXPLORER
   return `${base}/tx/${txHash}`
 }
 
@@ -88,7 +91,9 @@ type PaymentResult = {
   transactionHash?: string
 }
 
-async function runBackendWalletPayment(baseUrl: string): Promise<PaymentResult> {
+async function runBackendWalletPayment(
+  baseUrl: string,
+): Promise<PaymentResult> {
   const protectedContentUrl = `${baseUrl}/api/protected-content`
   const first = await fetch(protectedContentUrl)
   if (first.status !== 402) {
@@ -102,7 +107,12 @@ async function runBackendWalletPayment(baseUrl: string): Promise<PaymentResult> 
   const signRes = await fetch(`${baseUrl}/api/backend-wallet/test-payment`)
   const signData = (await signRes.json()) as
     | { paymentHeader: string }
-    | { success: true; transactionHash: string; message?: string; content?: unknown }
+    | {
+        success: true
+        transactionHash: string
+        message?: string
+        content?: unknown
+      }
     | { error?: string }
   if (!signRes.ok) {
     const err = signData as { error?: string; details?: string }
@@ -136,8 +146,17 @@ async function runBackendWalletPayment(baseUrl: string): Promise<PaymentResult> 
     content?: unknown
   }
   if (!contentRes.ok) {
-    const err = contentData as { message?: string; details?: string; error?: string }
-    throw new Error(err.details ?? err.message ?? err.error ?? 'Protected content request failed')
+    const err = contentData as {
+      message?: string
+      details?: string
+      error?: string
+    }
+    throw new Error(
+      err.details ??
+        err.message ??
+        err.error ??
+        'Protected content request failed',
+    )
   }
   return {
     success: contentData.success,
@@ -313,6 +332,12 @@ export function BackendWalletExperience() {
 
   const alreadyConfigured = Boolean(status?.payerAddress)
 
+  const handleTryAnotherPayment = useCallback(() => {
+    setTestResult(null)
+    void fetchBalance()
+    void fetchMerchantBalance()
+  }, [fetchBalance, fetchMerchantBalance])
+
   if (statusLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-900 text-white">
@@ -320,6 +345,28 @@ export function BackendWalletExperience() {
           <p className="text-zinc-400">Loading backend wallet status...</p>
         </div>
       </div>
+    )
+  }
+
+  if (testResult?.success) {
+    return (
+      <PaymentSuccess
+        content={{
+          content: testResult.content as {
+            title?: string
+            data?: string
+            timestamp?: string
+          },
+          message: testResult.message,
+        }}
+        onReset={handleTryAnotherPayment}
+        transactionHash={testResult.transactionHash}
+        explorerTxUrl={
+          testResult.transactionHash
+            ? getExplorerTxUrl(testResult.transactionHash, status?.network)
+            : undefined
+        }
+      />
     )
   }
 
@@ -333,7 +380,12 @@ export function BackendWalletExperience() {
             browser wallet.
           </p>
           <p className="mt-2 text-xs text-zinc-500">
-            Use a <strong>separate</strong> recipient address (not your backend or embedded wallet). Create one in the <strong>Pay-to address</strong> tab, copy to <code className="rounded bg-zinc-700 px-1">PAY_TO_ADDRESS</code> in backend <code className="rounded bg-zinc-700 px-1">.env.local</code>, restart, then fund Payer and pay from each tab.
+            Use a <strong>separate</strong> recipient address (not your backend
+            or embedded wallet). Create one in the{' '}
+            <strong>Pay-to address</strong> tab, copy to{' '}
+            <code className="rounded bg-zinc-700 px-1">PAY_TO_ADDRESS</code> in
+            backend <code className="rounded bg-zinc-700 px-1">.env.local</code>
+            , restart, then fund Payer and pay from each tab.
           </p>
         </div>
 
@@ -347,24 +399,38 @@ export function BackendWalletExperience() {
               </p>
               <div className="space-y-2 rounded border border-zinc-700 bg-zinc-900 p-4">
                 <p className="text-xs text-zinc-500">
-                  Balances below are for the USDC transfer (Payer → Recipient). On the block explorer the tx may show a different &quot;From&quot; (bundler); the 0.1 USDC is debited from Payer and credited to Recipient.
+                  Balances below are for the USDC transfer (Payer → Recipient).
+                  On the block explorer the tx may show a different
+                  &quot;From&quot; (bundler); the 0.1 USDC is debited from Payer
+                  and credited to Recipient.
                 </p>
                 <AddressRow
                   label="Payer (fund this):"
                   value={payerAddress}
-                  explorerUrl={getExplorerAddressUrl(payerAddress ?? '', status?.network)}
+                  explorerUrl={getExplorerAddressUrl(
+                    payerAddress ?? '',
+                    status?.network,
+                  )}
                   copied={copied}
                   copyLabel="payer"
                   onCopy={copyToClipboard}
                 />
                 <p className="text-xs text-zinc-500">
                   Fund Payer:{' '}
-                  <a href={USDC_FAUCET_URL} target="_blank" rel="noopener noreferrer" className="underline">
+                  <a
+                    href={USDC_FAUCET_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
                     Get USDC (faucet)
                   </a>
                   {' · '}
                   <a
-                    href={getExplorerAddressUrl(payerAddress ?? '', status?.network)}
+                    href={getExplorerAddressUrl(
+                      payerAddress ?? '',
+                      status?.network,
+                    )}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline"
@@ -375,7 +441,11 @@ export function BackendWalletExperience() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-zinc-400">Payer balance:</span>
                   <span className="font-mono">
-                    {balanceLoading ? '…' : formattedBalance != null ? `$${formattedBalance} USDC` : '—'}
+                    {balanceLoading
+                      ? '…'
+                      : formattedBalance != null
+                        ? `$${formattedBalance} USDC`
+                        : '—'}
                   </span>
                   <button
                     type="button"
@@ -386,14 +456,22 @@ export function BackendWalletExperience() {
                     ↻
                   </button>
                 </div>
-                {status?.payToAddress && status.payToAddress.toLowerCase() !== payerAddress?.toLowerCase() ? (
+                {status?.payToAddress &&
+                status.payToAddress.toLowerCase() !==
+                  payerAddress?.toLowerCase() ? (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-zinc-400">Recipient:</span>
-                    <span className="font-mono truncate max-w-[12rem]" title={status.payToAddress}>
-                      {status.payToAddress.slice(0, 6)}…{status.payToAddress.slice(-4)}
+                    <span
+                      className="font-mono truncate max-w-[12rem]"
+                      title={status.payToAddress}
+                    >
+                      {status.payToAddress.slice(0, 6)}…
+                      {status.payToAddress.slice(-4)}
                     </span>
                     <span className="font-mono">
-                      {merchantBalanceLoading ? '…' : `$${formatUnits(merchantBalance, USDC_DECIMALS)} USDC`}
+                      {merchantBalanceLoading
+                        ? '…'
+                        : `$${formatUnits(merchantBalance, USDC_DECIMALS)} USDC`}
                     </span>
                     <button
                       type="button"
@@ -412,12 +490,19 @@ export function BackendWalletExperience() {
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-zinc-400">Amount:</span>
-                  <span className="font-mono">${requiredAmountFormatted} USDC</span>
+                  <span className="font-mono">
+                    ${requiredAmountFormatted} USDC
+                  </span>
                 </div>
                 {!hasEnoughBalance && !balanceLoading ? (
                   <p className="text-xs text-amber-400">
                     Insufficient USDC —{' '}
-                    <a href={USDC_FAUCET_URL} target="_blank" rel="noopener noreferrer" className="underline">
+                    <a
+                      href={USDC_FAUCET_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
                       get USDC from Circle faucet
                     </a>
                   </p>
@@ -462,14 +547,6 @@ export function BackendWalletExperience() {
                     copyLabel="id"
                     onCopy={copyToClipboard}
                   />
-                  <AddressRow
-                    label="PAY_TO_ADDRESS"
-                    value={`PAY_TO_ADDRESS=${createdWallet.address}`}
-                    copyValue={`PAY_TO_ADDRESS=${createdWallet.address}`}
-                    copied={copied}
-                    copyLabel="address"
-                    onCopy={copyToClipboard}
-                  />
                 </div>
               ) : null}
             </>
@@ -482,7 +559,9 @@ export function BackendWalletExperience() {
           {alreadyConfigured ? (
             <>
               <p className="mt-1 text-sm text-zinc-400">
-                Sign and unlock content. Amount: <strong>${requiredAmountFormatted} USDC</strong>. Off-chain: no ETH needed.
+                Sign and unlock content. Amount:{' '}
+                <strong>${requiredAmountFormatted} USDC</strong>. Off-chain: no
+                ETH needed.
               </p>
               <button
                 type="button"
@@ -499,39 +578,20 @@ export function BackendWalletExperience() {
               {testError ? (
                 <p className="mt-3 text-sm text-red-400">{testError}</p>
               ) : null}
-              {testResult ? (
-                <div className="mt-4 rounded border border-green-800 bg-zinc-900 p-4">
-                  <p className="text-sm text-green-400">
-                    {testResult.transactionHash
-                      ? 'Payment accepted (on-chain)'
-                      : 'Content unlocked (off-chain)'}
-                  </p>
-                  {testResult.transactionHash ? (
-                    <p className="mt-2 text-xs text-zinc-400">
-                      Tx:{' '}
-                      <a
-                        href={getExplorerTxUrl(testResult.transactionHash, status?.network)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline"
-                      >
-                        {testResult.transactionHash}
-                      </a>
-                    </p>
-                  ) : null}
-                  {testResult.content ? (
-                    <pre className="mt-2 overflow-auto text-xs text-zinc-300">
-                      {JSON.stringify(testResult.content, null, 2)}
-                    </pre>
-                  ) : null}
-                </div>
-              ) : null}
             </>
           ) : (
             <p className="mt-2 text-sm text-zinc-400">
-              Set <code className="rounded bg-zinc-700 px-1">OPENFORT_WALLET_SECRET</code> and{' '}
-              <code className="rounded bg-zinc-700 px-1">OPENFORT_BACKEND_WALLET_ID</code> in backend{' '}
-              <code className="rounded bg-zinc-700 px-1">.env.local</code> and restart to pay.
+              Set{' '}
+              <code className="rounded bg-zinc-700 px-1">
+                OPENFORT_WALLET_SECRET
+              </code>{' '}
+              and{' '}
+              <code className="rounded bg-zinc-700 px-1">
+                OPENFORT_BACKEND_WALLET_ID
+              </code>{' '}
+              in backend{' '}
+              <code className="rounded bg-zinc-700 px-1">.env.local</code> and
+              restart to pay.
             </p>
           )}
         </section>

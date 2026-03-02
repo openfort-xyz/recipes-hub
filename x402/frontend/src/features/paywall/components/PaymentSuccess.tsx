@@ -1,9 +1,19 @@
 interface PaymentSuccessProps {
-  content: any
+  content: {
+    content?: { title?: string; data?: string; timestamp?: string }
+    message?: string
+  }
   onReset: () => void
+  transactionHash?: string
+  explorerTxUrl?: string
 }
 
-export function PaymentSuccess({ content, onReset }: PaymentSuccessProps) {
+export function PaymentSuccess({
+  content,
+  onReset,
+  transactionHash,
+  explorerTxUrl,
+}: PaymentSuccessProps) {
   const title = content?.content?.title ?? 'Content Unlocked'
   const message =
     content?.message ?? "Payment accepted! Here's your protected content."
@@ -21,7 +31,9 @@ export function PaymentSuccess({ content, onReset }: PaymentSuccessProps) {
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                aria-hidden
               >
+                <title>Success</title>
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -49,6 +61,20 @@ export function PaymentSuccess({ content, onReset }: PaymentSuccessProps) {
                   </p>
                 ) : null}
               </div>
+            ) : null}
+
+            {transactionHash && explorerTxUrl ? (
+              <p className="mt-4 text-xs text-zinc-400">
+                Tx:{' '}
+                <a
+                  href={explorerTxUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  {transactionHash.slice(0, 10)}…{transactionHash.slice(-8)}
+                </a>
+              </p>
             ) : null}
           </div>
 

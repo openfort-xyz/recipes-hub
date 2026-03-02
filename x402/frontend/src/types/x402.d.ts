@@ -1,25 +1,25 @@
-import type { PaymentRequirements } from "../integrations/x402";
+import type { PaymentRequirements } from '../integrations/x402'
 
 declare global {
   interface Window {
     x402: {
-      amount?: number;
-      testnet?: boolean;
-      paymentRequirements: PaymentRequirements | PaymentRequirements[];
-      currentUrl: string;
-      cdpClientKey?: string;
-      appName?: string;
-      appLogo?: string;
-      sessionTokenEndpoint?: string;
+      amount?: number
+      testnet?: boolean
+      paymentRequirements: PaymentRequirements | PaymentRequirements[]
+      currentUrl: string
+      cdpClientKey?: string
+      appName?: string
+      appLogo?: string
+      sessionTokenEndpoint?: string
       config?: {
         chainConfig: Record<
           string,
           {
-            usdcAddress: string;
-            usdcName: string;
+            usdcAddress: string
+            usdcName: string
           }
-        >;
-      };
-    };
+        >
+      }
+    }
   }
 }

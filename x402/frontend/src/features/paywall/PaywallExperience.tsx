@@ -253,12 +253,11 @@ export function PaywallExperience() {
     isWritePending
 
   const payTo = paymentRequirements?.payTo
-  const recipientBalanceLabel =
-    recipientBalanceLoading
-      ? '…'
-      : payTo
-        ? `$${formatUnits(recipientBalance, USDC_DECIMALS)} USDC`
-        : undefined
+  const recipientBalanceLabel = recipientBalanceLoading
+    ? '…'
+    : payTo
+      ? `$${formatUnits(recipientBalance, USDC_DECIMALS)} USDC`
+      : undefined
 
   return (
     <PaymentSummary
@@ -282,7 +281,9 @@ export function PaywallExperience() {
       recipientAddress={payTo}
       recipientBalanceLabel={recipientBalanceLabel}
       isRefreshingRecipientBalance={recipientBalanceLoading}
-      onRefreshRecipientBalance={payTo ? () => void fetchRecipientBalance() : undefined}
+      onRefreshRecipientBalance={
+        payTo ? () => void fetchRecipientBalance() : undefined
+      }
     />
   )
 }

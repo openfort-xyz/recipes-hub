@@ -105,10 +105,15 @@ export function PaymentSummary({
             {recipientAddress != null ? (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-zinc-400">Recipient:</span>
-                <span className="truncate max-w-[10rem]" title={recipientAddress}>
+                <span
+                  className="truncate max-w-[10rem]"
+                  title={recipientAddress}
+                >
                   {recipientAddress.slice(0, 6)}…{recipientAddress.slice(-4)}
                 </span>
-                <span className="text-white">{recipientBalanceLabel ?? '…'}</span>
+                <span className="text-white">
+                  {recipientBalanceLabel ?? '…'}
+                </span>
                 {onRefreshRecipientBalance ? (
                   <button
                     onClick={onRefreshRecipientBalance}

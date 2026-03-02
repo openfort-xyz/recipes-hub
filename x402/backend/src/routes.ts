@@ -300,7 +300,6 @@ export async function handleBackendWalletTestPayment(
   }
 
   try {
-    console.log("[backend-wallet] test-payment: signing");
     const account = await getBackendWalletAccount(openfortClient, walletId);
     if (!account) {
       res.status(500).json({ error: "Failed to load backend wallet account." });
@@ -308,13 +307,6 @@ export async function handleBackendWalletTestPayment(
     }
 
     const payTo = getAddress(payToRaw);
-    console.log(
-      "[backend-wallet] test-payment: USDC transfer payer (fund this) → payTo (recipient):",
-      account.address,
-      "→",
-      payTo,
-    );
-
     const requirements = buildPaymentRequirementsFromPaywall(env.paywall);
     const paymentHeader = await createBackendWalletPayment(account, requirements);
 
@@ -336,7 +328,6 @@ export async function handleBackendWalletTestPayment(
           env.openfort.delegatedAccountId || undefined,
         );
         await verifyOnChainPayment(transactionHash, env.paywall, env.paywall.rpcUrl);
-        console.log("[backend-wallet] test-payment: on-chain success, tx", transactionHash);
         res.status(200).json({
           success: true,
           transactionHash,
@@ -355,7 +346,6 @@ export async function handleBackendWalletTestPayment(
           (gaslessError.message.includes("Account type not supported") ||
             gaslessError.message.includes("account type"));
         if (isAccountTypeError) {
-          console.log("[backend-wallet] test-payment: gas sponsorship unavailable, returning paymentHeader");
           res.status(200).json({ paymentHeader });
           return;
         }
