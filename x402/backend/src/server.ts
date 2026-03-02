@@ -49,8 +49,11 @@ app.use((req, res, next) => {
   }
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-PAYMENT, X-TRANSACTION-HASH");
-  res.setHeader("Access-Control-Expose-Headers", "X-PAYMENT-RESPONSE");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, X-PAYMENT, PAYMENT-SIGNATURE, X-TRANSACTION-HASH",
+  );
+  res.setHeader("Access-Control-Expose-Headers", "X-PAYMENT-RESPONSE, PAYMENT-RESPONSE");
 
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
@@ -72,7 +75,10 @@ resolvePayToAddress().then(() => {
     handleShieldSession(req, res, openfortClient, env.openfort.shield),
   );
   app.all("/api/protected-content", rateLimitProtectedContent, (req: express.Request, res: express.Response) =>
-    handleProtectedContent(req, res, env.paywall),
+    handleProtectedContent(req, res, env.paywall, env.openfort.facilitatorUrl, {
+      keyId: env.openfort.facilitatorApiKeyId,
+      keySecret: env.openfort.facilitatorApiKeySecret,
+    }),
   );
   app.get("/api/backend-wallet/status", (_req: express.Request, res: express.Response) =>
     handleBackendWalletStatus(_req, res, openfortClient, env),
@@ -98,34 +104,7 @@ resolvePayToAddress().then(() => {
     res.status(500).json({ error: "Internal Server Error" });
   });
 
-  const hasBackendWalletSecret = Boolean(env.openfort.walletSecret?.trim());
-  const hasBackendWalletId = Boolean(env.openfort.walletId?.trim());
-  const hasPayTo = Boolean(env.paywall.payToAddress?.trim());
-
-  const mode = hasBackendWalletSecret ? "Backend wallet (Option B)" : "Embedded wallet (Option A)";
-  let configLine: string;
-  if (hasBackendWalletSecret) {
-    if (hasPayTo) configLine = "Config: ✓ Ready (payTo resolved)";
-    else if (hasBackendWalletId) configLine = "Config: ✗ PayTo resolve failed (check OPENFORT_BACKEND_WALLET_ID)";
-    else configLine = "Config: ⚠ Create a wallet in the demo (Frontend → Backend wallet tab), then set OPENFORT_BACKEND_WALLET_ID in .env.local and restart";
-  } else {
-    configLine = hasPayTo ? "Config: ✓ Ready" : "Config: ⚠ Set PAY_TO_ADDRESS in .env.local";
-  }
-
-  console.log(`
-🚀 x402 Demo Server
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📦 Mode: ${mode}
-${configLine}
-🌐 Running on: http://localhost:${env.port}
-🎯 Paying to: ${env.paywall.payToAddress || "(none)"}
-🔗 Network: ${env.paywall.payment.network}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`);
-
-  app.listen(env.port, () => {
-    console.log(`Server is listening on port ${env.port}`);
-  });
+  app.listen(env.port);
 }).catch((err) => {
   console.error("Fatal: failed to initialize server:", err);
   process.exit(1);

@@ -1,4 +1,5 @@
 interface PaymentConfig {
+  x402Version: 1 | 2;
   scheme: string;
   network: string;
   resource: string;
@@ -31,6 +32,9 @@ interface OpenfortConfig {
   walletId: string;
   delegatedAccountId: string;
   policyId: string;
+  facilitatorUrl: string;
+  facilitatorApiKeyId: string;
+  facilitatorApiKeySecret: string;
   shield: ShieldConfig;
 }
 
@@ -55,6 +59,12 @@ function toNumber(value?: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+function parseX402Version(value?: string): 1 | 2 {
+  const n = toNumber(value);
+  if (n === 1 || n === 2) return n;
+  return 2;
+}
+
 function resolveRpcUrl(explicit: string | undefined, network: string): string {
   if (explicit) return explicit;
   if (network === "base-sepolia") return "https://sepolia.base.org";
@@ -71,6 +81,7 @@ export function loadConfig(): Config {
       payToAddress: process.env.PAY_TO_ADDRESS ?? "",
       rpcUrl: resolveRpcUrl(process.env.X402_RPC_URL, network),
       payment: {
+        x402Version: parseX402Version(process.env.X402_VERSION),
         scheme: "exact",
         network,
         resource: process.env.X402_RESOURCE ?? "",
@@ -92,6 +103,9 @@ export function loadConfig(): Config {
       delegatedAccountId:
         process.env.OPENFORT_DELEGATED_ACCOUNT_ID?.trim() ?? "",
       policyId: process.env.OPENFORT_POLICY_ID ?? "",
+      facilitatorUrl: process.env.X402_FACILITATOR_URL?.trim() ?? "",
+      facilitatorApiKeyId: process.env.CDP_API_KEY_ID?.trim() ?? "",
+      facilitatorApiKeySecret: process.env.CDP_API_KEY_SECRET?.trim() ?? "",
       shield: {
         publishableKey: process.env.OPENFORT_SHIELD_PUBLISHABLE_KEY ?? "",
         secretKey: process.env.OPENFORT_SHIELD_SECRET_KEY ?? "",

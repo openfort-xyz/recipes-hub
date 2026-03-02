@@ -89,10 +89,7 @@ export function PaywallExperience() {
     }
     setRecipientBalanceLoading(true)
     try {
-      const balance = await getUSDCBalance(
-        publicClient,
-        payTo,
-      )
+      const balance = await getUSDCBalance(publicClient, payTo)
       setRecipientBalance(balance)
     } catch {
       setRecipientBalance(0n)

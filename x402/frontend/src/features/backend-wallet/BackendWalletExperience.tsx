@@ -20,6 +20,8 @@ interface BackendWalletStatus {
   payToAddress?: string
   network?: string
   maxAmountRequired?: string
+  /** Settlement mode: facilitator | openfort-policy | off-chain-only */
+  settlementMode?: 'facilitator' | 'openfort-policy' | 'off-chain-only'
 }
 
 interface CreatedWallet {
@@ -374,7 +376,33 @@ export function BackendWalletExperience() {
     <div className="min-h-screen bg-zinc-900 px-4 py-8 text-white">
       <div className="mx-auto max-w-2xl space-y-8">
         <div>
-          <h1 className="text-2xl font-semibold">Backend Wallet (Option B)</h1>
+          <h1 className="text-2xl font-semibold">Backend Wallet</h1>
+          {status?.settlementMode ? (
+            <div className="mt-2">
+              <span
+                className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
+                  status.settlementMode === 'facilitator'
+                    ? 'bg-emerald-900/50 text-emerald-300'
+                    : status.settlementMode === 'openfort-policy'
+                      ? 'bg-blue-900/50 text-blue-300'
+                      : 'bg-zinc-700 text-zinc-400'
+                }`}
+                title={
+                  status.settlementMode === 'facilitator'
+                    ? 'Approach A: x402 Facilitator (Coinbase) — USDC settles on-chain via facilitator'
+                    : status.settlementMode === 'openfort-policy'
+                      ? 'Approach B: Openfort Gas Policy — USDC settles on-chain via policy'
+                      : 'Off-chain only — USDC does not settle on-chain'
+                }
+              >
+                {status.settlementMode === 'facilitator'
+                  ? 'Approach A: x402 Facilitator (Coinbase)'
+                  : status.settlementMode === 'openfort-policy'
+                    ? 'Approach B: Openfort Gas Policy'
+                    : 'Off-chain only'}
+              </span>
+            </div>
+          ) : null}
           <p className="mt-1 text-sm text-zinc-400">
             Create a server-side wallet and test the x402 payment flow without a
             browser wallet.

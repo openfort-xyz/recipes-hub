@@ -8,17 +8,20 @@ import {
 } from "./openfort.js";
 import {
   type PaymentRequirements,
+  FacilitatorError,
   PaymentVerificationError,
   createBackendWalletPayment,
   createPaymentRequiredResponse,
   decodePaymentHeader,
   NETWORK_CHAIN_ID,
   parsePaymentPayload,
+  settleWithFacilitator,
   submitTransferWithAuthorizationGasless,
   tryUpgradeBackendWalletToDelegated,
   toErrorJson,
   verifyOffChainPayment,
   verifyOnChainPayment,
+  verifyWithFacilitator,
 } from "./payment.js";
 import type { SupportedNetwork } from "./payment.js";
 
@@ -90,9 +93,14 @@ export async function handleShieldSession(
 export async function handleProtectedContent(
   req: Request,
   res: Response,
-  paywall: Config["paywall"]
+  paywall: Config["paywall"],
+  facilitatorUrl: string,
+  facilitatorAuth?: { keyId: string; keySecret: string },
 ): Promise<void> {
-  const paymentHeader = req.headers["x-payment"] as string | undefined;
+  // V1: X-PAYMENT; V2: PAYMENT-SIGNATURE (Migration Guide)
+  const paymentHeader = (req.headers["x-payment"] ?? req.headers["payment-signature"]) as
+    | string
+    | undefined;
   const transactionHash = req.headers["x-transaction-hash"] as string | undefined;
 
   if (!paymentHeader && !transactionHash) {
@@ -124,8 +132,54 @@ export async function handleProtectedContent(
     return;
   }
 
+  const header = paymentHeader ?? "";
+  if (facilitatorUrl) {
+    try {
+      const raw = decodePaymentHeader(header);
+      const payment = parsePaymentPayload(raw);
+      const verifyResult = await verifyWithFacilitator(
+        facilitatorUrl,
+        payment,
+        paywall,
+        facilitatorAuth,
+      );
+      if (!verifyResult.isValid) {
+        res.status(402).json({
+          code: "FACILITATOR_VERIFY_INVALID",
+          message: "Payment verification failed",
+        });
+        return;
+      }
+      const settleResult = await settleWithFacilitator(
+        facilitatorUrl,
+        payment,
+        paywall,
+        facilitatorAuth,
+      );
+      res.status(200).json({
+        success: true,
+        message: "Payment accepted via facilitator! Here's your protected content.",
+        transactionHash: settleResult.transaction,
+        content: {
+          title: "Premium Content Unlocked",
+          data: "This is the protected content you paid for!",
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      if (error instanceof FacilitatorError || error instanceof PaymentVerificationError) {
+        const code = error instanceof FacilitatorError ? error.code : (error as PaymentVerificationError).code;
+        res.status(402).json({ code, message: error.message });
+      } else {
+        console.error(JSON.stringify({ context: "Payment verification (facilitator)", ...toErrorJson(error) }));
+        res.status(500).json({ error: "Internal server error" });
+      }
+    }
+    return;
+  }
+
   try {
-    await verifyOffChainPayment(paymentHeader ?? "", paywall);
+    await verifyOffChainPayment(header, paywall);
     res.status(200).json({
       success: true,
       message: "Payment accepted! Here's your protected content.",
@@ -149,6 +203,7 @@ export async function handleProtectedContent(
 
 function buildPaymentRequirementsFromPaywall(paywall: Config["paywall"]): PaymentRequirements {
   return {
+    x402Version: paywall.payment.x402Version,
     scheme: "exact",
     network: paywall.payment.network as PaymentRequirements["network"],
     maxAmountRequired: paywall.payment.maxAmountRequired,
@@ -180,12 +235,21 @@ export async function handleBackendWalletStatus(
     payerAddress = address ?? undefined;
   }
   const configured = hasWalletConfig && Boolean(payerAddress);
+  const hasFacilitator = Boolean(env.openfort.facilitatorUrl?.trim());
+  const hasDelegatedAccount = Boolean(env.openfort.delegatedAccountId?.trim());
+  const settlementMode = hasFacilitator
+    ? ("facilitator" as const)
+    : hasDelegatedAccount
+      ? ("openfort-policy" as const)
+      : ("off-chain-only" as const);
+
   res.status(200).json({
     configured,
     payerAddress: payerAddress ?? undefined,
     payToAddress: env.paywall.payToAddress?.trim() || undefined,
     network: env.paywall.payment.network || undefined,
     maxAmountRequired: env.paywall.payment.maxAmountRequired || undefined,
+    settlementMode,
   });
 }
 
@@ -306,7 +370,6 @@ export async function handleBackendWalletTestPayment(
       return;
     }
 
-    const payTo = getAddress(payToRaw);
     const requirements = buildPaymentRequirementsFromPaywall(env.paywall);
     const paymentHeader = await createBackendWalletPayment(account, requirements);
 
