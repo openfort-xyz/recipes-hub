@@ -111,6 +111,8 @@ export async function handleProtectedContent(
   if (transactionHash) {
     try {
       await verifyOnChainPayment(transactionHash, paywall, paywall.rpcUrl);
+      const walletType = (req.headers["x-wallet-type"] as string) || "embedded";
+      console.log(`x402 tx | wallet: ${walletType} | gas: on-chain`);
       res.status(200).json({
         success: true,
         message: "Payment accepted via on-chain transaction! Here's your protected content.",
@@ -156,6 +158,8 @@ export async function handleProtectedContent(
         paywall,
         facilitatorAuth,
       );
+      const walletType = (req.headers["x-wallet-type"] as string) || "embedded";
+      console.log(`x402 tx | wallet: ${walletType} | gas: facilitator`);
       res.status(200).json({
         success: true,
         message: "Payment accepted via facilitator! Here's your protected content.",
@@ -235,13 +239,13 @@ export async function handleBackendWalletStatus(
     payerAddress = address ?? undefined;
   }
   const configured = hasWalletConfig && Boolean(payerAddress);
-  const hasFacilitator = Boolean(env.openfort.facilitatorUrl?.trim());
-  const hasDelegatedAccount = Boolean(env.openfort.delegatedAccountId?.trim());
-  const settlementMode = hasFacilitator
-    ? ("facilitator" as const)
-    : hasDelegatedAccount
-      ? ("openfort-policy" as const)
-      : ("off-chain-only" as const);
+  const facilitatorAvailable =
+    Boolean(env.openfort.facilitatorUrl?.trim()) &&
+    Boolean(env.openfort.facilitatorApiKeyId?.trim()) &&
+    Boolean(env.openfort.facilitatorApiKeySecret?.trim());
+  const openfortPolicyAvailable = Boolean(
+    env.openfort.delegatedAccountId?.trim(),
+  );
 
   res.status(200).json({
     configured,
@@ -249,7 +253,8 @@ export async function handleBackendWalletStatus(
     payToAddress: env.paywall.payToAddress?.trim() || undefined,
     network: env.paywall.payment.network || undefined,
     maxAmountRequired: env.paywall.payment.maxAmountRequired || undefined,
-    settlementMode,
+    facilitatorAvailable,
+    openfortPolicyAvailable,
   });
 }
 
@@ -338,7 +343,7 @@ export async function handleBackendWalletUpgrade(
 }
 
 export async function handleBackendWalletTestPayment(
-  _req: Request,
+  req: Request,
   res: Response,
   openfortClient: Openfort | null,
   env: Config,
@@ -363,6 +368,14 @@ export async function handleBackendWalletTestPayment(
     return;
   }
 
+  const gasMode = req.query.gasMode === "facilitator" || req.query.gasMode === "openfort-policy"
+    ? (req.query.gasMode as "facilitator" | "openfort-policy")
+    : undefined;
+  const facilitatorConfigured =
+    Boolean(env.openfort.facilitatorUrl?.trim()) &&
+    Boolean(env.openfort.facilitatorApiKeyId?.trim()) &&
+    Boolean(env.openfort.facilitatorApiKeySecret?.trim());
+
   try {
     const account = await getBackendWalletAccount(openfortClient, walletId);
     if (!account) {
@@ -372,6 +385,11 @@ export async function handleBackendWalletTestPayment(
 
     const requirements = buildPaymentRequirementsFromPaywall(env.paywall);
     const paymentHeader = await createBackendWalletPayment(account, requirements);
+
+    if (gasMode === "facilitator" && facilitatorConfigured) {
+      res.status(200).json({ paymentHeader });
+      return;
+    }
 
     const policyId = env.openfort.policyId?.trim() ?? "";
     const hasDelegatedAccount = Boolean(env.openfort.delegatedAccountId?.trim());
@@ -391,6 +409,7 @@ export async function handleBackendWalletTestPayment(
           env.openfort.delegatedAccountId || undefined,
         );
         await verifyOnChainPayment(transactionHash, env.paywall, env.paywall.rpcUrl);
+        console.log("x402 tx | wallet: backend | gas: openfort");
         res.status(200).json({
           success: true,
           transactionHash,

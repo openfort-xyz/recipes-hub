@@ -205,6 +205,7 @@ export function usePaymentFlow({
         const response = await fetch(currentUrl, {
           headers: {
             'X-TRANSACTION-HASH': paymentHash,
+            'X-Wallet-Type': 'embedded',
           },
         })
 

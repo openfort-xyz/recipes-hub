@@ -12,6 +12,8 @@ const USDC_DECIMALS = 6
 const BASE_SEPOLIA_EXPLORER = 'https://sepolia.basescan.org'
 const USDC_FAUCET_URL = 'https://faucet.circle.com/'
 
+type GasMode = 'openfort-policy' | 'facilitator'
+
 interface BackendWalletStatus {
   configured: boolean
   /** Payer: backend wallet (fund with USDC + ETH for gas) */
@@ -20,8 +22,10 @@ interface BackendWalletStatus {
   payToAddress?: string
   network?: string
   maxAmountRequired?: string
-  /** Settlement mode: facilitator | openfort-policy | off-chain-only */
-  settlementMode?: 'facilitator' | 'openfort-policy' | 'off-chain-only'
+  /** True when facilitator URL, API key, and secret are set */
+  facilitatorAvailable?: boolean
+  /** True when policy ID and delegated account ID are set */
+  openfortPolicyAvailable?: boolean
 }
 
 interface CreatedWallet {
@@ -95,6 +99,7 @@ type PaymentResult = {
 
 async function runBackendWalletPayment(
   baseUrl: string,
+  gasMode: GasMode,
 ): Promise<PaymentResult> {
   const protectedContentUrl = `${baseUrl}/api/protected-content`
   const first = await fetch(protectedContentUrl)
@@ -106,7 +111,9 @@ async function runBackendWalletPayment(
     )
   }
 
-  const signRes = await fetch(`${baseUrl}/api/backend-wallet/test-payment`)
+  const testPaymentUrl = new URL(`${baseUrl}/api/backend-wallet/test-payment`)
+  testPaymentUrl.searchParams.set('gasMode', gasMode)
+  const signRes = await fetch(testPaymentUrl.toString())
   const signData = (await signRes.json()) as
     | { paymentHeader: string }
     | {
@@ -140,7 +147,7 @@ async function runBackendWalletPayment(
   }
 
   const contentRes = await fetch(protectedContentUrl, {
-    headers: { 'X-Payment': paymentHeader },
+    headers: { 'X-Payment': paymentHeader, 'X-Wallet-Type': 'backend' },
   })
   const contentData = (await contentRes.json()) as {
     success: boolean
@@ -187,6 +194,7 @@ export function BackendWalletExperience() {
   const [balanceLoading, setBalanceLoading] = useState(false)
   const [merchantBalance, setMerchantBalance] = useState<bigint>(0n)
   const [merchantBalanceLoading, setMerchantBalanceLoading] = useState(false)
+  const [gasMode, setGasMode] = useState<GasMode>('openfort-policy')
 
   const fetchStatus = useCallback(async () => {
     setStatusLoading(true)
@@ -204,6 +212,12 @@ export function BackendWalletExperience() {
   useEffect(() => {
     void fetchStatus()
   }, [fetchStatus])
+
+  useEffect(() => {
+    if (!status) return
+    if (status.openfortPolicyAvailable) setGasMode('openfort-policy')
+    else if (status.facilitatorAvailable) setGasMode('facilitator')
+  }, [status])
 
   const publicClient = useMemo(
     () =>
@@ -314,7 +328,7 @@ export function BackendWalletExperience() {
     setTestError(null)
     setTestResult(null)
     try {
-      const result = await runBackendWalletPayment(baseUrl)
+      const result = await runBackendWalletPayment(baseUrl, gasMode)
       setTestResult(result)
       void fetchBalance()
       void fetchMerchantBalance()
@@ -323,7 +337,7 @@ export function BackendWalletExperience() {
     } finally {
       setTestLoading(false)
     }
-  }, [baseUrl, fetchBalance, fetchMerchantBalance])
+  }, [baseUrl, gasMode, fetchBalance, fetchMerchantBalance])
 
   const copyToClipboard = useCallback((text: string, label: string) => {
     void navigator.clipboard.writeText(text).then(() => {
@@ -333,6 +347,15 @@ export function BackendWalletExperience() {
   }, [])
 
   const alreadyConfigured = Boolean(status?.payerAddress)
+
+  const tagMode = useMemo((): 'facilitator' | 'openfort-policy' | 'off-chain' => {
+    if (!status) return 'off-chain'
+    const { facilitatorAvailable, openfortPolicyAvailable } = status
+    if (facilitatorAvailable && openfortPolicyAvailable) return gasMode
+    if (facilitatorAvailable) return 'facilitator'
+    if (openfortPolicyAvailable) return 'openfort-policy'
+    return 'off-chain'
+  }, [status, gasMode])
 
   const handleTryAnotherPayment = useCallback(() => {
     setTestResult(null)
@@ -377,27 +400,27 @@ export function BackendWalletExperience() {
       <div className="mx-auto max-w-2xl space-y-8">
         <div>
           <h1 className="text-2xl font-semibold">Backend Wallet</h1>
-          {status?.settlementMode ? (
+          {status?.facilitatorAvailable || status?.openfortPolicyAvailable ? (
             <div className="mt-2">
               <span
                 className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
-                  status.settlementMode === 'facilitator'
+                  tagMode === 'facilitator'
                     ? 'bg-emerald-900/50 text-emerald-300'
-                    : status.settlementMode === 'openfort-policy'
+                    : tagMode === 'openfort-policy'
                       ? 'bg-blue-900/50 text-blue-300'
                       : 'bg-zinc-700 text-zinc-400'
                 }`}
                 title={
-                  status.settlementMode === 'facilitator'
+                  tagMode === 'facilitator'
                     ? 'Approach A: x402 Facilitator (Coinbase) — USDC settles on-chain via facilitator'
-                    : status.settlementMode === 'openfort-policy'
+                    : tagMode === 'openfort-policy'
                       ? 'Approach B: Openfort Gas Policy — USDC settles on-chain via policy'
                       : 'Off-chain only — USDC does not settle on-chain'
                 }
               >
-                {status.settlementMode === 'facilitator'
+                {tagMode === 'facilitator'
                   ? 'Approach A: x402 Facilitator (Coinbase)'
-                  : status.settlementMode === 'openfort-policy'
+                  : tagMode === 'openfort-policy'
                     ? 'Approach B: Openfort Gas Policy'
                     : 'Off-chain only'}
               </span>
@@ -586,7 +609,48 @@ export function BackendWalletExperience() {
           <h2 className="text-lg font-medium">2. Pay</h2>
           {alreadyConfigured ? (
             <>
-              <p className="mt-1 text-sm text-zinc-400">
+              {(status?.facilitatorAvailable ?? status?.openfortPolicyAvailable) ? (
+                <div className="mt-4 space-y-2">
+                  <span className="text-sm text-zinc-400">Pay gas with</span>
+                  <div className="flex rounded-lg border border-zinc-700 bg-zinc-900 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setGasMode('openfort-policy')}
+                      disabled={!status?.openfortPolicyAvailable}
+                      className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        gasMode === 'openfort-policy'
+                          ? 'bg-zinc-700 text-white'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                      title={
+                        status?.openfortPolicyAvailable
+                          ? 'Openfort policy sponsors gas'
+                          : 'Set policy ID and delegated account in backend'
+                      }
+                    >
+                      Openfort policy (sponsor gas)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGasMode('facilitator')}
+                      disabled={!status?.facilitatorAvailable}
+                      className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        gasMode === 'facilitator'
+                          ? 'bg-zinc-700 text-white'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                      title={
+                        status?.facilitatorAvailable
+                          ? 'Coinbase facilitator pays gas'
+                          : 'Set facilitator URL, API key, and secret in backend'
+                      }
+                    >
+                      Coinbase facilitator (gasless)
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              <p className="mt-4 text-sm text-zinc-400">
                 Sign and unlock content. Amount:{' '}
                 <strong>${requiredAmountFormatted} USDC</strong>. Off-chain: no
                 ETH needed.

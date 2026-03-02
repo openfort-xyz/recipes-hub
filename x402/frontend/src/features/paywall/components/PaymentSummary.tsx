@@ -1,6 +1,8 @@
 import { Spinner } from './Spinner'
 import { StatusBanner } from './StatusBanner'
 
+export type GasMode = 'openfort-policy' | 'facilitator'
+
 interface PaymentSummaryProps {
   walletAddress: string
   balanceLabel: string
@@ -20,6 +22,11 @@ interface PaymentSummaryProps {
   recipientBalanceLabel?: string
   isRefreshingRecipientBalance?: boolean
   onRefreshRecipientBalance?: () => void
+  /** Gas mode: Openfort policy (sponsor) or Coinbase facilitator (gasless) */
+  gasMode?: GasMode
+  onGasModeChange?: (mode: GasMode) => void
+  /** When false, facilitator option is disabled/hidden */
+  facilitatorAvailable?: boolean
 }
 
 export function PaymentSummary({
@@ -40,7 +47,13 @@ export function PaymentSummary({
   recipientBalanceLabel,
   isRefreshingRecipientBalance,
   onRefreshRecipientBalance,
+  gasMode = 'openfort-policy',
+  onGasModeChange,
+  facilitatorAvailable = false,
 }: PaymentSummaryProps) {
+  const showGasModeSwitch = Boolean(onGasModeChange)
+  const canSelectFacilitator = facilitatorAvailable
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-900 px-4 text-white">
       <div className="flex w-full max-w-3xl flex-col gap-8 rounded-lg border border-zinc-700 bg-zinc-800 p-8 shadow-xl">
@@ -65,6 +78,44 @@ export function PaymentSummary({
           ) : null}
         </div>
 
+        {showGasModeSwitch ? (
+          <div className="space-y-2">
+            <span className="text-sm text-zinc-400">Pay gas with</span>
+            <div className="flex rounded-lg border border-zinc-700 bg-zinc-900 p-1">
+              <button
+                type="button"
+                onClick={() => onGasModeChange?.('openfort-policy')}
+                className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                  gasMode === 'openfort-policy'
+                    ? 'bg-zinc-700 text-white'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                Openfort policy (sponsor gas)
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  canSelectFacilitator && onGasModeChange?.('facilitator')
+                }
+                disabled={!canSelectFacilitator}
+                className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  gasMode === 'facilitator'
+                    ? 'bg-zinc-700 text-white'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+                title={
+                  canSelectFacilitator
+                    ? 'Coinbase facilitator pays gas'
+                    : 'Set facilitator URL, API key, and secret in backend'
+                }
+              >
+                Coinbase facilitator (gasless)
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <div className="space-y-4 rounded-lg border border-zinc-700 bg-zinc-900 p-6">
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
@@ -87,7 +138,9 @@ export function PaymentSummary({
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
+                    aria-hidden
                   >
+                    <title>Refresh balance</title>
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -105,10 +158,7 @@ export function PaymentSummary({
             {recipientAddress != null ? (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-zinc-400">Recipient:</span>
-                <span
-                  className="truncate max-w-[10rem]"
-                  title={recipientAddress}
-                >
+                <span className="truncate max-w-40" title={recipientAddress}>
                   {recipientAddress.slice(0, 6)}…{recipientAddress.slice(-4)}
                 </span>
                 <span className="text-white">
@@ -127,7 +177,9 @@ export function PaymentSummary({
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
+                      aria-hidden
                     >
+                      <title>Refresh recipient balance</title>
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"

@@ -51,7 +51,7 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, X-PAYMENT, PAYMENT-SIGNATURE, X-TRANSACTION-HASH",
+    "Content-Type, X-PAYMENT, PAYMENT-SIGNATURE, X-TRANSACTION-HASH, X-Wallet-Type",
   );
   res.setHeader("Access-Control-Expose-Headers", "X-PAYMENT-RESPONSE, PAYMENT-RESPONSE");
 
