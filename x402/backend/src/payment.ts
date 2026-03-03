@@ -37,7 +37,7 @@ function toCaip2Network(network: SupportedNetwork): string {
 // ---- Payment types ----
 
 export interface PaymentRequirements {
-	x402Version: 1 | 2;
+	x402Version: 2;
 	scheme: "exact";
 	network: SupportedNetwork;
 	maxAmountRequired: string;
@@ -68,7 +68,7 @@ export interface ExactEvmPayload {
 }
 
 export interface PaymentPayload {
-	x402Version: number;
+	x402Version: 2;
 	scheme: "exact";
 	network: SupportedNetwork;
 	payload: ExactEvmPayload;
@@ -973,10 +973,10 @@ export function parsePaymentPayload(raw: unknown): PaymentPayload {
 
 	const obj = raw as Record<string, unknown>;
 
-	if (typeof obj.x402Version !== "number") {
+	if (obj.x402Version !== 2) {
 		throw new PaymentVerificationError(
 			"MALFORMED_PAYLOAD",
-			"Missing or invalid x402Version",
+			"Unsupported x402 version (only v2 supported)",
 		);
 	}
 
@@ -1038,7 +1038,7 @@ export function parsePaymentPayload(raw: unknown): PaymentPayload {
 	}
 
 	return {
-		x402Version: obj.x402Version,
+		x402Version: 2,
 		scheme: "exact",
 		network: network as SupportedNetwork,
 		payload: {

@@ -174,12 +174,7 @@ export function PaywallExperience() {
           'Payment destination not configured. Please contact support.',
         )
       }
-      const x402Version = paymentRequirements.x402Version ?? 2
-      const payment = await createPayment(
-        clientForSigning,
-        x402Version,
-        validRequirements,
-      )
+      const payment = await createPayment(clientForSigning, validRequirements)
       const encoded = encodePayment(payment)
       const response = await fetch(currentUrl, {
         method: 'GET',

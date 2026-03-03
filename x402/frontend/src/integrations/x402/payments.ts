@@ -9,9 +9,9 @@ import type {
   UnsignedPaymentPayload,
 } from './types'
 
+
 export function preparePaymentHeader(
   from: Address,
-  x402Version: number,
   paymentRequirements: PaymentRequirements,
 ): UnsignedPaymentPayload {
   const nowSeconds = Math.floor(Date.now() / 1000)
@@ -21,7 +21,7 @@ export function preparePaymentHeader(
   )
 
   return {
-    x402Version,
+    x402Version: 2,
     scheme: paymentRequirements.scheme,
     network: paymentRequirements.network,
     payload: {
@@ -40,7 +40,6 @@ export function preparePaymentHeader(
 
 export async function createPayment(
   client: any,
-  x402Version: number,
   paymentRequirements: PaymentRequirements,
 ): Promise<PaymentPayload> {
   const accountAddress = resolveAccountAddress(client)
@@ -48,11 +47,7 @@ export async function createPayment(
     throw new Error('Wallet client missing account address')
   }
 
-  const unsigned = preparePaymentHeader(
-    accountAddress,
-    x402Version,
-    paymentRequirements,
-  )
+  const unsigned = preparePaymentHeader(accountAddress, paymentRequirements)
   const signed = await signPaymentHeader(
     client,
     accountAddress,

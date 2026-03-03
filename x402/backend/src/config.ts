@@ -1,5 +1,5 @@
 interface PaymentConfig {
-  x402Version: 1 | 2;
+  x402Version: 2;
   scheme: string;
   network: string;
   resource: string;
@@ -59,11 +59,7 @@ function toNumber(value?: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function parseX402Version(value?: string): 1 | 2 {
-  const n = toNumber(value);
-  if (n === 1 || n === 2) return n;
-  return 2;
-}
+
 
 function resolveRpcUrl(explicit: string | undefined, network: string): string {
   if (explicit) return explicit;
@@ -81,7 +77,7 @@ export function loadConfig(): Config {
       payToAddress: process.env.PAY_TO_ADDRESS ?? "",
       rpcUrl: resolveRpcUrl(process.env.X402_RPC_URL, network),
       payment: {
-        x402Version: parseX402Version(process.env.X402_VERSION),
+        x402Version: 2,
         scheme: "exact",
         network,
         resource: process.env.X402_RESOURCE ?? "",
