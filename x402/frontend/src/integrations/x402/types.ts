@@ -3,7 +3,7 @@ import type { Address, Hex } from 'viem'
 import type { SupportedNetwork } from './networks'
 
 export interface PaymentRequirements {
-  x402Version?: 1 | 2
+  x402Version?: 2
   scheme: 'exact'
   network: SupportedNetwork
   maxAmountRequired: string
@@ -35,14 +35,14 @@ export interface ExactEvmPayload {
 }
 
 export interface PaymentPayload {
-  x402Version: number
+  x402Version: 2
   scheme: 'exact'
   network: SupportedNetwork
   payload: ExactEvmPayload
 }
 
 export interface UnsignedPaymentPayload {
-  x402Version: number
+  x402Version: 2
   scheme: 'exact'
   network: SupportedNetwork
   payload: {
