@@ -261,7 +261,14 @@ export async function verifyOffChainPayment(
 export type FacilitatorAuth = { keyId: string; keySecret: string };
 
 function isCdpFacilitator(baseUrl: string): boolean {
-	return baseUrl.includes("cdp.coinbase.com");
+	try {
+		const url = new URL(baseUrl);
+		const allowedHosts = ["cdp.coinbase.com"];
+		return allowedHosts.includes(url.hostname);
+	} catch {
+		// If the URL cannot be parsed, it is not a valid CDP facilitator URL.
+		return false;
+	}
 }
 
 function buildFacilitatorRequirements(
