@@ -1,1 +1,1 @@
-export { PaywallExperience } from './PaywallExperience';
+export { PaywallExperience } from './PaywallExperience'

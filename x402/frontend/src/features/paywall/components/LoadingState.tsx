@@ -1,8 +1,8 @@
-import { Spinner } from "./Spinner";
+import { Spinner } from './Spinner'
 
 interface LoadingStateProps {
-  title: string;
-  subtitle?: string;
+  title: string
+  subtitle?: string
 }
 
 export function LoadingState({ title, subtitle }: LoadingStateProps) {
@@ -14,5 +14,5 @@ export function LoadingState({ title, subtitle }: LoadingStateProps) {
         <Spinner />
       </div>
     </div>
-  );
+  )
 }

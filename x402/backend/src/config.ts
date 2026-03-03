@@ -1,4 +1,5 @@
 interface PaymentConfig {
+  x402Version: 1 | 2;
   scheme: string;
   network: string;
   resource: string;
@@ -15,6 +16,7 @@ interface PaymentConfig {
 
 interface PaywallConfig {
   payToAddress: string;
+  rpcUrl: string;
   payment: PaymentConfig;
 }
 
@@ -26,6 +28,13 @@ interface ShieldConfig {
 
 interface OpenfortConfig {
   secretKey: string;
+  walletSecret: string;
+  walletId: string;
+  delegatedAccountId: string;
+  policyId: string;
+  facilitatorUrl: string;
+  facilitatorApiKeyId: string;
+  facilitatorApiKeySecret: string;
   shield: ShieldConfig;
 }
 
@@ -38,7 +47,10 @@ export interface Config {
 
 function parseOrigins(rawOrigins?: string): string[] {
   if (!rawOrigins) return [];
-  return rawOrigins.split(",").map(origin => origin.trim()).filter(Boolean);
+  return rawOrigins
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 }
 
 function toNumber(value?: string): number | undefined {
@@ -47,15 +59,31 @@ function toNumber(value?: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+function parseX402Version(value?: string): 1 | 2 {
+  const n = toNumber(value);
+  if (n === 1 || n === 2) return n;
+  return 2;
+}
+
+function resolveRpcUrl(explicit: string | undefined, network: string): string {
+  if (explicit) return explicit;
+  if (network === "base-sepolia") return "https://sepolia.base.org";
+  if (network === "base") return "https://mainnet.base.org";
+  return "";
+}
+
 export function loadConfig(): Config {
+  const network = process.env.X402_NETWORK ?? "";
   return {
     port: toNumber(process.env.PORT) ?? 3001,
     allowedOrigins: parseOrigins(process.env.CORS_ORIGINS),
     paywall: {
-      payToAddress: process.env.PAY_TO_ADDRESS ?? process.env.ADDRESS ?? "",
+      payToAddress: process.env.PAY_TO_ADDRESS ?? "",
+      rpcUrl: resolveRpcUrl(process.env.X402_RPC_URL, network),
       payment: {
+        x402Version: parseX402Version(process.env.X402_VERSION),
         scheme: "exact",
-        network: process.env.X402_NETWORK ?? "",
+        network,
         resource: process.env.X402_RESOURCE ?? "",
         description: process.env.X402_DESCRIPTION ?? "",
         mimeType: process.env.X402_MIME_TYPE ?? "",
@@ -70,6 +98,14 @@ export function loadConfig(): Config {
     },
     openfort: {
       secretKey: process.env.OPENFORT_SECRET_KEY ?? "",
+      walletSecret: process.env.OPENFORT_WALLET_SECRET ?? "",
+      walletId: process.env.OPENFORT_BACKEND_WALLET_ID ?? "",
+      delegatedAccountId:
+        process.env.OPENFORT_DELEGATED_ACCOUNT_ID?.trim() ?? "",
+      policyId: process.env.OPENFORT_POLICY_ID ?? "",
+      facilitatorUrl: process.env.X402_FACILITATOR_URL?.trim() ?? "",
+      facilitatorApiKeyId: process.env.CDP_API_KEY_ID?.trim() ?? "",
+      facilitatorApiKeySecret: process.env.CDP_API_KEY_SECRET?.trim() ?? "",
       shield: {
         publishableKey: process.env.OPENFORT_SHIELD_PUBLISHABLE_KEY ?? "",
         secretKey: process.env.OPENFORT_SHIELD_SECRET_KEY ?? "",

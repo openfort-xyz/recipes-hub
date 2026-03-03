@@ -1,13 +1,13 @@
-export type { SupportedNetwork } from "./networks";
+export { type BalanceClient, getUSDCBalance } from './balance'
+export type { SupportedNetwork } from './networks'
+
+export { getNetworkId } from './networks'
+export { createPayment, encodePayment, preparePaymentHeader } from './payments'
+export { ensureValidAmount, selectPaymentRequirements } from './requirements'
 export type {
-  PaymentRequirements,
   ExactEvmPayload,
   ExactEvmPayloadAuthorization,
   PaymentPayload,
+  PaymentRequirements,
   UnsignedPaymentPayload,
-} from "./types";
-
-export { getNetworkId } from "./networks";
-export { selectPaymentRequirements, ensureValidAmount } from "./requirements";
-export { getUSDCBalance, type BalanceClient } from "./balance";
-export { preparePaymentHeader, createPayment, encodePayment } from "./payments";
+} from './types'

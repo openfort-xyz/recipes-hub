@@ -1,1 +1,1 @@
-export { OpenfortProviders } from './OpenfortProviders';
+export { OpenfortProviders } from './OpenfortProviders'

@@ -1,48 +1,59 @@
-import { useUser, useWallets, type UserWallet } from "@openfort/react";
-import { useCallback, useMemo } from "react";
-import { erc20Abi, createPublicClient, http } from "viem";
-import { base, baseSepolia } from "viem/chains";
-import { useAccount, useSwitchChain, useWriteContract } from "wagmi";
+import { type UserWallet, useUser, useWallets } from '@openfort/react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPublicClient, erc20Abi, formatUnits, http } from 'viem'
+import { base, baseSepolia } from 'viem/chains'
+import {
+  useAccount,
+  useSwitchChain,
+  useWalletClient,
+  useWriteContract,
+} from 'wagmi'
 
 import {
+  createPayment,
+  encodePayment,
   ensureValidAmount,
   getUSDCBalance,
   type SupportedNetwork,
-} from "../../integrations/x402";
-import { AuthPrompt } from "./components/AuthPrompt";
-import { ErrorState } from "./components/ErrorState";
-import { LoadingState } from "./components/LoadingState";
-import { PaymentSuccess } from "./components/PaymentSuccess";
-import { PaymentSummary } from "./components/PaymentSummary";
-import { WalletSelector } from "./components/WalletSelector";
-import { usePaymentFlow } from "./hooks/usePaymentFlow";
-import { useUsdcBalance } from "./hooks/useUsdcBalance";
+} from '../../integrations/x402'
+import { getApiBaseUrl } from '../backend-wallet/getApiBaseUrl'
+import { AuthPrompt } from './components/AuthPrompt'
+import { ErrorState } from './components/ErrorState'
+import { LoadingState } from './components/LoadingState'
+import { PaymentSuccess } from './components/PaymentSuccess'
+import { type GasMode, PaymentSummary } from './components/PaymentSummary'
+import { WalletSelector } from './components/WalletSelector'
+import { usePaymentFlow } from './hooks/usePaymentFlow'
+import { useUsdcBalance } from './hooks/useUsdcBalance'
 import {
   getRequiredAmount,
   hasSufficientBalance,
   isDestinationConfigured,
-} from "./utils/paymentGuards";
+} from './utils/paymentGuards'
 
-const BALANCE_REFRESH_INTERVAL_MS = 3000;
+const BALANCE_REFRESH_INTERVAL_MS = 3000
+const USDC_DECIMALS = 6
 
 export function PaywallExperience() {
   const initialNetwork: SupportedNetwork =
-    window.x402?.testnet === false ? "base" : "base-sepolia";
+    window.x402?.testnet === false ? 'base' : 'base-sepolia'
 
   // Derive payment chain details
-  const paymentChain = initialNetwork === "base" ? base : baseSepolia;
-  const chainName = initialNetwork === "base" ? "Base" : "Base Sepolia";
-  const testnet = initialNetwork !== "base";
+  const paymentChain = initialNetwork === 'base' ? base : baseSepolia
+  const chainName = initialNetwork === 'base' ? 'Base' : 'Base Sepolia'
+  const testnet = initialNetwork !== 'base'
 
-  const { address, isConnected, chainId } = useAccount();
-  const { switchChainAsync } = useSwitchChain();
-  const { isAuthenticated } = useUser();
-  const { wallets, isLoadingWallets, setActiveWallet, isConnecting } = useWallets();
+  const { address, isConnected, chainId } = useAccount()
+  const { switchChainAsync } = useSwitchChain()
+  const { isAuthenticated } = useUser()
+  const { wallets, isLoadingWallets, setActiveWallet, isConnecting } =
+    useWallets()
 
   // Unified payment flow hook
   const {
     state: paymentState,
     paymentRequirements,
+    currentUrl,
     amount,
     statusMessage,
     error: flowError,
@@ -54,7 +65,25 @@ export function PaywallExperience() {
     network: initialNetwork,
     resourceUrl: window.x402?.currentUrl,
     paymentChainId: paymentChain.id,
-  });
+  })
+
+  const [gasMode, setGasMode] = useState<GasMode>('openfort-policy')
+  const [facilitatorAvailable, setFacilitatorAvailable] = useState(false)
+  const [facilitatorPaying, setFacilitatorPaying] = useState(false)
+  const [facilitatorSuccessContent, setFacilitatorSuccessContent] =
+    useState<unknown>(null)
+  const [facilitatorError, setFacilitatorError] = useState<string | null>(null)
+  const walletClient = useWalletClient()
+
+  useEffect(() => {
+    const baseUrl = getApiBaseUrl()
+    void fetch(`${baseUrl}/api/backend-wallet/status`)
+      .then((res) => res.json())
+      .then((data: { facilitatorAvailable?: boolean }) => {
+        setFacilitatorAvailable(Boolean(data.facilitatorAvailable))
+      })
+      .catch(() => setFacilitatorAvailable(false))
+  }, [])
 
   // Create public client for balance checks
   const publicClient = useMemo(
@@ -64,105 +93,218 @@ export function PaywallExperience() {
         transport: http(),
       }),
     [paymentChain],
-  );
+  )
 
-  const { formattedBalance: formattedUsdcBalance, isRefreshingBalance, refreshBalance } =
-    useUsdcBalance({
-      address,
-      paymentRequirements,
-      publicClient,
-      refreshIntervalMs: BALANCE_REFRESH_INTERVAL_MS,
-    });
+  const {
+    formattedBalance: formattedUsdcBalance,
+    isRefreshingBalance,
+    refreshBalance,
+  } = useUsdcBalance({
+    address,
+    paymentRequirements,
+    publicClient,
+    refreshIntervalMs: BALANCE_REFRESH_INTERVAL_MS,
+  })
 
-  const { writeContractAsync, isPending: isWritePending } = useWriteContract();
+  const [recipientBalance, setRecipientBalance] = useState<bigint>(0n)
+  const [recipientBalanceLoading, setRecipientBalanceLoading] = useState(false)
+  const fetchRecipientBalance = useCallback(async () => {
+    const payTo = paymentRequirements?.payTo
+    if (!payTo || !publicClient) {
+      setRecipientBalance(0n)
+      return
+    }
+    setRecipientBalanceLoading(true)
+    try {
+      const balance = await getUSDCBalance(publicClient, payTo)
+      setRecipientBalance(balance)
+    } catch {
+      setRecipientBalance(0n)
+    } finally {
+      setRecipientBalanceLoading(false)
+    }
+  }, [paymentRequirements?.payTo, publicClient])
+  useEffect(() => {
+    if (!paymentRequirements?.payTo) return
+    void fetchRecipientBalance()
+  }, [paymentRequirements?.payTo, fetchRecipientBalance])
+
+  const { writeContractAsync, isPending: isWritePending } = useWriteContract()
 
   // Check if we're on the correct chain
-  const isCorrectChain = isConnected && chainId === paymentChain.id;
+  const isCorrectChain = isConnected && chainId === paymentChain.id
 
   const handleSwitchChain = useCallback(async () => {
-    if (isCorrectChain) return;
+    if (isCorrectChain) return
 
     try {
-      await switchChainAsync({ chainId: paymentChain.id });
+      await switchChainAsync({ chainId: paymentChain.id })
     } catch (error) {
-      console.error("Failed to switch network", error);
+      console.error('Failed to switch network', error)
     }
-  }, [isCorrectChain, switchChainAsync, paymentChain.id]);
+  }, [isCorrectChain, switchChainAsync, paymentChain.id])
+
+  const handlePaymentViaFacilitator = useCallback(async () => {
+    const client = walletClient?.data
+    if (!paymentRequirements || !address || !currentUrl || !client) {
+      setFacilitatorError('Wallet or payment details not ready.')
+      return
+    }
+    const clientForSigning = {
+      ...client,
+      account: client.account ?? (address ? { address } : undefined),
+    }
+    if (!clientForSigning.account) {
+      setFacilitatorError('Wallet client missing account address.')
+      return
+    }
+    const validRequirements = ensureValidAmount(paymentRequirements)
+    const requiredAmount = getRequiredAmount(validRequirements)
+    setFacilitatorPaying(true)
+    setFacilitatorError(null)
+    try {
+      const balance = await getUSDCBalance(publicClient, address)
+      if (!hasSufficientBalance(balance, requiredAmount)) {
+        throw new Error(
+          `Insufficient balance. Make sure you have USDC on ${chainName}.`,
+        )
+      }
+      if (!isDestinationConfigured(validRequirements.payTo)) {
+        throw new Error(
+          'Payment destination not configured. Please contact support.',
+        )
+      }
+      const x402Version = paymentRequirements.x402Version ?? 2
+      const payment = await createPayment(
+        clientForSigning,
+        x402Version,
+        validRequirements,
+      )
+      const encoded = encodePayment(payment)
+      const response = await fetch(currentUrl, {
+        method: 'GET',
+        headers: {
+          'PAYMENT-SIGNATURE': encoded,
+          'X-Wallet-Type': 'embedded',
+        },
+      })
+      if (!response.ok) {
+        const err = (await response.json().catch(() => ({}))) as {
+          message?: string
+        }
+        throw new Error(err.message ?? `Request failed: ${response.status}`)
+      }
+      const data = (await response.json()) as {
+        success?: boolean
+        content?: unknown
+        message?: string
+      }
+      setFacilitatorSuccessContent(data)
+    } catch (error) {
+      setFacilitatorError(
+        error instanceof Error ? error.message : 'Payment failed',
+      )
+    } finally {
+      setFacilitatorPaying(false)
+    }
+  }, [
+    address,
+    chainName,
+    currentUrl,
+    paymentRequirements,
+    publicClient,
+    walletClient?.data,
+  ])
 
   const handlePayment = useCallback(async () => {
     if (!paymentRequirements || !address) {
-      return;
+      return
+    }
+    if (gasMode === 'facilitator') {
+      await handlePaymentViaFacilitator()
+      return
     }
 
-    const validRequirements = ensureValidAmount(paymentRequirements);
-    const requiredAmount = getRequiredAmount(validRequirements);
+    const validRequirements = ensureValidAmount(paymentRequirements)
+    const requiredAmount = getRequiredAmount(validRequirements)
 
     try {
-      const balance = await getUSDCBalance(publicClient as any, address);
+      const balance = await getUSDCBalance(publicClient, address)
       if (!hasSufficientBalance(balance, requiredAmount)) {
-        throw new Error(`Insufficient balance. Make sure you have USDC on ${chainName}.`);
+        throw new Error(
+          `Insufficient balance. Make sure you have USDC on ${chainName}.`,
+        )
       }
 
       if (!isDestinationConfigured(validRequirements.payTo)) {
-        throw new Error("Payment destination not configured. Please contact support.");
+        throw new Error(
+          'Payment destination not configured. Please contact support.',
+        )
       }
 
       const hash = await writeContractAsync({
         address: validRequirements.asset,
         abi: erc20Abi,
-        functionName: "transfer",
+        functionName: 'transfer',
         args: [validRequirements.payTo, requiredAmount],
         chainId: paymentChain.id,
-      });
+      })
 
-      initiatePayment(hash);
+      initiatePayment(hash)
     } catch (error) {
-      console.error("Payment failed", error);
+      console.error('Payment failed', error)
     }
   }, [
     address,
     chainName,
+    gasMode,
     paymentChain.id,
     paymentRequirements,
     publicClient,
     writeContractAsync,
     initiatePayment,
-  ]);
+    handlePaymentViaFacilitator,
+  ])
 
   const connectWallet = useCallback(
     (wallet: UserWallet) => {
-      void setActiveWallet(wallet.id);
+      void setActiveWallet(wallet.id)
     },
     [setActiveWallet],
-  );
+  )
 
   const handleTryAnotherPayment = useCallback(() => {
-    resetPayment();
-    void refreshBalance(true);
-  }, [resetPayment, refreshBalance]);
+    setFacilitatorSuccessContent(null)
+    setFacilitatorError(null)
+    resetPayment()
+    void refreshBalance(true)
+  }, [resetPayment, refreshBalance])
 
   // Show loading state
-  if (paymentState === "loading" && !paymentRequirements) {
+  if (paymentState === 'loading' && !paymentRequirements) {
     return (
       <LoadingState
         title="Payment Required"
         subtitle="Loading payment details..."
       />
-    );
+    )
   }
 
   // Show error state
-  if (paymentState === "error" || flowError) {
+  if (paymentState === 'error' || flowError) {
     return (
       <ErrorState
         title="Payment Configuration Error"
-        message={statusMessage || "We could not retrieve payment requirements from the server."}
+        message={
+          statusMessage ||
+          'We could not retrieve payment requirements from the server.'
+        }
         actionLabel="Retry"
         onAction={() => {
-          void refetchRequirements();
+          void refetchRequirements()
         }}
       />
-    );
+    )
   }
 
   if (!paymentRequirements) {
@@ -171,11 +313,11 @@ export function PaywallExperience() {
         title="Payment Configuration Missing"
         message="No payment requirements were provided. Please check your server configuration."
       />
-    );
+    )
   }
 
   if (!isAuthenticated) {
-    return <AuthPrompt />;
+    return <AuthPrompt />
   }
 
   if (isLoadingWallets || wallets.length === 0) {
@@ -184,7 +326,7 @@ export function PaywallExperience() {
         title="Setting up your wallet"
         subtitle="We're preparing your embedded Openfort wallet."
       />
-    );
+    )
   }
 
   if (!isConnected || !address) {
@@ -194,26 +336,48 @@ export function PaywallExperience() {
         isConnecting={isConnecting}
         onSelect={connectWallet}
       />
-    );
+    )
   }
 
-  // Show success state
-  if (paymentState === "success" && successContent) {
+  // Show success state (on-chain or facilitator path)
+  if (paymentState === 'success' && successContent) {
     return (
       <PaymentSuccess
         content={successContent}
         onReset={handleTryAnotherPayment}
       />
-    );
+    )
+  }
+  if (facilitatorSuccessContent) {
+    return (
+      <PaymentSuccess
+        content={facilitatorSuccessContent}
+        onReset={handleTryAnotherPayment}
+      />
+    )
   }
 
   // Show payment summary
-  const isWorking = paymentState === "paying" || paymentState === "confirming" || paymentState === "unlocking" || isWritePending;
+  const isWorking =
+    paymentState === 'paying' ||
+    paymentState === 'confirming' ||
+    paymentState === 'unlocking' ||
+    isWritePending ||
+    facilitatorPaying
+
+  const payTo = paymentRequirements?.payTo
+  const recipientBalanceLabel = recipientBalanceLoading
+    ? '…'
+    : payTo
+      ? `$${formatUnits(recipientBalance, USDC_DECIMALS)} USDC`
+      : undefined
 
   return (
     <PaymentSummary
       walletAddress={address}
-      balanceLabel={formattedUsdcBalance ? `$${formattedUsdcBalance} USDC` : "Loading..."}
+      balanceLabel={
+        formattedUsdcBalance ? `$${formattedUsdcBalance} USDC` : 'Loading...'
+      }
       amountDue={amount}
       chainName={chainName}
       description={paymentRequirements.description}
@@ -222,11 +386,20 @@ export function PaywallExperience() {
       isWorking={isWorking}
       isRefreshingBalance={isRefreshingBalance}
       onRefreshBalance={() => {
-        void refreshBalance(true);
+        void refreshBalance(true)
       }}
       onSwitchNetwork={handleSwitchChain}
       onSubmitPayment={handlePayment}
-      statusMessage={statusMessage}
+      statusMessage={facilitatorError ?? statusMessage}
+      recipientAddress={payTo}
+      recipientBalanceLabel={recipientBalanceLabel}
+      isRefreshingRecipientBalance={recipientBalanceLoading}
+      onRefreshRecipientBalance={
+        payTo ? () => void fetchRecipientBalance() : undefined
+      }
+      gasMode={gasMode}
+      onGasModeChange={setGasMode}
+      facilitatorAvailable={facilitatorAvailable}
     />
-  );
+  )
 }
