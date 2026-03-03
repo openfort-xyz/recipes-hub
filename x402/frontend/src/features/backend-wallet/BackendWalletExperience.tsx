@@ -348,7 +348,10 @@ export function BackendWalletExperience() {
 
   const alreadyConfigured = Boolean(status?.payerAddress)
 
-  const tagMode = useMemo((): 'facilitator' | 'openfort-policy' | 'off-chain' => {
+  const tagMode = useMemo(():
+    | 'facilitator'
+    | 'openfort-policy'
+    | 'off-chain' => {
     if (!status) return 'off-chain'
     const { facilitatorAvailable, openfortPolicyAvailable } = status
     if (facilitatorAvailable && openfortPolicyAvailable) return gasMode
@@ -432,11 +435,10 @@ export function BackendWalletExperience() {
           </p>
           <p className="mt-2 text-xs text-zinc-500">
             Use a <strong>separate</strong> recipient address (not your backend
-            or embedded wallet). Create one in the{' '}
-            <strong>Pay-to address</strong> tab, copy to{' '}
+            or embedded wallet). Set{' '}
             <code className="rounded bg-zinc-700 px-1">PAY_TO_ADDRESS</code> in
-            backend <code className="rounded bg-zinc-700 px-1">.env.local</code>
-            , restart, then fund Payer and pay from each tab.
+            backend <code className="rounded bg-zinc-700 px-1">.env.local</code>,
+            restart, then fund Payer and pay from each tab.
           </p>
         </div>
 
@@ -536,7 +538,7 @@ export function BackendWalletExperience() {
                   </div>
                 ) : status?.payToAddress ? null : (
                   <div className="text-sm text-zinc-500">
-                    Recipient: Not set (use Pay-to address tab)
+                    Recipient: Not set (set PAY_TO_ADDRESS in backend .env.local)
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
@@ -609,7 +611,8 @@ export function BackendWalletExperience() {
           <h2 className="text-lg font-medium">2. Pay</h2>
           {alreadyConfigured ? (
             <>
-              {(status?.facilitatorAvailable ?? status?.openfortPolicyAvailable) ? (
+              {(status?.facilitatorAvailable ??
+              status?.openfortPolicyAvailable) ? (
                 <div className="mt-4 space-y-2">
                   <span className="text-sm text-zinc-400">Pay gas with</span>
                   <div className="flex rounded-lg border border-zinc-700 bg-zinc-900 p-1">

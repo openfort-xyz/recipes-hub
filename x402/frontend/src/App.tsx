@@ -1,15 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { BackendWalletExperience } from './features/backend-wallet'
-import { PayToAddressExperience } from './features/pay-to-address'
 import { PaywallExperience } from './features/paywall'
 
-type Tab = 'embedded' | 'backend' | 'pay-to'
+type Tab = 'embedded' | 'backend'
 
 function getTabFromHash(): Tab {
   if (typeof window === 'undefined') return 'embedded'
   const hash = window.location.hash
   if (hash === '#backend-wallet') return 'backend'
-  if (hash === '#pay-to-address') return 'pay-to'
   return 'embedded'
 }
 
@@ -24,7 +22,6 @@ function App() {
 
   const setHash = useCallback((t: Tab) => {
     if (t === 'backend') window.location.hash = '#backend-wallet'
-    else if (t === 'pay-to') window.location.hash = '#pay-to-address'
     else window.location.hash = ''
   }, [])
 
@@ -54,22 +51,10 @@ function App() {
           >
             Backend wallet
           </button>
-          <button
-            type="button"
-            onClick={() => setHash('pay-to')}
-            className={`rounded px-4 py-2 text-sm font-medium transition-colors ${
-              tab === 'pay-to'
-                ? 'bg-primary text-white'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            Pay-to address
-          </button>
         </div>
       </nav>
       {tab === 'embedded' && <PaywallExperience />}
       {tab === 'backend' && <BackendWalletExperience />}
-      {tab === 'pay-to' && <PayToAddressExperience />}
     </div>
   )
 }
