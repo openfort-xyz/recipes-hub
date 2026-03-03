@@ -346,7 +346,7 @@ export async function verifyWithFacilitator(
 		invalidMessage?: string;
 	};
 	try {
-		data = JSON.parse(rawText) as typeof data;
+		data = JSON.parse(rawText)
 	} catch {
 		throw new FacilitatorError(
 			"FACILITATOR_VERIFY_FAILED",
@@ -431,7 +431,7 @@ export async function settleWithFacilitator(
 		errorMessage?: string;
 	};
 	try {
-		data = JSON.parse(rawText) as typeof data;
+		data = JSON.parse(rawText)
 	} catch {
 		throw new FacilitatorError(
 			"FACILITATOR_SETTLE_FAILED",
@@ -586,11 +586,7 @@ function parseDelegatedAccountId(data: unknown): string | null {
 	if (data === null || typeof data !== "object") return null;
 	const o = data as Record<string, unknown>;
 	const camel = o.delegatedAccount;
-	if (
-		camel !== null &&
-		typeof camel === "object" &&
-		typeof (camel as { id?: string }).id === "string"
-	)
+	if (camel !== null && typeof camel === "object")
 		return (camel as { id: string }).id;
 	const snake = o.delegated_account;
 	if (
@@ -710,7 +706,7 @@ async function getDelegatedAccountAuth(
 	}
 	const publicClient = createPublicClient({ transport: http(rpcUrl) });
 	const eoaNonce = await publicClient.getTransactionCount({
-		address: account.address as Address,
+		address: account.address,
 	});
 	const authHash = hashAuthorization({
 		contractAddress: EIP7702_CALIBUR_IMPLEMENTATION,
@@ -726,15 +722,7 @@ async function getDelegatedAccountAuth(
 		};
 	}
 
-	const backend = openfortClient.accounts.evm.backend as {
-		update?: (params: {
-			id: string;
-			accountType: string;
-			chainType: string;
-			chainId: number;
-			implementationType: string;
-		}) => Promise<{ delegatedAccount?: { id: string } }>;
-	};
+	const backend = openfortClient.accounts.evm.backend;
 	if (typeof backend.update === "function") {
 		try {
 			const updated = await backend.update({
@@ -748,14 +736,7 @@ async function getDelegatedAccountAuth(
 			if (delegatedId)
 				return { delegatedAccountId: delegatedId, signedAuthorization };
 		} catch (updateErr) {
-			const msg =
-				typeof updateErr === "object" &&
-				updateErr !== null &&
-				"message" in updateErr
-					? String((updateErr as { message: unknown }).message)
-					: String(updateErr);
-			console.error("Error updating backend wallet to delegated account", msg);
-			// Account already exists → resolve via API; other errors → fall through to API
+			console.error("Error updating backend wallet to delegated account", updateErr);
 		}
 	}
 
@@ -842,9 +823,7 @@ export async function submitTransferWithAuthorizationGasless(
 	>;
 	try {
 		intent = await openfortClient.transactionIntents.create(
-			createParams as Parameters<
-				typeof openfortClient.transactionIntents.create
-			>[0],
+			createParams
 		);
 	} catch (err) {
 		const msg = openfortErrorMessage(err);
@@ -865,7 +844,7 @@ export async function submitTransferWithAuthorizationGasless(
 	// For custodial EIP-7702 Delegated Accounts, Openfort cannot auto-sign (AA V8 limitation),
 	// so nextAction is absent. Fall back to intent.details.userOperationHash which AA V8 always exposes.
 	const nextActionHash = (
-		intent.nextAction?.payload as { signableHash?: string } | undefined
+		intent.nextAction?.payload
 	)?.signableHash;
 	const detailsHash = (
 		intent.details as { userOperationHash?: string } | null | undefined
@@ -928,9 +907,8 @@ export async function submitTransferWithAuthorizationGasless(
 				{ headers: { Authorization: `Bearer ${apiSecretKey}` } },
 			);
 			if (pollRes.ok) {
-				const polled = (await pollRes.json()) as IntentDiagnosticShape;
-				txHash = (polled.response as { transactionHash?: string } | undefined)
-					?.transactionHash;
+				const polled = (await pollRes.json());
+				txHash = polled.response?.transactionHash;
 				if (txHash) break;
 			}
 		}
@@ -953,26 +931,19 @@ export function toErrorJson(err: unknown): object {
 	return { value: String(err) };
 }
 
-type IntentDiagnosticShape = {
-	id?: string;
-	response?: unknown;
-	nextAction?: { type?: string; payload?: Record<string, unknown> };
-	status?: unknown;
-};
-
 // ---- Helpers ----
 
 /** Extract a readable message from Openfort API errors (errorMessage.message) or standard Error. */
 function openfortErrorMessage(err: unknown): string {
 	if (err !== null && typeof err === "object") {
-		const o = err as Record<string, unknown>;
+		const o = err as { errorMessage?: unknown };
 		const em = o.errorMessage;
 		if (
 			em !== null &&
 			typeof em === "object" &&
-			typeof (em as Record<string, unknown>).message === "string"
+			typeof (em as { message: string }).message === "string"
 		) {
-			return (em as Record<string, string>).message;
+			return (em as { message: string }).message;
 		}
 		if (typeof em === "string") return em;
 	}
@@ -1025,7 +996,7 @@ export function parsePaymentPayload(raw: unknown): PaymentPayload {
 		);
 	}
 
-	const p = payload as Record<string, unknown>;
+	const p = payload as { authorization: unknown; signature: unknown };
 	const authorization = p.authorization;
 	if (typeof authorization !== "object" || authorization === null) {
 		throw new PaymentVerificationError(
@@ -1034,7 +1005,7 @@ export function parsePaymentPayload(raw: unknown): PaymentPayload {
 		);
 	}
 
-	const auth = authorization as Record<string, unknown>;
+	const auth = authorization as { [key: string]: unknown };
 	const authFields = [
 		"from",
 		"to",

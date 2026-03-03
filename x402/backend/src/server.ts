@@ -18,7 +18,7 @@ config({ path: ".env.local" });
 
 const env = loadConfig();
 // OPENFORT_WALLET_SECRET is required for backend wallet sign (X-Wallet-Auth); without it, account.sign() will fail.
-const openfortClient = createOpenfortClient(env.openfort.secretKey, env.openfort.walletSecret || undefined);
+const openfortClient = createOpenfortClient(env.openfort.secretKey, env.openfort.walletSecret);
 
 const app = express();
 
