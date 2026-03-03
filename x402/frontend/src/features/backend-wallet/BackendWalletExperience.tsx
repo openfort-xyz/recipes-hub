@@ -628,7 +628,7 @@ export function BackendWalletExperience() {
                           : 'Set policy ID and delegated account in backend'
                       }
                     >
-                      Openfort policy (sponsor gas)
+                      Openfort policy
                     </button>
                     <button
                       type="button"
@@ -645,7 +645,7 @@ export function BackendWalletExperience() {
                           : 'Set facilitator URL, API key, and secret in backend'
                       }
                     >
-                      Coinbase facilitator (gasless)
+                      Coinbase facilitator
                     </button>
                   </div>
                 </div>
