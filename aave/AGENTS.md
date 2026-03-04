@@ -12,7 +12,7 @@
 - Backend: Clone and run [openfort-backend-quickstart](https://github.com/openfort-xyz/openfort-backend-quickstart) on `http://localhost:3001`
 
 ## Environment
-- Frontend `.env` must define `VITE_OPENFORT_PUBLISHABLE_KEY`, `VITE_OPENFORT_SHIELD_PUBLIC_KEY`, `VITE_OPENFORT_POLICY_ID` (optional), and `VITE_BACKEND_URL`.
+- Frontend `.env` must define `VITE_OPENFORT_PUBLISHABLE_KEY`, `VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY`, `VITE_BACKEND_URL`, and optionally `VITE_OPENFORT_POLICY_ID` and `VITE_WALLET_CONNECT_PROJECT_ID`.
 - Backend (external) `.env` must define `OPENFORT_SECRET_KEY` from Openfort dashboard.
 - Populate both files with real Openfort credentials from the dashboard—placeholder values will fail.
 
@@ -23,8 +23,9 @@
 
 ## Code style
 - Follows Vite + TypeScript defaults with ESLint (`pnpm lint`).
-- Prefer functional React components and hooks; keep wallet state in React Query where possible.
-- Uses `@aave/react` SDK for Aave protocol interactions.
+- Prefer functional React components and hooks; wallet state is managed through wagmi and `@openfort/react` hooks.
+- Uses `@aave/react`, `@aave/client`, and `@aave/graphql` SDKs for Aave protocol interactions.
+- React Query (`@tanstack/react-query`) is a peer dependency used internally by wagmi and `@aave/react`; application code does not call React Query hooks directly.
 
 ## PR instructions
 - Title format: `[aave] <summary>`.
