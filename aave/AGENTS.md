@@ -12,7 +12,7 @@
 - Backend: Clone and run [openfort-backend-quickstart](https://github.com/openfort-xyz/openfort-backend-quickstart) on `http://localhost:3001`
 
 ## Environment
-- Frontend `.env` must define `VITE_OPENFORT_PUBLISHABLE_KEY`, `VITE_OPENFORT_SHIELD_PUBLIC_KEY`, `VITE_OPENFORT_POLICY_ID` (optional), and `VITE_BACKEND_URL`.
+- Frontend `.env` must define `VITE_OPENFORT_PUBLISHABLE_KEY`, `VITE_OPENFORT_SHIELD_PUBLIC_KEY`, `VITE_OPENFORT_FEE_SPONSORSHIP_ID` (optional), and `VITE_BACKEND_URL`.
 - Backend (external) `.env` must define `OPENFORT_SECRET_KEY` from Openfort dashboard.
 - Populate both files with real Openfort credentials from the dashboard—placeholder values will fail.
 

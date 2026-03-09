@@ -23,11 +23,11 @@ pnpx gitpick openfort-xyz/recipes-hub/tree/main/aave openfort-aave && cd openfor
 3. Navigate to **Shield** section
 4. Copy your **Shield Public Key**
 
-### Create a Policy (Optional)
+### Create a Fee Sponsorship (Optional)
 
 1. Navigate to **Gas Policies**
-2. Create a new policy to sponsor user transactions
-3. Copy the **Policy ID**
+2. Create a new fee sponsorship to sponsor user transactions
+3. Copy the **Fee Sponsorship ID**
 
 ## 3. Setup Backend
 
@@ -65,7 +65,7 @@ Add your credentials to `.env`:
 ```env
 VITE_OPENFORT_PUBLISHABLE_KEY=pk_...
 VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY=...
-VITE_OPENFORT_POLICY_ID=pol_...     # Optional
+VITE_OPENFORT_FEE_SPONSORSHIP_ID=pol_...     # Optional
 VITE_BACKEND_URL=http://localhost:3001
 ```
 

@@ -1,66 +1,53 @@
 'use client'
 
-import { OpenfortButton, type UserWallet, use7702Authorization, useSignOut, useUser, useWallets } from '@openfort/react'
+import { OpenfortButton, use7702Authorization, useOpenfort, useSignOut, useUser } from '@openfort/react'
+import { useEthereumEmbeddedWallet } from '@openfort/react/ethereum'
 import { Loader2 } from 'lucide-react'
-import { createSmartAccountClient } from 'permissionless'
-import { toSimpleSmartAccount } from 'permissionless/accounts'
-import { createPimlicoClient } from 'permissionless/clients/pimlico'
 import { useEffect, useState } from 'react'
-import { createPublicClient, http, zeroAddress } from 'viem'
-import { entryPoint08Address } from 'viem/account-abstraction'
-import { sepolia } from 'viem/chains'
-import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi'
+import { type Hex, createPublicClient, http, zeroAddress } from 'viem'
+import { createBundlerClient, createPaymasterClient, toSimple7702SmartAccount } from 'viem/account-abstraction'
+import { baseSepolia } from 'viem/chains'
+import { useAccount, useSwitchChain, useWalletClient } from 'wagmi'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
-const title = 'Openfort + Permissionless + 7702'
+// Simple7702Account implementation (eth-infinitism) — default in viem's toSimple7702SmartAccount
+const SIMPLE_7702_ADDRESS = '0xe6Cae83BdE06E4c305530e199D7217f42808555B'
+
+const title = 'Openfort + 7702'
 
 export function UserOperation() {
   const { user, isAuthenticated: authenticated } = useUser()
   const { signOut: logout } = useSignOut()
+  const { client } = useOpenfort()
   const [loading, setLoading] = useState(false)
   const [txHash, setTxHash] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const { signAuthorization } = use7702Authorization()
 
   const walletClient = useWalletClient()
-  const { isConnected, chainId } = useAccount()
+  const { chainId } = useAccount()
   const { switchChain } = useSwitchChain()
-
-  const { wallets, setActiveWallet } = useWallets()
-  const [embeddedWallet, setEmbeddedWallet] = useState<UserWallet | undefined>(undefined)
+  const { wallets, activeWallet, setActive } = useEthereumEmbeddedWallet()
 
   useEffect(() => {
-    if (wallets.length > 0) {
-      setActiveWallet({
-        walletId: wallets[0].id,
-        address: wallets[0].address,
-      }).then((activeWallet) => {
-        setEmbeddedWallet(activeWallet.wallet)
-      })
+    if (wallets.length > 0 && !activeWallet) {
+      setActive({ address: wallets[0].address }).catch(() => {})
     }
-  }, [wallets.length])
+  }, [wallets.length, activeWallet, setActive])
 
-  // Automatically switch to Sepolia when wallet connects
   useEffect(() => {
-    console.log('isConnected:', isConnected, 'chainId:', chainId)
-    if (chainId !== sepolia.id) {
-      console.log('Switching to Sepolia network...')
+    if (chainId !== baseSepolia.id) {
       switchChain(
-        { chainId: sepolia.id },
-        {
-          onError: (error) => {
-            console.error('Failed to switch chain:', error)
-            setError(`Please switch to Sepolia network manually. ${error.message}`)
-          },
-        }
+        { chainId: baseSepolia.id },
+        { onError: (err) => setError(`Please switch to Base Sepolia manually. ${err.message}`) },
       )
     }
   }, [chainId, switchChain])
 
   const sendUserOperation = async () => {
-    if (!user || !embeddedWallet) {
-      setError('No wallet connected')
+    if (!user || !activeWallet || !client) {
+      setError('Wallet or client not ready')
       return
     }
 
@@ -68,60 +55,95 @@ export function UserOperation() {
     setError(null)
 
     try {
-      const pimlicoApiKey = process.env.NEXT_PUBLIC_PIMLICO_API_KEY
-
-      if (!pimlicoApiKey || pimlicoApiKey === 'YOUR_PIMLICO_API_KEY') {
-        throw new Error('Please set a valid Pimlico API key in your .env.local file')
+      if (!walletClient.data?.account) {
+        throw new Error('Wallet not ready — please wait a moment and try again')
       }
 
-      const pimlicoUrl = `https://api.pimlico.io/v2/sepolia/rpc?apikey=${pimlicoApiKey}`
+      const eoa = walletClient.data.account.address
+      const openfortRpcUrl = `https://api.openfort.io/rpc/${baseSepolia.id}`
 
       const publicClient = createPublicClient({
-        chain: sepolia,
-        transport: http(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL!),
+        chain: baseSepolia,
+        transport: http(),
       })
 
-      const pimlicoClient = createPimlicoClient({
-        transport: http(pimlicoUrl),
-      })
-      console.log('walletClient:', walletClient)
-      // Get the wallet provider
-      if (!walletClient.data) {
-        throw new Error('No wallet found')
+      // Wrap Openfort embedded wallet as a local account for viem
+      const embeddedOwner = {
+        address: eoa,
+        type: 'local' as const,
+        source: 'custom' as const,
+        publicKey: '0x04' as Hex,
+        nonceManager: undefined,
+        async sign({ hash }: { hash: Hex }) {
+          return (await client.embeddedWallet.signMessage(hash, {
+            hashMessage: false,
+            arrayifyMessage: false,
+          })) as Hex
+        },
+        async signMessage({ message }: { message: string | { raw: Hex | Uint8Array } }) {
+          const msg =
+            typeof message === 'string'
+              ? message
+              : message.raw instanceof Uint8Array
+                ? Buffer.from(message.raw).toString('hex')
+                : (message.raw as string)
+          return (await client.embeddedWallet.signMessage(msg, {
+            hashMessage: true,
+            arrayifyMessage: true,
+          })) as Hex
+        },
+        async signTypedData(params: { domain?: unknown; types: unknown; primaryType?: string; message: unknown }) {
+          return (await client.embeddedWallet.signTypedData(
+            params.domain as Record<string, unknown>,
+            params.types as unknown as Record<string, Array<{ name: string; type: string }>>,
+            params.message as Record<string, unknown>,
+          )) as Hex
+        },
+        async signTransaction(): Promise<Hex> {
+          throw new Error('signTransaction not supported for embedded wallets')
+        },
+        async signAuthorization(): Promise<{ r: Hex; s: Hex; yParity: number }> {
+          throw new Error('Use use7702Authorization hook instead')
+        },
       }
 
-      const simpleSmartAccount = await toSimpleSmartAccount({
-        owner: walletClient.data,
-        entryPoint: {
-          address: entryPoint08Address,
-          version: '0.8',
-        },
+      // viem's toSimple7702SmartAccount handles everything:
+      // - factory: 0x7702, factoryData: 0x
+      // - execute/executeBatch call encoding (Simple7702Account ABI)
+      // - EIP-712 UserOp signing with plain ECDSA (no wrapping)
+      // - defaults to implementation 0xe6Cae83BdE06E4c305530e199D7217f42808555B
+      const smartAccount = await toSimple7702SmartAccount({
         client: publicClient,
-        address: walletClient.data.account.address,
+        owner: embeddedOwner as never,
       })
 
-      // Create the smart account client
-      const smartAccountClient = createSmartAccountClient({
-        account: simpleSmartAccount,
-        chain: sepolia,
-        bundlerTransport: http(pimlicoUrl),
-        paymaster: pimlicoClient,
-        userOperation: {
-          estimateFeesPerGas: async () => {
-            return (await pimlicoClient.getUserOperationGasPrice()).fast
+      const paymasterClient = createPaymasterClient({
+        transport: http(openfortRpcUrl, {
+          fetchOptions: {
+            headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENFORT_PUBLISHABLE_KEY}` },
           },
-        },
-      })
-
-      const authorization = await signAuthorization({
-        contractAddress: '0xe6Cae83BdE06E4c305530e199D7217f42808555B',
-        chainId: sepolia.id,
-        nonce: await publicClient.getTransactionCount({
-          address: walletClient.data.account.address,
         }),
       })
 
-      const txnHash = await smartAccountClient.sendTransaction({
+      const bundlerClient = createBundlerClient({
+        account: smartAccount,
+        paymaster: paymasterClient,
+        client: publicClient,
+        transport: http(openfortRpcUrl, {
+          fetchOptions: {
+            headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENFORT_PUBLISHABLE_KEY}` },
+          },
+        }),
+      })
+
+      // Sign EIP-7702 authorization using Openfort's hook
+      const authorization = await signAuthorization({
+        contractAddress: SIMPLE_7702_ADDRESS,
+        chainId: baseSepolia.id,
+        nonce: await publicClient.getTransactionCount({ address: eoa }),
+      })
+
+      const txnHash = await bundlerClient.sendUserOperation({
         calls: [
           {
             to: zeroAddress,
@@ -129,15 +151,14 @@ export function UserOperation() {
             value: BigInt(0),
           },
         ],
-        factory: '0x7702',
-        factoryData: '0x',
-        paymasterContext: {
-          sponsorshipPolicyId: process.env.NEXT_PUBLIC_SPONSORSHIP_POLICY_ID,
-        },
         authorization,
+        paymasterContext: {
+          policyId: process.env.NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID,
+        },
       })
 
-      setTxHash(txnHash)
+      const receipt = await bundlerClient.waitForUserOperationReceipt({ hash: txnHash })
+      setTxHash(receipt.receipt.transactionHash)
     } catch (err) {
       console.error('Error sending user operation:', err)
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -163,14 +184,18 @@ export function UserOperation() {
         <CardHeader>
           <CardTitle>Connected Address</CardTitle>
           <CardDescription className="text-sm font-mono">
-            {embeddedWallet?.address || 'No address available'}
+            {activeWallet?.address || 'No address available'}
           </CardDescription>
         </CardHeader>
         <CardFooter className="flex gap-2 justify-end">
           <Button onClick={() => logout()} variant="outline">
             Logout
           </Button>
-          <Button onClick={() => sendUserOperation()} disabled={loading} variant="default">
+          <Button
+            onClick={() => sendUserOperation()}
+            disabled={loading || !walletClient.data || !client}
+            variant="default"
+          >
             {loading ? <Loader2 className="h-4 w-4 animate-spin text-amber-500" /> : null}
             Send 7702 UserOp
           </Button>
@@ -185,8 +210,8 @@ export function UserOperation() {
           </CardHeader>
           <CardFooter>
             <Button variant="link" className="p-0 h-auto" asChild>
-              <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer">
-                View on Etherscan
+              <a href={`https://sepolia.basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer">
+                View on Basescan
               </a>
             </Button>
           </CardFooter>

@@ -28,8 +28,8 @@ export function OpenfortProviders({ children }: { children: React.ReactNode }) {
                 .VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY!, // The Shield publishable key from https://dashboard.openfort.io
               ethereum: {
                 chainId: baseSepolia.id, // The chain ID for the Ethereum network you want to use
-                ethereumProviderPolicyId: import.meta.env
-                  .VITE_OPENFORT_POLICY_ID, // The policy ID for sponsoring transactions
+                ethereumFeeSponsorshipId: import.meta.env
+                  .VITE_OPENFORT_FEE_SPONSORSHIP_ID, // The fee sponsorship ID for sponsoring transactions
               },
               createEncryptedSessionEndpoint: import.meta.env
                 .VITE_CREATE_ENCRYPTED_SESSION_ENDPOINT, // The endpoint to create an encryption session for automatic wallet recovery

@@ -20,7 +20,7 @@ Create a `.env.local` file with:
 ```
 NEXT_PUBLIC_OPENFORT_PUBLISHABLE_KEY=your_openfort_key
 NEXT_PUBLIC_SHIELD_PUBLISHABLE_KEY=your_shield_key
-NEXT_PUBLIC_OPENFORT_POLICY_ID=your_policy_id
+NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID=your_policy_id
 NEXT_PUBLIC_CREATE_ENCRYPTED_SESSION_ENDPOINT=your_session_endpoint
 NEXT_PUBLIC_PIMLICO_API_KEY=your_pimlico_key
 NEXT_PUBLIC_SPONSORSHIP_POLICY_ID=your_sponsorship_policy_id

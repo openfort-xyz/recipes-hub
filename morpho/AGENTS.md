@@ -11,13 +11,13 @@
 - `pnpm dev`
 
 ## Environment
-- `.env` needs `VITE_OPENFORT_PUBLISHABLE_KEY`, `VITE_OPENFORT_POLICY_ID`, `VITE_OPENFORT_SHIELD_PUBLIC_KEY`, `VITE_WALLET_CONNECT_PROJECT_ID`, `VITE_BACKEND_URL`, and `VITE_FRONTEND_URL`.
+- `.env` needs `VITE_OPENFORT_PUBLISHABLE_KEY`, `VITE_OPENFORT_FEE_SPONSORSHIP_ID`, `VITE_OPENFORT_SHIELD_PUBLIC_KEY`, `VITE_WALLET_CONNECT_PROJECT_ID`, `VITE_BACKEND_URL`, and `VITE_FRONTEND_URL`.
 - Backend uses external [openfort-backend-quickstart](https://github.com/openfort-xyz/openfort-backend-quickstart) which requires `OPENFORT_API_KEY` and `OPENFORT_SHIELD_SECRET_KEY`.
 - Update env files when rotating Shield credentials or changing Morpho vault addresses.
 
 ## Testing instructions
 - `pnpm lint`
-- Manually validate supply, withdraw, balance display, and vault APY flows after changing API or policy settings.
+- Manually validate supply, withdraw, balance display, and vault APY flows after changing API or fee sponsorship settings.
 - Ensure the external backend is running with populated Shield credentials prior to UI testing.
 
 ## Code style

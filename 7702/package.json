@@ -1,5 +1,5 @@
 {
-  "name": "openfort-permissionless-7702",
+  "name": "openfort-7702",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@openfort/openfort-node": "^0.7.3",
-    "@openfort/react": "^0.2.5",
+    "@openfort/react": "1.0.0",
     "@radix-ui/react-slot": "^1.2.0",
     "@tanstack/react-query": "^5.74.7",
     "@types/node": "^22.15.3",
@@ -27,7 +27,6 @@
     "lucide-react": "^0.507.0",
     "next": "^15.3.1",
     "os-browserify": "^0.3.0",
-    "permissionless": "^0.2.46",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "stream-browserify": "^3.0.0",

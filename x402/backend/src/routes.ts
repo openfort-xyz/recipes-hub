@@ -391,7 +391,7 @@ export async function handleBackendWalletTestPayment(
       return;
     }
 
-    const policyId = env.openfort.policyId?.trim() ?? "";
+    const feeSponsorshipId = env.openfort.feeSponsorshipId?.trim() ?? "";
     const hasDelegatedAccount = Boolean(env.openfort.delegatedAccountId?.trim());
     if (hasDelegatedAccount) {
       try {
@@ -401,7 +401,7 @@ export async function handleBackendWalletTestPayment(
         const transactionHash = await submitTransferWithAuthorizationGasless(
           openfortClient,
           walletId.trim(),
-          policyId,
+          feeSponsorshipId,
           payment,
           asset,
           env.paywall.rpcUrl,

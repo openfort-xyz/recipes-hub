@@ -10,7 +10,7 @@
 - `pnpm dev` – starts on `http://localhost:3000`
 
 ## Environment
-- `.env.local` needs `NEXT_PUBLIC_OPENFORT_PUBLISHABLE_KEY`, `NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY`, `NEXT_PUBLIC_OPENFORT_POLICY_ID`, `NEXT_PUBLIC_OPENFORT_DEFAULT_CHAIN_ID`, optional `NEXT_PUBLIC_LIFI_API_KEY`, and `NEXT_PUBLIC_LIFI_INTEGRATOR`.
+- `.env.local` needs `NEXT_PUBLIC_OPENFORT_PUBLISHABLE_KEY`, `NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY`, `NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID`, `NEXT_PUBLIC_OPENFORT_DEFAULT_CHAIN_ID`, optional `NEXT_PUBLIC_LIFI_API_KEY`, and `NEXT_PUBLIC_LIFI_INTEGRATOR`.
 - All environment variables must be prefixed with `NEXT_PUBLIC_` to be accessible in the browser.
 - Populate with real Openfort credentials and policy IDs from the dashboard—placeholder values will fail.
 - LiFi API key is optional; omit to use public endpoints with rate limits.

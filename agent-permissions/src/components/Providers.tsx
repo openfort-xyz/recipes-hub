@@ -16,7 +16,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           walletConfig={{
             accountType: AccountTypeEnum.EOA,
             shieldPublishableKey: process.env.NEXT_PUBLIC_SHIELD_PUBLISHABLE_KEY!,
-            ethereumProviderPolicyId: process.env.NEXT_PUBLIC_POLICY_ID,
+            ethereum: {
+              ethereumFeeSponsorshipId: process.env.NEXT_PUBLIC_FEE_SPONSORSHIP_ID,
+            },
           }}
         >
           {children}

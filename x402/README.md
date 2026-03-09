@@ -20,7 +20,7 @@ You'll need to configure credentials for both frontend and backend.
    - **Publishable Key** (`pk_test_...`) - Frontend
    - **Secret Key** (`sk_test_...`) - Backend
    - **Shield Keys**
-4. Create a Policy and get the **Policy ID** (`pol_...`)
+4. Create a Fee Sponsorship and get the **Fee Sponsorship ID** (`pol_...`)
 
 ### Configure Environment
 
@@ -30,7 +30,7 @@ Create `frontend/.env.local`:
 VITE_OPENFORT_PUBLISHABLE_KEY=pk_test_...
 VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY=shpk_test_...
 VITE_WALLET_CONNECT_PROJECT_ID=your-wallet-connect-project-id
-VITE_OPENFORT_POLICY_ID=pol_...
+VITE_OPENFORT_FEE_SPONSORSHIP_ID=pol_...
 VITE_CREATE_ENCRYPTED_SESSION_ENDPOINT=http://localhost:3007/api/protected-create-encryption-session
 VITE_OPENFORT_THEME=
 VITE_X402_RESOURCE_URL=http://localhost:3007/api/protected-content
@@ -119,9 +119,9 @@ Both wallet types support gasless transactions. The user (or backend wallet) nev
 
 Openfort's fee sponsorship uses a paymaster pattern to cover gas costs.
 
-**For embedded wallets:** Set `VITE_OPENFORT_POLICY_ID` in the frontend env. When the user signs a USDC `transfer()` via wagmi, Openfort's smart account infrastructure routes the transaction through a paymaster that sponsors gas based on the policy rules.
+**For embedded wallets:** Set `VITE_OPENFORT_FEE_SPONSORSHIP_ID` in the frontend env. When the user signs a USDC `transfer()` via wagmi, Openfort's smart account infrastructure routes the transaction through a paymaster that sponsors gas based on the fee sponsorship rules.
 
-**For backend wallets:** The backend wallet EOA is upgraded to an EIP-7702 Delegated Account, enabling it to use Openfort's transaction intent system. Set `OPENFORT_DELEGATED_ACCOUNT_ID` and optionally `OPENFORT_POLICY_ID` in the backend env. The server calls `submitTransferWithAuthorizationGasless()` which creates an Openfort transaction intent with gas sponsorship.
+**For backend wallets:** The backend wallet EOA is upgraded to an EIP-7702 Delegated Account, enabling it to use Openfort's transaction intent system. Set `OPENFORT_DELEGATED_ACCOUNT_ID` and optionally `OPENFORT_FEE_SPONSORSHIP_ID` in the backend env. The server calls `submitTransferWithAuthorizationGasless()` which creates an Openfort transaction intent with gas sponsorship.
 
 ### Via Facilitator (Coinbase CDP)
 

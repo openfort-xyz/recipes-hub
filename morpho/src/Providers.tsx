@@ -35,7 +35,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               shieldPublishableKey: import.meta.env.VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY,
               createEncryptedSessionEndpoint: `${import.meta.env.VITE_BACKEND_URL}/api/protected-create-encryption-session`,
               ethereum: {
-                ethereumProviderPolicyId: import.meta.env.VITE_OPENFORT_POLICY_ID || undefined,
+                ethereumFeeSponsorshipId: import.meta.env.VITE_OPENFORT_FEE_SPONSORSHIP_ID || undefined,
               }
             }}
           >

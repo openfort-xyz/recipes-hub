@@ -76,7 +76,7 @@ src/
 # Client-side
 NEXT_PUBLIC_OPENFORT_PUBLISHABLE_KEY    # Openfort SDK public key
 NEXT_PUBLIC_SHIELD_PUBLISHABLE_KEY      # Shield for passkey recovery
-NEXT_PUBLIC_POLICY_ID                   # Paymaster policy
+NEXT_PUBLIC_FEE_SPONSORSHIP_ID                   # Paymaster policy
 
 # Server-side
 OPENFORT_SECRET_KEY                     # Backend API key

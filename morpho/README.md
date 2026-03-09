@@ -40,7 +40,7 @@ From your [Openfort dashboard](https://dashboard.openfort.io):
 
 1. **Publishable Key**: Go to **Developers** → **API Keys** → copy your publishable key
 2. **Shield Public Key**: Go to **Developers** → **API Keys** → copy your Shield public key
-3. **Policy ID** (optional): Go to **Policies** → select or create a policy → copy the policy ID
+3. **Fee Sponsorship ID** (optional): Go to **Policies** → select or create a fee sponsorship → copy the fee sponsorship ID
 
 ## 4. Get WalletConnect Project ID
 
@@ -59,7 +59,7 @@ Update `.env` with your credentials:
 ```env
 VITE_OPENFORT_PUBLISHABLE_KEY=pk_your_publishable_key
 VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY=pk_your_shield_publishable_key
-VITE_OPENFORT_POLICY_ID=pol_optional_policy
+VITE_OPENFORT_FEE_SPONSORSHIP_ID=pol_optional_fee_sponsorship
 VITE_WALLET_CONNECT_PROJECT_ID=your_walletconnect_project_id
 VITE_BACKEND_URL=http://localhost:3000
 ```

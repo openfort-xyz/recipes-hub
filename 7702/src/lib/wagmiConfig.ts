@@ -1,11 +1,11 @@
-import { sepolia } from 'viem/chains'
+import { baseSepolia } from 'viem/chains'
 import { createConfig, http } from 'wagmi'
 
 // Configure the chains you want to use
 export const wagmiConfig = createConfig({
-  chains: [sepolia],
+  chains: [baseSepolia],
   ssr: true,
   transports: {
-    [sepolia.id]: http('https://ethereum-sepolia-rpc.publicnode.com'),
+    [baseSepolia.id]: http(),
   },
 })
