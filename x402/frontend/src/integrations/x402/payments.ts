@@ -9,7 +9,6 @@ import type {
   UnsignedPaymentPayload,
 } from './types'
 
-
 export function preparePaymentHeader(
   from: Address,
   paymentRequirements: PaymentRequirements,
