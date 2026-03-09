@@ -1,4 +1,4 @@
-import { type UserWallet, useUser, useWallets } from '@openfort/react'
+import { useUser } from '@openfort/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPublicClient, erc20Abi, formatUnits, http } from 'viem'
 import { base, baseSepolia } from 'viem/chains'
@@ -22,7 +22,6 @@ import { ErrorState } from './components/ErrorState'
 import { LoadingState } from './components/LoadingState'
 import { PaymentSuccess } from './components/PaymentSuccess'
 import { type GasMode, PaymentSummary } from './components/PaymentSummary'
-import { WalletSelector } from './components/WalletSelector'
 import { usePaymentFlow } from './hooks/usePaymentFlow'
 import { useUsdcBalance } from './hooks/useUsdcBalance'
 import {
@@ -31,7 +30,6 @@ import {
   isDestinationConfigured,
 } from './utils/paymentGuards'
 
-const BALANCE_REFRESH_INTERVAL_MS = 3000
 const USDC_DECIMALS = 6
 
 export function PaywallExperience() {
@@ -43,11 +41,10 @@ export function PaywallExperience() {
   const chainName = initialNetwork === 'base' ? 'Base' : 'Base Sepolia'
   const testnet = initialNetwork !== 'base'
 
-  const { address, isConnected, chainId } = useAccount()
+  const { address, isConnected, chainId, status } = useAccount()
   const { switchChainAsync } = useSwitchChain()
   const { isAuthenticated } = useUser()
-  const { wallets, isLoadingWallets, setActiveWallet, isConnecting } =
-    useWallets()
+  const isLoadingWallets = status === 'connecting'
 
   // Unified payment flow hook
   const {
@@ -103,7 +100,6 @@ export function PaywallExperience() {
     address,
     paymentRequirements,
     publicClient,
-    refreshIntervalMs: BALANCE_REFRESH_INTERVAL_MS,
   })
 
   const [recipientBalance, setRecipientBalance] = useState<bigint>(0n)
@@ -261,13 +257,6 @@ export function PaywallExperience() {
     handlePaymentViaFacilitator,
   ])
 
-  const connectWallet = useCallback(
-    (wallet: UserWallet) => {
-      void setActiveWallet(wallet.id)
-    },
-    [setActiveWallet],
-  )
-
   const handleTryAnotherPayment = useCallback(() => {
     setFacilitatorSuccessContent(null)
     setFacilitatorError(null)
@@ -315,7 +304,7 @@ export function PaywallExperience() {
     return <AuthPrompt />
   }
 
-  if (isLoadingWallets || wallets.length === 0) {
+  if (isLoadingWallets) {
     return (
       <LoadingState
         title="Setting up your wallet"
@@ -324,12 +313,13 @@ export function PaywallExperience() {
     )
   }
 
+  // Wallet is auto-activated by EmbeddedWalletWagmiSync — show a loading state
+  // while wagmi connects rather than asking the user to manually pick a wallet.
   if (!isConnected || !address) {
     return (
-      <WalletSelector
-        wallets={wallets}
-        isConnecting={isConnecting}
-        onSelect={connectWallet}
+      <LoadingState
+        title="Connecting wallet"
+        subtitle="Setting up your embedded wallet for payment..."
       />
     )
   }

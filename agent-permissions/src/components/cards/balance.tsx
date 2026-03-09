@@ -3,7 +3,7 @@
 import { useSignOut, useUser } from '@openfort/react'
 import { useCallback, useEffect, useState } from 'react'
 import { type Address, erc20Abi, formatUnits, getAddress, type Hex, padHex } from 'viem'
-import { useAccount, useBlockNumber, useReadContract, useSendTransaction } from 'wagmi'
+import { useAccount, useReadContract, useSendTransaction } from 'wagmi'
 import { encodeExecute, encodeRegisterKey, encodeUpdateKeySettings, hashKey, KeyType } from '@/lib/calibur'
 
 const USDC_ADDRESS = '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as const
@@ -91,38 +91,27 @@ export const Balance = () => {
   const {
     data: balance,
     isLoading: isBalanceLoading,
-    refetch: refetchBalance,
   } = useReadContract({
     address: USDC_ADDRESS,
     abi: erc20Abi,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    query: { enabled: !!address },
+    query: { enabled: !!address, refetchInterval: 30_000 },
   })
 
-  const { data: mockBalance, refetch: refetchMockBalance } = useReadContract({
+  const { data: mockBalance } = useReadContract({
     address: MOCK_ERC20_ADDRESS,
     abi: erc20Abi,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    query: { enabled: !!address },
+    query: { enabled: !!address, refetchInterval: 30_000 },
   })
-
-  const { data: blockNumber } = useBlockNumber({ watch: true })
 
   const formattedBalance = balance !== undefined ? formatUnits(balance, 6) : '0'
   const formattedMockBalance = mockBalance !== undefined ? formatUnits(mockBalance, 18) : '0'
   const hasBalance = balance !== undefined && balance > BigInt(0)
 
   const [countdown, setCountdown] = useState<number | null>(null)
-
-  // Refetch balances on every new block
-  useEffect(() => {
-    if (blockNumber) {
-      refetchBalance()
-      refetchMockBalance()
-    }
-  }, [blockNumber, refetchBalance, refetchMockBalance])
 
   const fetchDcaStatus = useCallback(async () => {
     if (!address) return

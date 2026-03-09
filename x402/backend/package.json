@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.44.0",
-    "@openfort/openfort-node": "^0.9.2",
+    "@openfort/openfort-node": "^0.10.1",
     "dotenv": "^16.3.1",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",

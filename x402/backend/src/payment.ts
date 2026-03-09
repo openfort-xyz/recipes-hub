@@ -263,8 +263,7 @@ export type FacilitatorAuth = { keyId: string; keySecret: string };
 function isCdpFacilitator(baseUrl: string): boolean {
 	try {
 		const url = new URL(baseUrl);
-		const allowedHosts = ["cdp.coinbase.com"];
-		return allowedHosts.includes(url.hostname);
+		return url.hostname === "cdp.coinbase.com" || url.hostname.endsWith(".cdp.coinbase.com");
 	} catch {
 		// If the URL cannot be parsed, it is not a valid CDP facilitator URL.
 		return false;
@@ -364,8 +363,8 @@ export async function verifyWithFacilitator(
 		throw new FacilitatorError(
 			"FACILITATOR_VERIFY_FAILED",
 			data.invalidMessage ??
-				data.invalidReason ??
-				`Verify failed: ${res.status}`,
+			data.invalidReason ??
+			`Verify failed: ${res.status}`,
 		);
 	}
 	if (data.isValid) {
@@ -534,7 +533,7 @@ export async function createBackendWalletPayment(
 	return encoded;
 }
 
-// ---- Gas sponsorship (Openfort policy) ----
+// ---- Gas sponsorship (Openfort fee sponsorship) ----
 // USDC transferWithAuthorization contract ABI (EIP-3009; payer submits)
 const TRANSFER_WITH_AUTHORIZATION_ABI = [
 	{
@@ -733,13 +732,13 @@ async function getDelegatedAccountAuth(
 	if (typeof backend.update === "function") {
 		try {
 			const updated = await backend.update({
-				id: walletId,
+				walletId: account?.walletId,
+				accountId: account?.id,
 				accountType: "Delegated Account",
-				chainType: "EVM",
 				chainId,
 				implementationType: "Calibur",
 			});
-			const delegatedId = updated?.delegatedAccount?.id;
+			const delegatedId = updated?.id;
 			if (delegatedId)
 				return { delegatedAccountId: delegatedId, signedAuthorization };
 		} catch (updateErr) {
@@ -767,13 +766,13 @@ async function getDelegatedAccountAuth(
  * same on-chain address as EOA but with EIP-7702 code) is the transaction sender. Backend wallet must
  * be upgraded to a Delegated Account for the chain; see
  * https://www.openfort.io/docs/products/server/usage (Sending gasless transactions).
- * When policyId is empty, no policy is sent and Openfort uses project-scoped fee sponsorship (auto-discovered).
- * When policyId is set, it is sent for transaction-scoped fee sponsorship.
+ * When feeSponsorshipId is empty, no policy is sent and Openfort uses project-scoped fee sponsorship (auto-discovered).
+ * When feeSponsorshipId is set, it is sent for transaction-scoped fee sponsorship.
  */
 export async function submitTransferWithAuthorizationGasless(
 	openfortClient: Openfort,
 	walletId: string,
-	policyId: string,
+	feeSponsorshipId: string,
 	payload: PaymentPayload,
 	asset: Address,
 	rpcUrl: string,
@@ -821,7 +820,7 @@ export async function submitTransferWithAuthorizationGasless(
 	const createParams = {
 		chainId,
 		account: delegatedAccountId,
-		...(policyId.trim() ? { policy: policyId.trim() } : {}),
+		...(feeSponsorshipId.trim() ? { policy: feeSponsorshipId.trim() } : {}),
 		signedAuthorization: signedAuth,
 		interactions: [{ to: asset, data }],
 	};
@@ -840,7 +839,7 @@ export async function submitTransferWithAuthorizationGasless(
 		throw new PaymentVerificationError(
 			"TX_BROADCAST_FAILED",
 			invalidPol
-				? `${msg} Use a fee sponsorship policy from the Fee sponsorships tab (not a backend wallet policy). For project-scoped gas sponsorship, leave OPENFORT_POLICY_ID empty.`
+				? `${msg} Use a fee sponsorship from the Fee sponsorships tab (not a backend wallet policy). For project-scoped gas sponsorship, leave OPENFORT_FEE_SPONSORSHIP_ID empty.`
 				: msg,
 		);
 	}
@@ -924,7 +923,7 @@ export async function submitTransferWithAuthorizationGasless(
 	if (!txHash) {
 		throw new PaymentVerificationError(
 			"TX_BROADCAST_FAILED",
-			`Openfort intent ${intent.id} created but no transactionHash. Check fee sponsorship (${policyId ? `policy ${policyId}` : "project-scoped policy"}) in Openfort dashboard. See server logs for intent/response details.`,
+			`Openfort intent ${intent.id} created but no transactionHash. Check fee sponsorship (${feeSponsorshipId ? `fee sponsorship ${feeSponsorshipId}` : "project-scoped fee sponsorship"}) in Openfort dashboard. See server logs for intent/response details.`,
 		);
 	}
 	return txHash as Hex;

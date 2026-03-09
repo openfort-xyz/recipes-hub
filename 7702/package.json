@@ -1,5 +1,5 @@
 {
-  "name": "openfort-permissionless-7702",
+  "name": "openfort-7702",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,8 +11,8 @@
     "format": "biome format --write ."
   },
   "dependencies": {
-    "@openfort/openfort-node": "^0.7.3",
-    "@openfort/react": "^0.2.5",
+    "@openfort/openfort-node": "^0.10.1",
+    "@openfort/react": "1.0.1",
     "@radix-ui/react-slot": "^1.2.0",
     "@tanstack/react-query": "^5.74.7",
     "@types/node": "^22.15.3",
@@ -27,7 +27,6 @@
     "lucide-react": "^0.507.0",
     "next": "^15.3.1",
     "os-browserify": "^0.3.0",
-    "permissionless": "^0.2.46",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "stream-browserify": "^3.0.0",
@@ -46,5 +45,6 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.4",
     "tw-animate-css": "^1.2.9"
-  }
+  },
+  "packageManager": "pnpm@10.30.3+sha512.c961d1e0a2d8e354ecaa5166b822516668b7f44cb5bd95122d590dd81922f606f5473b6d23ec4a5be05e7fcd18e8488d47d978bbe981872f1145d06e9a740017"
 }

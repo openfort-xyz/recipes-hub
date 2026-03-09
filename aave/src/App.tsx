@@ -1,7 +1,7 @@
 import { useUser } from "@openfort/react";
 import { useMemo } from 'react';
 import { useAccount, useReadContract } from "wagmi";
-import { usdcAbi, USDC_CONTRACT_ADDRESS } from './contracts/usdc';
+import { usdcAbi, USDC_ADDRESSES } from './contracts/usdc';
 import { evmAddress, useAaveMarkets, chainId } from "@aave/react";
 import { MainLayout } from './components/MainLayout';
 import { WalletBalanceCard } from './components/WalletBalanceCard';
@@ -15,14 +15,16 @@ function App() {
   const { isAuthenticated } = useUser();
 
 
+  const usdcAddress = currentChainId ? USDC_ADDRESSES[currentChainId] : undefined;
+
   // Read USDC balance
   const { data: usdcBalance, refetch: refetchUsdcBalance } = useReadContract({
-    address: USDC_CONTRACT_ADDRESS,
+    address: usdcAddress,
     abi: usdcAbi,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address,
+      enabled: !!address && !!usdcAddress,
     },
   }) as { data: bigint | undefined; refetch: () => Promise<any> };
 
@@ -66,7 +68,8 @@ function App() {
       return {
         marketAddress: market.address,
         currencyAddress: usdcSupplyReserve.underlyingToken.address,
-        chainId: market.chain.chainId
+        chainId: market.chain.chainId,
+        supplyCapReached: usdcSupplyReserve.supplyInfo?.supplyCapReached ?? false,
       };
     }
     return null;
@@ -80,7 +83,9 @@ function App() {
     isSupplying,
     isWithdrawing,
     supplying,
-    withdrawing
+    withdrawing,
+    supplyError,
+    withdrawError,
   } = useAaveOperations(usdcReserve, usdcSupplyData, refetchUsdcBalance, refreshUserSupplies);
 
   return (
@@ -113,6 +118,8 @@ function App() {
         withdrawingLoading={withdrawing.loading}
         onDepositToAave={handleDepositToAave}
         onWithdrawFromAave={handleWithdrawFromAave}
+        supplyError={supplyError}
+        withdrawError={withdrawError}
       />
     </MainLayout>
   );

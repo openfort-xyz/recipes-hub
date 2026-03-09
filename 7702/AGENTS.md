@@ -26,7 +26,7 @@ Required variables:
 # Openfort Project Keys
 NEXT_PUBLIC_OPENFORT_PUBLISHABLE_KEY=your_openfort_key
 OPENFORT_SECRET_KEY=your_secret_key
-NEXT_PUBLIC_OPENFORT_POLICY_ID=your_policy_id
+NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID=your_policy_id
 
 # Openfort Shield Keys
 NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY=your_shield_key

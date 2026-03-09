@@ -1,6 +1,7 @@
 'use client'
 
-import { AccountTypeEnum, RecoveryMethod, useUser, useWallets } from '@openfort/react'
+import { AccountTypeEnum, RecoveryMethod, useUser } from '@openfort/react'
+import { useEthereumEmbeddedWallet } from '@openfort/react/ethereum'
 import { useEffect, useState } from 'react'
 import { useAccount } from 'wagmi'
 
@@ -29,17 +30,10 @@ function useIsPasskeyAvailable() {
 }
 
 export const Wallets = () => {
-  const {
-    wallets,
-    isLoadingWallets,
-    activeWallet,
-    availableWallets,
-    setActiveWallet,
-    isConnecting,
-    createWallet,
-    error: walletError,
-    isCreating,
-  } = useWallets()
+  const walletHook = useEthereumEmbeddedWallet()
+  const { wallets, activeWallet, isLoading: isLoadingWallets, isConnecting, create, setActive, status } = walletHook
+  const walletError = walletHook.isError && 'error' in walletHook ? (walletHook as { error: string }).error : null
+  const isCreating = status === 'creating'
   const { user, isAuthenticated } = useUser()
   const { isConnected } = useAccount()
   const isPasskeyAvailable = useIsPasskeyAvailable()
@@ -60,12 +54,10 @@ export const Wallets = () => {
         setError('Please enter a recovery password.')
         return
       }
-      await createWallet({
-        accountType: AccountTypeEnum.DELEGATED_ACCOUNT,
-        recovery:
-          recoveryMethod === RecoveryMethod.PASSKEY
-            ? { recoveryMethod: RecoveryMethod.PASSKEY }
-            : { recoveryMethod: RecoveryMethod.PASSWORD, password },
+      await create({
+        accountType: AccountTypeEnum.SMART_ACCOUNT,
+        recoveryMethod,
+        password: recoveryMethod === RecoveryMethod.PASSWORD ? password : undefined,
       })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Wallet creation failed'
@@ -85,15 +77,10 @@ export const Wallets = () => {
         setError('Please enter your recovery password.')
         return
       }
-      await setActiveWallet({
-        walletId: 'xyz.openfort',
+      await setActive({
         address: wallet.address,
-        recovery:
-          wallet.recoveryMethod === RecoveryMethod.PASSKEY
-            ? { recoveryMethod: RecoveryMethod.PASSKEY }
-            : wallet.recoveryMethod === RecoveryMethod.PASSWORD
-              ? { recoveryMethod: RecoveryMethod.PASSWORD, password }
-              : undefined,
+        recoveryMethod: wallet.recoveryMethod,
+        password: wallet.recoveryMethod === RecoveryMethod.PASSWORD ? password : undefined,
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Recovery failed')
@@ -101,7 +88,7 @@ export const Wallets = () => {
   }
 
   // No wallets yet — create one
-  if (availableWallets.length === 0) {
+  if (wallets.length === 0) {
     return (
       <div className="space-y-4">
         <h1>Create a wallet</h1>
@@ -134,7 +121,7 @@ export const Wallets = () => {
             Passkeys are not available on this device. Using password recovery.
           </p>
         )}
-        {(error || walletError) && <p className="text-red-500 text-sm">{error || walletError?.message}</p>}
+        {(error || walletError) && <p className="text-red-500 text-sm">{error || walletError}</p>}
       </div>
     )
   }
@@ -189,7 +176,7 @@ export const Wallets = () => {
           </div>
         )}
 
-        {(error || walletError) && <p className="text-red-500 text-sm">{error || walletError?.message}</p>}
+        {(error || walletError) && <p className="text-red-500 text-sm">{error || walletError}</p>}
 
         <div className={wallets.length > 0 ? 'border-t border-border pt-4 space-y-3' : 'space-y-3'}>
           {wallets.length > 0 && <p className="text-sm text-muted-foreground">Or create a new wallet:</p>}

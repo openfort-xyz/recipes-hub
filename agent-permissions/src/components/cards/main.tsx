@@ -1,6 +1,7 @@
 'use client'
 
-import { useOpenfort, useUser, useWallets } from '@openfort/react'
+import { useOpenfort, useUser } from '@openfort/react'
+import { useEthereumEmbeddedWallet } from '@openfort/react/ethereum'
 import { useAccount } from 'wagmi'
 import { Auth } from './auth'
 import { Balance } from './balance'
@@ -12,7 +13,7 @@ function useStep(): Step {
   const { isLoading: isSdkLoading } = useOpenfort()
   const { isAuthenticated } = useUser()
   const { isConnected } = useAccount()
-  const { availableWallets, activeWallet, isLoadingWallets, isConnecting } = useWallets()
+  const { activeWallet, isLoading: isLoadingWallets, isConnecting } = useEthereumEmbeddedWallet()
 
   // SDK still initializing — show nothing to avoid flashing auth/wallet screens
   if (isSdkLoading) return 'loading'

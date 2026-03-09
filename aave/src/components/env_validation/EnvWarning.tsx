@@ -41,7 +41,7 @@ const EnvWarning: React.FC<EnvWarningProps> = ({ children }) => {
     { key: 'VITE_OPENFORT_PUBLISHABLE_KEY', name: 'Openfort Project Publishable Key' },
     { key: 'VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY', name: 'Openfort Shield Publishable Key' },
     { key: 'VITE_BACKEND_URL', name: 'Backend URL' },
-    { key: 'VITE_OPENFORT_POLICY_ID', name: 'Openfort Policy ID' },
+    { key: 'VITE_OPENFORT_FEE_SPONSORSHIP_ID', name: 'Openfort Fee Sponsorship ID' },
   ];
 
   const missingEnvVars = requiredEnvVars.filter(

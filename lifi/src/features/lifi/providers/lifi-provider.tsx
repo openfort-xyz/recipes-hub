@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type FC, type PropsWithChildren, useEffect, useState } from "react";
 import type { Config, CreateConnectorFn } from "wagmi";
 import { initializeLiFiConfig, loadSupportedChains } from "../services/lifi-config";
-import { useWallets } from "@openfort/react";
+import { useEthereumEmbeddedWallet } from "@openfort/react/ethereum";
 
 interface LiFiProviderProps extends PropsWithChildren {
   wagmiConfig: Config;
@@ -17,7 +17,7 @@ export const LiFiProvider: FC<LiFiProviderProps> = ({
   wagmiConfig,
   connectors,
 }) => {
-  const { isLoadingWallets } = useWallets();
+  const { isLoading: isLoadingWallets } = useEthereumEmbeddedWallet();
   const [isInitialized, setIsInitialized] = useState(false);
   const isReady = !isLoadingWallets;
 

@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
         paymaster: paymasterClient,
         client: viemClient,
         paymasterContext: {
-          policyId: process.env.NEXT_PUBLIC_POLICY_ID,
+          policyId: process.env.NEXT_PUBLIC_FEE_SPONSORSHIP_ID,
         },
         transport: rpcTransport,
       })
@@ -321,7 +321,7 @@ export async function POST(request: NextRequest) {
       paymaster: paymasterClient,
       client: viemClient,
       paymasterContext: {
-        policyId: process.env.NEXT_PUBLIC_POLICY_ID,
+        policyId: process.env.NEXT_PUBLIC_FEE_SPONSORSHIP_ID,
       },
       transport: rpcTransport,
     })

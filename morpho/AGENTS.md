@@ -17,7 +17,7 @@
 
 ## Testing instructions
 - `pnpm lint`
-- Manually validate supply, withdraw, balance display, and vault APY flows after changing API or policy settings.
+- Manually validate supply, withdraw, balance display, and vault APY flows after changing API or fee sponsorship settings.
 - Ensure the external backend is running with populated Shield credentials prior to UI testing.
 
 ## Code style

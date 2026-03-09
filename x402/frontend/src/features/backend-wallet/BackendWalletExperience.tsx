@@ -31,6 +31,7 @@ interface BackendWalletStatus {
 interface CreatedWallet {
   id: string
   address: string
+  delegatedAccountId?: string
 }
 
 function getExplorerAddressUrl(address: string, network?: string): string {
@@ -437,8 +438,8 @@ export function BackendWalletExperience() {
             Use a <strong>separate</strong> recipient address (not your backend
             or embedded wallet). Set{' '}
             <code className="rounded bg-zinc-700 px-1">PAY_TO_ADDRESS</code> in
-            backend <code className="rounded bg-zinc-700 px-1">.env.local</code>,
-            restart, then fund Payer and pay from each tab.
+            backend <code className="rounded bg-zinc-700 px-1">.env.local</code>
+            , restart, then fund Payer and pay from each tab.
           </p>
         </div>
 
@@ -538,7 +539,8 @@ export function BackendWalletExperience() {
                   </div>
                 ) : status?.payToAddress ? null : (
                   <div className="text-sm text-zinc-500">
-                    Recipient: Not set (set PAY_TO_ADDRESS in backend .env.local)
+                    Recipient: Not set (set PAY_TO_ADDRESS in backend
+                    .env.local)
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
@@ -600,6 +602,21 @@ export function BackendWalletExperience() {
                     copyLabel="id"
                     onCopy={copyToClipboard}
                   />
+                  {createdWallet.delegatedAccountId ? (
+                    <AddressRow
+                      label="OPENFORT_DELEGATED_ACCOUNT_ID"
+                      value={`OPENFORT_DELEGATED_ACCOUNT_ID=${createdWallet.delegatedAccountId}`}
+                      copyValue={`OPENFORT_DELEGATED_ACCOUNT_ID=${createdWallet.delegatedAccountId}`}
+                      copied={copied}
+                      copyLabel="delegatedAccountId"
+                      onCopy={copyToClipboard}
+                    />
+                  ) : (
+                    <p className="text-xs text-yellow-400">
+                      ⚠ Delegated account not created — check server logs for
+                      [upgrade] output.
+                    </p>
+                  )}
                 </div>
               ) : null}
             </>

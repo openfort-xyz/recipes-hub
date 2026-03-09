@@ -3,8 +3,8 @@ import { Providers } from '@/components/Providers'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Openfort + Permissionless + 7702',
-  description: 'A demo of Openfort with Permissionless SDK for sending UserOperations',
+  title: 'Openfort + 7702',
+  description: 'A demo of Openfort embedded wallets with EIP-7702 authorization and gasless transactions',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
