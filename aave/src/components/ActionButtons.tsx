@@ -17,6 +17,8 @@ interface ActionButtonsProps {
   withdrawingLoading: boolean;
   onDepositToAave: () => void;
   onWithdrawFromAave: () => void;
+  supplyError: string | null;
+  withdrawError: string | null;
 }
 
 export function ActionButtons({
@@ -30,8 +32,12 @@ export function ActionButtons({
   isWithdrawing,
   withdrawingLoading,
   onDepositToAave,
-  onWithdrawFromAave
+  onWithdrawFromAave,
+  supplyError,
+  withdrawError,
 }: ActionButtonsProps) {
+  const supplyCapReached = usdcReserve?.supplyCapReached ?? false;
+
   const handleSupplyClick = () => {
     if (!usdcBalance || usdcBalance < BigInt(100000)) { // 0.1 USDC = 100,000 (6 decimals)
       alert('Insufficient balance. You need at least 0.1 USDC to supply to the pool.');
@@ -51,7 +57,7 @@ export function ActionButtons({
         <div className="w-80 space-y-4">
           <button
             onClick={handleSupplyClick}
-            disabled={isLoading || !usdcReserve || !usdcBalance || usdcBalance === 0n}
+            disabled={isLoading || !usdcReserve || !usdcBalance || usdcBalance === 0n || supplyCapReached}
             className="w-full bg-white text-black font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg border border-gray-200 flex flex-row items-center justify-center hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {(isSupplying || supplyingLoading) && !isWithdrawing && !withdrawingLoading ? (
@@ -66,10 +72,13 @@ export function ActionButtons({
             ) : (
               <>
                 <span className="mr-2">️↗️</span>
-                Supply 0.1 USDC to pool
+                {supplyCapReached ? 'Supply cap reached' : 'Supply 0.1 USDC to pool'}
               </>
             )}
           </button>
+          {supplyCapReached && (
+            <p className="text-yellow-400 text-xs">The USDC supply cap for this market is full. Try on mainnet or wait for capacity to free up.</p>
+          )}
 
           <button
             onClick={onWithdrawFromAave}
@@ -92,6 +101,12 @@ export function ActionButtons({
               </>
             )}
           </button>
+          {supplyError && (
+            <p className="text-red-400 text-sm">{supplyError}</p>
+          )}
+          {withdrawError && (
+            <p className="text-red-400 text-sm">{withdrawError}</p>
+          )}
         </div>
       )}
     </div>

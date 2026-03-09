@@ -11,6 +11,8 @@ export function useAaveOperations(usdcReserve: any, usdcSupplyData: any, refetch
   const [sendTransaction, sending] = useSendTransaction(walletClient);
   const [isSupplying, setIsSupplying] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [supplyError, setSupplyError] = useState<string | null>(null);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
 
   const handleDepositToAave = async () => {
     if (!walletClient || !walletClient.account?.address || !usdcReserve) {
@@ -18,6 +20,7 @@ export function useAaveOperations(usdcReserve: any, usdcSupplyData: any, refetch
       return;
     }
     setIsSupplying(true);
+    setSupplyError(null);
     try {
       const supplyResult = await supply({
         market: evmAddress(usdcReserve.marketAddress),
@@ -73,7 +76,9 @@ export function useAaveOperations(usdcReserve: any, usdcSupplyData: any, refetch
         await refreshUserSupplies();
       }
     } catch (error) {
-      console.error("Aave deposit failed:", error);
+      const msg = error instanceof Error ? error.message : String(error);
+      const match = msg.match(/\[GraphQL\] Bad user input - (.+)/)
+      setSupplyError(match ? match[1] : msg);
     } finally {
       setIsSupplying(false);
     }
@@ -89,6 +94,7 @@ export function useAaveOperations(usdcReserve: any, usdcSupplyData: any, refetch
       return;
     }
     setIsWithdrawing(true);
+    setWithdrawError(null);
     try {
       const withdrawResult = await withdraw({
         market: evmAddress(usdcReserve.marketAddress),
@@ -135,6 +141,9 @@ export function useAaveOperations(usdcReserve: any, usdcSupplyData: any, refetch
         await refreshUserSupplies();
       }
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      const match = msg.match(/\[GraphQL\] Bad user input - (.+)/)
+      setWithdrawError(match ? match[1] : msg);
     } finally {
       setIsWithdrawing(false);
     }
@@ -149,6 +158,8 @@ export function useAaveOperations(usdcReserve: any, usdcSupplyData: any, refetch
     isSupplying,
     isWithdrawing,
     supplying,
-    withdrawing
+    withdrawing,
+    supplyError,
+    withdrawError,
   };
 }
