@@ -2,7 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft } from "lucide-react";
-import { useWallets, useUser } from "@openfort/react";
+import { useUser } from "@openfort/react";
+import { useEthereumEmbeddedWallet } from "@openfort/react/ethereum";
 
 interface ActionButtonsProps {
   isLoading: boolean;
@@ -31,9 +32,9 @@ export default function ActionButtons({
   onBackToForm,
   onShowExecutionDisplay,
 }: ActionButtonsProps) {
-  const { activeWallet } = useWallets();
+  const { status } = useEthereumEmbeddedWallet();
   const { isAuthenticated } = useUser();
-  const isConnected = !!activeWallet && isAuthenticated;
+  const isConnected = status === "connected" && isAuthenticated;
 
   if (showRouteDisplay) {
     // Route display view - show Execute Swap, View Execution (if active), and Back buttons

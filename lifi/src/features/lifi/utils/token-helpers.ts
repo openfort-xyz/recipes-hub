@@ -48,9 +48,9 @@ export const getPreferredChain = (
   }
 
   const matches = [
+    walletChainId ? chains.find((chain) => chain.id === walletChainId) : null,
     chains.find((chain) => chain.id === ETHEREUM_CHAIN_ID),
     chains.find((chain) => chain.key?.toLowerCase() === "ethereum"),
-    walletChainId ? chains.find((chain) => chain.id === walletChainId) : null,
     chains[0],
   ];
 

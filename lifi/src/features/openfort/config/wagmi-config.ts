@@ -1,4 +1,4 @@
-import { getDefaultConfig } from "@openfort/react";
+import { getDefaultConfig } from "@openfort/react/wagmi";
 import { createConfig } from "wagmi";
 import {
   arbitrum,
