@@ -263,8 +263,7 @@ export type FacilitatorAuth = { keyId: string; keySecret: string };
 function isCdpFacilitator(baseUrl: string): boolean {
 	try {
 		const url = new URL(baseUrl);
-		const allowedHosts = ["cdp.coinbase.com"];
-		return allowedHosts.includes(url.hostname);
+		return url.hostname === "cdp.coinbase.com" || url.hostname.endsWith(".cdp.coinbase.com");
 	} catch {
 		// If the URL cannot be parsed, it is not a valid CDP facilitator URL.
 		return false;
@@ -364,8 +363,8 @@ export async function verifyWithFacilitator(
 		throw new FacilitatorError(
 			"FACILITATOR_VERIFY_FAILED",
 			data.invalidMessage ??
-				data.invalidReason ??
-				`Verify failed: ${res.status}`,
+			data.invalidReason ??
+			`Verify failed: ${res.status}`,
 		);
 	}
 	if (data.isValid) {
@@ -733,13 +732,13 @@ async function getDelegatedAccountAuth(
 	if (typeof backend.update === "function") {
 		try {
 			const updated = await backend.update({
-				id: walletId,
+				walletId: account?.walletId,
+				accountId: account?.id,
 				accountType: "Delegated Account",
-				chainType: "EVM",
 				chainId,
 				implementationType: "Calibur",
 			});
-			const delegatedId = updated?.delegatedAccount?.id;
+			const delegatedId = updated?.id;
 			if (delegatedId)
 				return { delegatedAccountId: delegatedId, signedAuthorization };
 		} catch (updateErr) {

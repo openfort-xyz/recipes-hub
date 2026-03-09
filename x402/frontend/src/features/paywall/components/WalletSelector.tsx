@@ -1,11 +1,11 @@
-import type { UserWallet } from '@openfort/react'
+import type { ConnectedEmbeddedEthereumWallet } from '@openfort/react/ethereum'
 
 import { Spinner } from './Spinner'
 
 interface WalletSelectorProps {
-  wallets: UserWallet[]
+  wallets: ConnectedEmbeddedEthereumWallet[]
   isConnecting: boolean
-  onSelect: (wallet: UserWallet) => void
+  onSelect: (wallet: ConnectedEmbeddedEthereumWallet) => void
 }
 
 export function WalletSelector({

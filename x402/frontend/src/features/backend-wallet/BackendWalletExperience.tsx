@@ -31,6 +31,7 @@ interface BackendWalletStatus {
 interface CreatedWallet {
   id: string
   address: string
+  delegatedAccountId?: string
 }
 
 function getExplorerAddressUrl(address: string, network?: string): string {
@@ -600,6 +601,20 @@ export function BackendWalletExperience() {
                     copyLabel="id"
                     onCopy={copyToClipboard}
                   />
+                  {createdWallet.delegatedAccountId ? (
+                    <AddressRow
+                      label="OPENFORT_DELEGATED_ACCOUNT_ID"
+                      value={`OPENFORT_DELEGATED_ACCOUNT_ID=${createdWallet.delegatedAccountId}`}
+                      copyValue={`OPENFORT_DELEGATED_ACCOUNT_ID=${createdWallet.delegatedAccountId}`}
+                      copied={copied}
+                      copyLabel="delegatedAccountId"
+                      onCopy={copyToClipboard}
+                    />
+                  ) : (
+                    <p className="text-xs text-yellow-400">
+                      ⚠ Delegated account not created — check server logs for [upgrade] output.
+                    </p>
+                  )}
                 </div>
               ) : null}
             </>

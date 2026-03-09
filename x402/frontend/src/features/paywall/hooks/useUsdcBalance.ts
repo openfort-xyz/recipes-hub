@@ -11,14 +11,12 @@ interface UseUsdcBalanceOptions {
   address?: `0x${string}`
   paymentRequirements?: PaymentRequirements
   publicClient: BalanceClient
-  refreshIntervalMs: number
 }
 
 export function useUsdcBalance({
   address,
   paymentRequirements,
   publicClient,
-  refreshIntervalMs,
 }: UseUsdcBalanceOptions) {
   const [formattedBalance, setFormattedBalance] = useState('')
   const [isRefreshingBalance, setIsRefreshingBalance] = useState(false)
@@ -27,15 +25,11 @@ export function useUsdcBalance({
     async (isManual = false) => {
       if (!address || !paymentRequirements) {
         setFormattedBalance('')
-        if (isManual) {
-          setIsRefreshingBalance(false)
-        }
+        if (isManual) setIsRefreshingBalance(false)
         return
       }
 
-      if (isManual) {
-        setIsRefreshingBalance(true)
-      }
+      if (isManual) setIsRefreshingBalance(true)
 
       try {
         const balance = await getUSDCBalance(
@@ -46,34 +40,20 @@ export function useUsdcBalance({
       } catch (error) {
         console.error('Failed to check USDC balance', error)
       } finally {
-        if (isManual) {
-          setIsRefreshingBalance(false)
-        }
+        if (isManual) setIsRefreshingBalance(false)
       }
     },
     [address, paymentRequirements, publicClient],
   )
 
+  // Fetch once on mount / when address or requirements change
   useEffect(() => {
     if (!address || !paymentRequirements) {
       setFormattedBalance('')
       return
     }
-
     void refreshBalance()
   }, [address, paymentRequirements, refreshBalance])
-
-  useEffect(() => {
-    if (!address || !paymentRequirements) {
-      return
-    }
-
-    const intervalId = setInterval(() => {
-      void refreshBalance()
-    }, refreshIntervalMs)
-
-    return () => clearInterval(intervalId)
-  }, [address, paymentRequirements, refreshBalance, refreshIntervalMs])
 
   return {
     formattedBalance,

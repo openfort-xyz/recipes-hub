@@ -1,4 +1,5 @@
-import { type UserWallet, useUser, useWallets } from '@openfort/react'
+import { useUser } from '@openfort/react'
+import { type ConnectedEmbeddedEthereumWallet, useEthereumEmbeddedWallet } from '@openfort/react/ethereum'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPublicClient, erc20Abi, formatUnits, http } from 'viem'
 import { base, baseSepolia } from 'viem/chains'
@@ -31,7 +32,6 @@ import {
   isDestinationConfigured,
 } from './utils/paymentGuards'
 
-const BALANCE_REFRESH_INTERVAL_MS = 3000
 const USDC_DECIMALS = 6
 
 export function PaywallExperience() {
@@ -46,8 +46,9 @@ export function PaywallExperience() {
   const { address, isConnected, chainId } = useAccount()
   const { switchChainAsync } = useSwitchChain()
   const { isAuthenticated } = useUser()
-  const { wallets, isLoadingWallets, setActiveWallet, isConnecting } =
-    useWallets()
+  const { wallets, status: walletStatus, setActive } = useEthereumEmbeddedWallet()
+  const isLoadingWallets = walletStatus === 'fetching-wallets'
+  const isConnecting = walletStatus === 'connecting' || walletStatus === 'reconnecting'
 
   // Unified payment flow hook
   const {
@@ -103,7 +104,6 @@ export function PaywallExperience() {
     address,
     paymentRequirements,
     publicClient,
-    refreshIntervalMs: BALANCE_REFRESH_INTERVAL_MS,
   })
 
   const [recipientBalance, setRecipientBalance] = useState<bigint>(0n)
@@ -262,10 +262,10 @@ export function PaywallExperience() {
   ])
 
   const connectWallet = useCallback(
-    (wallet: UserWallet) => {
-      void setActiveWallet(wallet.id)
+    (wallet: ConnectedEmbeddedEthereumWallet) => {
+      void setActive({ address: wallet.address })
     },
-    [setActiveWallet],
+    [setActive],
   )
 
   const handleTryAnotherPayment = useCallback(() => {

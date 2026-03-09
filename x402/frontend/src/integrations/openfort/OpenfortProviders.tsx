@@ -1,9 +1,5 @@
-import {
-  AuthProvider,
-  getDefaultConfig,
-  OpenfortProvider,
-  RecoveryMethod,
-} from '@openfort/react'
+import { AuthProvider, OpenfortProvider, RecoveryMethod } from '@openfort/react'
+import { getDefaultConfig } from '@openfort/react/wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 import { baseSepolia } from 'viem/chains'
@@ -29,7 +25,10 @@ export function OpenfortProviders({ children }: { children: React.ReactNode }) {
           walletConfig={{
             shieldPublishableKey: import.meta.env
               .VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY!, // The Shield publishable key from https://dashboard.openfort.io
-            ethereumProviderPolicyId: import.meta.env.VITE_OPENFORT_POLICY_ID, // The policy ID for sponsoring transactions
+            ethereum: {
+              chainId: baseSepolia.id, // The chain ID for the Ethereum network you want to use
+              ethereumProviderPolicyId: import.meta.env.VITE_OPENFORT_POLICY_ID, // The policy ID for sponsoring transactions
+            },
             createEncryptedSessionEndpoint: import.meta.env
               .VITE_CREATE_ENCRYPTED_SESSION_ENDPOINT, // The endpoint to create an encryption session for automatic wallet recovery
           }}
