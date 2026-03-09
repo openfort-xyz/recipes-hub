@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project overview
-- Collection of Openfort integration samples (`7702`, `aave`, `hyperliquid`, `lifi`, `morpho`, `usdc`, `x402`).
+- Collection of Openfort integration samples (`7702`, `aave`, `agent-permissions`, `hyperliquid`, `lifi`, `morpho`, `usdc`, `x402`).
 - Each subdirectory has its own `AGENTS.md` with detailed setup instructions; start at the sample you are modifying.
 
 ## Setup commands
@@ -16,7 +16,7 @@
 ## Code style
 - Frontend web apps use Vite + TypeScript with ESLint or Next.js + TypeScript; keep hooks functional and avoid new global state.
 - The 7702 sample uses Next.js + TypeScript with Biome for formatting/linting and pnpm for package management.
-- The x402 sample uses React + Vite + TypeScript with Biome for formatting/linting and pnpm for package management, with a Node.js built-in http backend.
+- The x402 sample has a React + Vite + TypeScript frontend with Biome for formatting/linting and pnpm, and an Express 5 + TypeScript backend (no linting configured for backend).
 - React Native apps (usdc, hyperliquid) follow Expo Router conventions, functional components, and use pnpm for package management.
 - Backend services are Express with Node 18; keep async handlers tidy and leverage existing logging patterns.
 
