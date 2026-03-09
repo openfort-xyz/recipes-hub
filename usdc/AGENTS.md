@@ -1,8 +1,9 @@
 # AGENTS.md
 
 ## Project overview
-- Expo React Native demo for Openfort embedded wallets moving USDC across Sepolia networks.
+- Expo React Native demo for Openfort embedded wallets with USDC transfers on Ethereum Sepolia.
 - Handles wallet creation, faucet funding, and sponsored transfers via Shield.
+- Base Sepolia is configured as a supported chain in the OpenfortProvider but all transfer logic, USDC contract addresses, and faucet instructions target Ethereum Sepolia only.
 
 ## Setup commands
 - `pnpm install`

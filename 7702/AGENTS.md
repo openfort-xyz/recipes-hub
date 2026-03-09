@@ -16,16 +16,32 @@ pnpm install
 ```
 
 ### Environment Variables
-Create a `.env.local` file with:
+Copy `.env.example` to `.env.local` and fill in real values:
+```bash
+cp .env.example .env.local
 ```
+
+Required variables:
+```
+# Openfort Project Keys
 NEXT_PUBLIC_OPENFORT_PUBLISHABLE_KEY=your_openfort_key
-NEXT_PUBLIC_SHIELD_PUBLISHABLE_KEY=your_shield_key
+OPENFORT_SECRET_KEY=your_secret_key
 NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID=your_policy_id
+
+# Openfort Shield Keys
+NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY=your_shield_key
+OPENFORT_SHIELD_SECRET_KEY=your_shield_secret_key
+OPENFORT_SHIELD_ENCRYPTION_SHARE=your_encryption_share
+
+# Encrypted Session Endpoint
 NEXT_PUBLIC_CREATE_ENCRYPTED_SESSION_ENDPOINT=your_session_endpoint
+
+# Pimlico Configuration
 NEXT_PUBLIC_PIMLICO_API_KEY=your_pimlico_key
 NEXT_PUBLIC_SPONSORSHIP_POLICY_ID=your_sponsorship_policy_id
+
+# Network Configuration
 NEXT_PUBLIC_SEPOLIA_RPC_URL=your_sepolia_rpc_url
-OPENFORT_SECRET_KEY=your_secret_key
 ```
 
 ### Development
@@ -82,7 +98,11 @@ pnpm format
 7702/
 ├── src/
 │   ├── app/              # Next.js App Router
-│   │   ├── api/          # API routes (Shield session)
+│   │   ├── api/
+│   │   │   └── shield-session/
+│   │   │       └── route.ts  # Shield session API route
+│   │   ├── globals.css   # Global styles
+│   │   ├── layout.tsx    # Root layout
 │   │   └── page.tsx      # Main application page
 │   ├── components/       # React components
 │   │   ├── ui/           # UI components (button, card)

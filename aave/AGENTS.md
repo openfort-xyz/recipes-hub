@@ -23,8 +23,9 @@
 
 ## Code style
 - Follows Vite + TypeScript defaults with ESLint (`pnpm lint`).
-- Prefer functional React components and hooks; keep wallet state in React Query where possible.
-- Uses `@aave/react` SDK for Aave protocol interactions.
+- Prefer functional React components and hooks; wallet state is managed through wagmi and `@openfort/react` hooks.
+- Uses `@aave/react`, `@aave/client`, and `@aave/graphql` SDKs for Aave protocol interactions.
+- React Query (`@tanstack/react-query`) is a peer dependency used internally by wagmi and `@aave/react`; application code does not call React Query hooks directly.
 
 ## PR instructions
 - Title format: `[aave] <summary>`.
