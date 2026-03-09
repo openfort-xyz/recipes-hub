@@ -7,7 +7,7 @@ This document provides specific guidance for AI coding assistants working with t
 You are working on a **React + Vite + Express.js** application that demonstrates x402 payment protocol integration with Openfort smart accounts. The stack includes:
 - Frontend: React 18, TypeScript, Tailwind CSS v4, Wagmi, viem
 - Backend: Express.js 5, TypeScript, Openfort Node SDK
-- Tools: Biome (not Prettier), pnpm (not npm), TypeScript 5.8
+- Tools: Biome for frontend (not Prettier; backend has no linter), pnpm (not npm), TypeScript ~5.8.3 (frontend) / ^5.7.0 (backend)
 
 ## Critical Rules
 
@@ -266,6 +266,7 @@ function PaymentUI() { return <div>...</div> }
   - **openfort.ts**: Openfort client initialization
   - **routes.ts**: HTTP endpoints (402 responses, Shield sessions, health)
   - **payment.ts**: Payment validation logic
+  - **cdp-auth.ts**: CDP JWT generation for Coinbase API authentication
 - **dist/**: Compiled JavaScript output
 - **package.json**: Backend dependencies
 

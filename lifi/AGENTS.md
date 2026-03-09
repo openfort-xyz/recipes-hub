@@ -6,7 +6,7 @@
 
 ## Setup commands
 - `pnpm install`
-- `cp .env.example .env.local`
+- Create `.env.local` with the variables listed below (see `.env.example` for a template)
 - `pnpm dev` – starts on `http://localhost:3000`
 
 ## Environment
@@ -21,10 +21,22 @@
 - Manually validate swap flows across different chain combinations (Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche).
 - Test authentication, route discovery, execution tracking, and resume/stop controls.
 
+## Project structure
+```
+src/
+├── app/              # Next.js App Router (layout, page, providers, globals.css)
+├── components/       # Shared UI components (header, footer, mode-toggle, ui/)
+├── features/
+│   ├── lifi/         # LiFi swap feature (components, hooks, services, constants, types)
+│   └── openfort/     # Openfort wallet integration (components, config, hooks, providers)
+└── lib/              # Shared utilities
+```
+
 ## Code style
-- Next.js 15 with App Router and TypeScript; follow existing Tailwind + hooks patterns.
-- Prefer functional React components and keep state in React Query/hooks where possible.
-- Use wagmi hooks for on-chain data and LiFi SDK for routing and execution.
+- Next.js 15 with App Router and TypeScript; Tailwind CSS v4 via `@tailwindcss/postcss`.
+- A legacy `tailwind.config.js` (v3 format) exists alongside the v4 setup; theme tokens are defined in `globals.css` using `@theme inline`.
+- Prefer functional React components and hooks; wagmi hooks for on-chain data, LiFi SDK for routing and execution.
+- ESLint with `next/core-web-vitals` and `next/typescript` configs; enforces `import type` syntax.
 - Maintain clear separation between UI components, providers, and business logic.
 
 ## PR instructions

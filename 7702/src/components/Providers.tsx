@@ -19,9 +19,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
             shieldPublishableKey: process.env.NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY!, // The Shield publishable key from https://dashboard.openfort.io
             ethereum: {
               ethereumFeeSponsorshipId: process.env.NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID, // The fee sponsorship ID for sponsoring transactions
+              accountType: AccountTypeEnum.EOA,
             },
             createEncryptedSessionEndpoint: process.env.NEXT_PUBLIC_CREATE_ENCRYPTED_SESSION_ENDPOINT, // The endpoint to create an encryption session for automatic wallet recovery
-            accountType: AccountTypeEnum.EOA,
           }}
           uiConfig={{
             authProviders: [AuthProvider.EMAIL_OTP, AuthProvider.GUEST, AuthProvider.GOOGLE],
