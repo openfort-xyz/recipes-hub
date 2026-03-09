@@ -39,12 +39,13 @@ export async function authorizeAddress(req: Request, address: string) {
   const { session, user } = await authenticateRequest(req)
 
   const openfort = getOpenfort()
-  const { data: accounts } = await openfort.accounts.evm.embedded.list({
+  const { data: accounts } = await openfort.accounts.list({
     user: user.id,
-    address: getAddress(address),
   })
 
-  if (accounts.length === 0) {
+  const normalizedAddress = getAddress(address)
+  const owned = accounts.some((acc) => getAddress(acc.address) === normalizedAddress)
+  if (!owned) {
     throw new AuthError('Address not owned by authenticated user', 403)
   }
 
