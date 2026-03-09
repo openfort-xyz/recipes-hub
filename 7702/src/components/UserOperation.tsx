@@ -4,12 +4,13 @@ import { OpenfortButton, use7702Authorization, useOpenfort, useSignOut, useUser 
 import { useEthereumEmbeddedWallet } from '@openfort/react/ethereum'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { type Hex, createPublicClient, http, zeroAddress } from 'viem'
+import { createPublicClient, http, zeroAddress } from 'viem'
 import { createBundlerClient, createPaymasterClient, toSimple7702SmartAccount } from 'viem/account-abstraction'
 import { baseSepolia } from 'viem/chains'
 import { useAccount, useSwitchChain, useWalletClient } from 'wagmi'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { toAccount } from 'viem/accounts'
 
 // Simple7702Account implementation (eth-infinitism) — default in viem's toSimple7702SmartAccount
 const SIMPLE_7702_ADDRESS = '0xe6Cae83BdE06E4c305530e199D7217f42808555B'
@@ -26,7 +27,7 @@ export function UserOperation() {
   const { signAuthorization } = use7702Authorization()
 
   const walletClient = useWalletClient()
-  const { chainId } = useAccount()
+  const { chainId,  } = useAccount()
   const { switchChain } = useSwitchChain()
   const { wallets, activeWallet, setActive } = useEthereumEmbeddedWallet()
 
@@ -67,46 +68,21 @@ export function UserOperation() {
         transport: http(),
       })
 
-      // Wrap Openfort embedded wallet as a local account for viem
-      const embeddedOwner = {
-        address: eoa,
-        type: 'local' as const,
-        source: 'custom' as const,
-        publicKey: '0x04' as Hex,
-        nonceManager: undefined,
-        async sign({ hash }: { hash: Hex }) {
-          return (await client.embeddedWallet.signMessage(hash, {
-            hashMessage: false,
-            arrayifyMessage: false,
-          })) as Hex
+      const owner = toAccount({
+        address: walletClient.data.account.address,
+        async sign({ hash }) {
+          return walletClient.data!.signMessage({ message: { raw: hash } })
         },
-        async signMessage({ message }: { message: string | { raw: Hex | Uint8Array } }) {
-          const msg =
-            typeof message === 'string'
-              ? message
-              : message.raw instanceof Uint8Array
-                ? Buffer.from(message.raw).toString('hex')
-                : (message.raw as string)
-          return (await client.embeddedWallet.signMessage(msg, {
-            hashMessage: true,
-            arrayifyMessage: true,
-          })) as Hex
+        async signMessage({ message }) {
+          return walletClient.data!.signMessage({ message })
         },
-        async signTypedData(params: { domain?: unknown; types: unknown; primaryType?: string; message: unknown }) {
-          return (await client.embeddedWallet.signTypedData(
-            params.domain as Record<string, unknown>,
-            params.types as unknown as Record<string, Array<{ name: string; type: string }>>,
-            params.message as Record<string, unknown>,
-          )) as Hex
+        async signTransaction(tx) {
+          return walletClient.data!.signTransaction(tx as any)
         },
-        async signTransaction(): Promise<Hex> {
-          throw new Error('signTransaction not supported for embedded wallets')
+        async signTypedData(typedData) {
+          return walletClient.data!.signTypedData(typedData as any)
         },
-        async signAuthorization(): Promise<{ r: Hex; s: Hex; yParity: number }> {
-          throw new Error('Use use7702Authorization hook instead')
-        },
-      }
-
+      })
       // viem's toSimple7702SmartAccount handles everything:
       // - factory: 0x7702, factoryData: 0x
       // - execute/executeBatch call encoding (Simple7702Account ABI)
@@ -114,7 +90,7 @@ export function UserOperation() {
       // - defaults to implementation 0xe6Cae83BdE06E4c305530e199D7217f42808555B
       const smartAccount = await toSimple7702SmartAccount({
         client: publicClient,
-        owner: embeddedOwner as never,
+        owner: owner as never,
       })
 
       const paymasterClient = createPaymasterClient({
