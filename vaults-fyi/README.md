@@ -44,11 +44,7 @@ From your [Openfort dashboard](https://dashboard.openfort.io):
 
 Sign up at the [vaults.fyi portal](https://portal.vaults.fyi) to get an API key. Keys are typically issued within one business day. See the [SDK quickstart](https://docs.vaults.fyi/sdk/quickstart) for more details.
 
-## 5. Get WalletConnect Project ID
-
-Create a project at [WalletConnect Cloud](https://cloud.walletconnect.com/) and copy the Project ID.
-
-## 6. Configure environment
+## 5. Configure environment
 
 ```bash
 cp .env.example .env
@@ -60,14 +56,13 @@ Fill in:
 VITE_OPENFORT_PUBLISHABLE_KEY=pk_...
 VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY=pk_...
 VITE_OPENFORT_FEE_SPONSORSHIP_ID=pol_...           # optional
-VITE_WALLET_CONNECT_PROJECT_ID=...
 VITE_BACKEND_URL=http://localhost:3000
 VAULTS_FYI_API_KEY=...
 ```
 
 `VAULTS_FYI_API_KEY` is **not** prefixed with `VITE_`. It is read by `vite.config.ts` at server startup and injected into the dev proxy as the `x-api-key` header. The key never reaches the browser bundle. For production deploys, replace the dev proxy with your own backend route that adds the same header.
 
-## 7. Run
+## 6. Run
 
 ```bash
 pnpm install
