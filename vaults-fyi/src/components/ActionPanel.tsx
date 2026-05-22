@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { parseUnits } from "viem";
 import { useQueryClient } from "@tanstack/react-query";
 import { sdk } from "../lib/vaultsFyi";
 import type { VaultOption } from "../hooks/useDepositOptions";
@@ -6,7 +7,8 @@ import { useExecuteAction } from "../hooks/useExecuteAction";
 import { Card } from "./Card";
 
 const NETWORK = "base";
-const DEFAULT_AMOUNT = "1000000"; // 1 USDC, 6 decimals
+const USDC_DECIMALS = 6;
+const DEFAULT_AMOUNT = "1"; // 1 USDC
 
 export function ActionPanel({
   userAddress,
@@ -31,7 +33,10 @@ export function ActionPanel({
           network: NETWORK,
           vaultId: selected.vaultId,
         },
-        query: { assetAddress: selected.asset.address, amount },
+        query: {
+          assetAddress: selected.asset.address,
+          amount: parseUnits(amount.replace(",", "."), USDC_DECIMALS).toString(),
+        },
       });
       await execute(currentActionIndex, actions);
       await queryClient.invalidateQueries({ queryKey: ["positions"] });
@@ -46,14 +51,19 @@ export function ActionPanel({
       subtitle={`${selected.protocol.name} · ${(selected.apy["7day"].total * 100).toFixed(2)}% APY · ${selected.address}`}
     >
       <div className="flex items-center gap-3">
-        <input
-          type="text"
-          inputMode="numeric"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="flex-1 bg-neutral-800 text-white text-sm rounded-lg px-3 py-2 border border-neutral-700"
-          placeholder="Amount in base units (1000000 = 1 USDC)"
-        />
+        <div className="relative flex-1">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="w-full bg-neutral-800 text-white text-sm rounded-lg pl-3 pr-16 py-2 border border-neutral-700"
+            placeholder="Amount in USDC"
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-500">
+            USDC
+          </span>
+        </div>
         <button
           onClick={handleDeposit}
           disabled={preparing || running}
