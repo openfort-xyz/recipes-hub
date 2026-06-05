@@ -132,7 +132,8 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Learn more
 
-- [Openfort backend wallets](https://www.openfort.io/docs)
+- [Recipe walkthrough on Openfort docs](https://www.openfort.io/docs/recipes/mpp)
+- [Openfort backend wallets](https://www.openfort.io/docs/products/server)
 - [`@openfort/openfort-node`](https://www.npmjs.com/package/@openfort/openfort-node)
 - [MPP Protocol](https://machinepayments.dev)
 - [`mppx` SDK](https://www.npmjs.com/package/mppx)
