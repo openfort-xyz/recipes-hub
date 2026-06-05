@@ -1,0 +1,32 @@
+{
+  "name": "openfort-mpp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "check": "biome check --write .",
+    "lint": "biome lint .",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "@openfort/openfort-node": "0.10.5",
+    "mppx": "0.3.6",
+    "next": "16.1.6",
+    "ox": "0.12.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "viem": "2.46.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.4",
+    "@tailwindcss/postcss": "4.1.4",
+    "@types/node": "22.15.3",
+    "@types/react": "19.1.2",
+    "@types/react-dom": "19.1.2",
+    "tailwindcss": "4.1.4",
+    "typescript": "5.8.3"
+  },
+  "packageManager": "pnpm@10.30.3"
+}
