@@ -67,6 +67,8 @@ The dashboard shows the price/recipient/network from the 402 challenge, the Open
 wallet and live balances, and after paying renders the unlocked content, the decoded
 `Payment-Receipt`, and the on-chain settlement signature.
 
+![MPP on Solana dashboard after a payment — status unlocked 200, payer/merchant balances, settlement signature, unlocked content, and the payment receipt](./docs/dashboard.png)
+
 ## How the Openfort integration works
 
 `src/signer.ts` is the whole bridge. `@solana/mpp`'s client builds the charge transaction and
