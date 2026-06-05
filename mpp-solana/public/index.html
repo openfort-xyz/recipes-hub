@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MPP × Openfort — Solana paywall demo</title>
+    <style>
+      :root {
+        --bg: #0c0c10;
+        --card: #15151c;
+        --line: #26262f;
+        --text: #ededf2;
+        --muted: #9b9bab;
+        --accent: #7c5cff;
+        --good: #34d399;
+        --warn: #fbbf24;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        display: flex;
+        justify-content: center;
+        padding: 48px 20px;
+      }
+      .wrap { width: 100%; max-width: 640px; }
+      h1 { font-size: 22px; margin: 0 0 4px; }
+      .sub { color: var(--muted); margin: 0 0 28px; }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+      .row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; }
+      .row .k { color: var(--muted); }
+      .row .v { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; text-align: right; word-break: break-all; }
+      .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+      .pill.locked { background: #3a2030; color: #ff9bb5; }
+      .pill.ok { background: #11352a; color: var(--good); }
+      button {
+        width: 100%;
+        background: var(--accent);
+        color: white;
+        border: 0;
+        border-radius: 10px;
+        padding: 13px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity .15s;
+      }
+      button:hover { opacity: .9; }
+      button:disabled { opacity: .5; cursor: default; }
+      pre {
+        background: #0e0e13;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 12px;
+        overflow: auto;
+        margin: 10px 0 0;
+        color: #c8c8d4;
+      }
+      a { color: var(--accent); }
+      .muted { color: var(--muted); font-size: 13px; }
+      .flash { color: var(--good); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>MPP × Openfort</h1>
+      <p class="sub">An agent paying for an HTTP resource over the Machine Payments Protocol — signed by an Openfort backend Solana wallet.</p>
+
+      <div class="card">
+        <div class="row"><span class="k">Resource</span><span class="v" id="resource">—</span></div>
+        <div class="row"><span class="k">Network</span><span class="v" id="network">—</span></div>
+        <div class="row"><span class="k">Price</span><span class="v" id="price">—</span></div>
+        <div class="row"><span class="k">Status</span><span class="v"><span class="pill locked" id="status">locked · 402</span></span></div>
+      </div>
+
+      <div class="card">
+        <div class="row"><span class="k">Payer wallet (Openfort)</span><span class="v" id="payer">—</span></div>
+        <div class="row"><span class="k">Payer balance</span><span class="v" id="payerBal">—</span></div>
+        <div class="row"><span class="k">Merchant balance</span><span class="v" id="merchantBal">—</span></div>
+      </div>
+
+      <button id="pay">Pay &amp; unlock</button>
+      <p class="muted" id="hint" style="text-align:center;margin-top:10px">Click to run the 402 → sign → settle loop.</p>
+
+      <div class="card" id="result" style="display:none">
+        <div class="row"><span class="k">Result</span><span class="v"><span class="pill ok" id="resultStatus">200</span></span></div>
+        <div class="row"><span class="k">Settlement signature</span><span class="v" id="sig">—</span></div>
+        <div class="muted" style="margin-top:10px">Unlocked content</div>
+        <pre id="body">—</pre>
+        <div class="muted" style="margin-top:6px">Payment receipt</div>
+        <pre id="receipt">—</pre>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id)
+      const fmtSol = (n) => (n == null ? '—' : n.toFixed(6) + ' SOL')
+
+      async function loadState() {
+        const s = await (await fetch('/api/state')).json()
+        $('resource').textContent = s.resourceUrl
+        $('network').textContent = s.challenge.network || '—'
+        const amt = s.challenge.amount
+        const cur = (s.challenge.currency || '').toUpperCase()
+        $('price').textContent = amt ? `${amt} base units · ${cur}` : '—'
+        $('payer').textContent = s.payer
+        $('payerBal').textContent = fmtSol(s.payerBalance)
+        $('merchantBal').textContent = fmtSol(s.merchantBalance)
+      }
+
+      $('pay').onclick = async () => {
+        const btn = $('pay')
+        btn.disabled = true
+        btn.textContent = 'Paying…'
+        $('hint').textContent = 'Building charge, signing with Openfort, settling on Solana…'
+        try {
+          const r = await (await fetch('/api/pay', { method: 'POST' })).json()
+          if (r.error) throw new Error(r.error)
+          $('result').style.display = 'block'
+          $('resultStatus').textContent = r.status
+          $('status').className = 'pill ok'
+          $('status').textContent = 'unlocked · ' + r.status
+          $('sig').textContent = r.signature || '—'
+          $('body').textContent = JSON.stringify(r.body, null, 2)
+          $('receipt').textContent = JSON.stringify(r.receipt, null, 2)
+          $('hint').innerHTML = '<span class="flash">Paid. Balances updated below.</span>'
+          await loadState()
+        } catch (e) {
+          $('hint').textContent = 'Error: ' + e.message
+        } finally {
+          btn.disabled = false
+          btn.textContent = 'Pay & unlock again'
+        }
+      }
+
+      loadState()
+    </script>
+  </body>
+</html>
