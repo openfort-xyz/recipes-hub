@@ -39,6 +39,14 @@ src/
 - ESLint with `next/core-web-vitals` and `next/typescript` configs; enforces `import type` syntax.
 - Maintain clear separation between UI components, providers, and business logic.
 
+## Upgrade notes (@lifi/sdk v4)
+- This sample uses the **v4 (headless) LI.FI SDK**. There is no `createConfig` and no bundled `EVM()` provider.
+- The client is created with `createClient({ integrator, apiKey, providers: [EthereumProvider({ getWalletClient, switchChain })] })` from `@lifi/sdk` + the modular `@lifi/sdk-provider-ethereum`. It is created once in `features/lifi/services/lifi-config.ts` and shared via `getLiFiClient()`.
+- **Every action takes the client first**: `getRoutes(client, …)`, `getChains(client)`, `getTokens(client, …)`, `executeRoute(client, route, opts)`, `resumeRoute(client, route)`. `getActiveRoutes()`, `stopRouteExecution(route)`, `updateRouteExecution(route, opts)` take no client.
+- Execution progress moved from `step.execution.process[]` to `step.execution.actions[]` (`ExecutionAction`: `.type`/`.status`/`.txHash`/`.txLink`).
+- `ExecutionOptions` dropped `switchChainHook` and `disableMessageSigning` (chain switching is now the provider's `switchChain`). `useSyncWagmiConfig` was removed from `@lifi/wallet-management` v4 — the provider just initializes the client; wagmi chains come from the static config.
+- Builds and lints clean; runtime swap execution should be re-verified.
+
 ## PR instructions
 - Title format: `[lifi] <summary>`.
 - Ensure production build passes and test multi-chain swap flows before requesting review.

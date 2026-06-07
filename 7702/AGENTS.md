@@ -1,29 +1,144 @@
-# AGENTS.md
+# 7702 Sample - Agent Guide
 
-## Project overview
-- Next.js 15 + TypeScript sample demonstrating EIP-7702 authorization with Openfort embedded wallets.
-- Uses Permissionless + Pimlico for gasless (sponsored) transactions on Ethereum Sepolia.
+## Project Overview
+Next.js 15 + TypeScript sample demonstrating EIP-7702 authorization using Openfort embedded wallets with Permissionless and Pimlico for gasless transactions.
 
-## Setup commands
-- `pnpm install`
-- `cp .env.example .env.local`
-- `pnpm dev` (serves UI on `http://localhost:3000`)
+## Setup Commands
 
-## Environment
-- `.env.local` needs the Openfort project keys (`NEXT_PUBLIC_OPENFORT_PUBLISHABLE_KEY`, `OPENFORT_SECRET_KEY`, `NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID`), the Shield keys (`NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY`, `OPENFORT_SHIELD_SECRET_KEY`, `OPENFORT_SHIELD_ENCRYPTION_SHARE`), `NEXT_PUBLIC_CREATE_ENCRYPTED_SESSION_ENDPOINT`, the Pimlico keys (`NEXT_PUBLIC_PIMLICO_API_KEY`, `NEXT_PUBLIC_SPONSORSHIP_POLICY_ID`), and `NEXT_PUBLIC_SEPOLIA_RPC_URL`.
-- Populate with real Openfort credentials from the dashboard — placeholder values will fail.
+### Prerequisites
+- Node.js 18+ (check with `node -v`)
+- pnpm 10.16.1+ (managed via packageManager field)
 
-## Testing instructions
-- `pnpm check` (Biome format + lint + organize imports) or `pnpm lint`.
-- `pnpm build` to verify the production build.
-- Manually: sign in (email / Google / guest), run the EIP-7702 authorization, send a gasless transaction, and confirm it on Sepolia Etherscan.
+### Install Dependencies
+```bash
+cd 7702
+pnpm install
+```
 
-## Code style
-- Next.js 15 + React 19 + TypeScript; Biome (single quotes, ES5 trailing commas, 2-space indent).
-- wagmi + viem for chain interactions, `@openfort/react` for embedded wallets, Permissionless for smart-account operations.
-- Path alias `@/*` → `./src/*`; keep components functional with hooks.
+### Environment Variables
+Copy `.env.example` to `.env.local` and fill in real values:
+```bash
+cp .env.example .env.local
+```
 
-## PR instructions
-- Title format: `[7702] <summary>`.
-- Run `pnpm check` and `pnpm build` before requesting review.
-- Document env var changes in `7702/README.md` and this file.
+Required variables:
+```
+# Openfort Project Keys
+NEXT_PUBLIC_OPENFORT_PUBLISHABLE_KEY=your_openfort_key
+OPENFORT_SECRET_KEY=your_secret_key
+NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID=your_policy_id
+
+# Openfort Shield Keys
+NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY=your_shield_key
+OPENFORT_SHIELD_SECRET_KEY=your_shield_secret_key
+OPENFORT_SHIELD_ENCRYPTION_SHARE=your_encryption_share
+
+# Encrypted Session Endpoint
+NEXT_PUBLIC_CREATE_ENCRYPTED_SESSION_ENDPOINT=your_session_endpoint
+
+# Pimlico Configuration
+NEXT_PUBLIC_PIMLICO_API_KEY=your_pimlico_key
+NEXT_PUBLIC_SPONSORSHIP_POLICY_ID=your_sponsorship_policy_id
+
+# Network Configuration
+NEXT_PUBLIC_SEPOLIA_RPC_URL=your_sepolia_rpc_url
+```
+
+### Development
+```bash
+pnpm dev
+```
+
+### Build
+```bash
+pnpm build
+```
+
+## Testing Instructions
+
+### Linting & Formatting
+```bash
+# Run biome check (format + lint + organize imports)
+pnpm check
+
+# Run biome lint only
+pnpm lint
+
+# Run biome format only
+pnpm format
+```
+
+### Manual Testing
+1. Start the dev server: `pnpm dev`
+2. Open http://localhost:3000
+3. Sign in with email, Google, or guest mode
+4. Test EIP-7702 authorization flow
+5. Send a gasless transaction
+6. Verify transaction on Sepolia Etherscan
+
+## Code Style
+
+- Next.js 15 with TypeScript and React 19
+- Biome for formatting and linting
+- Uses pnpm for package management
+- 2-space indentation
+- Single quotes, trailing commas (ES5), semicolons as needed
+- Organize imports automatically via Biome
+
+### Key Patterns
+- Functional React components with hooks
+- Wagmi for Ethereum interactions
+- Viem for low-level client operations
+- Openfort React SDK for embedded wallets
+- Permissionless SDK for smart account operations
+
+## Project Structure
+
+```
+7702/
+├── src/
+│   ├── app/              # Next.js App Router
+│   │   ├── api/
+│   │   │   └── shield-session/
+│   │   │       └── route.ts  # Shield session API route
+│   │   ├── globals.css   # Global styles
+│   │   ├── layout.tsx    # Root layout
+│   │   └── page.tsx      # Main application page
+│   ├── components/       # React components
+│   │   ├── ui/           # UI components (button, card)
+│   │   ├── Providers.tsx # App providers (Openfort, Wagmi, etc.)
+│   │   └── UserOperation.tsx # User operation component
+│   └── lib/              # Utility functions
+│       ├── utils.ts      # General utilities
+│       └── wagmiConfig.ts # Wagmi configuration
+├── public/               # Static assets
+├── biome.json           # Biome configuration
+├── package.json         # Dependencies and scripts
+├── pnpm-lock.yaml       # pnpm lockfile
+└── tsconfig.json        # TypeScript configuration
+```
+
+## Common Issues
+
+### Build Errors
+- Ensure all environment variables are set
+- Run `pnpm install` to ensure dependencies are up to date
+- Check Node.js version (requires 18+)
+
+### Linting Errors
+- Run `pnpm check` to auto-fix most issues
+- For CSS at-rule warnings: these are disabled for Tailwind CSS directives
+
+## Upgrade notes (June 2026)
+- Next.js stays on **15** (wagmi/walletconnect needs the webpack shim in `next.config.js`, which Next 16's Turbopack rejects). `app/layout.tsx` sets `export const dynamic = 'force-dynamic'` because `@openfort/react` throws if it renders without a publishable key at static prerender.
+- Keep `wagmi` on `^2` / `@wagmi/connectors` on `^5` — `@openfort/react` peer-caps wagmi at 2.x.
+- The old node polyfill deps (`crypto-browserify`, `stream-browserify`, etc.) plus `dotenv` and `valtio` were removed as unused; `next.config.js` only keeps `fs/net/tls: false` and the `@react-native-async-storage/async-storage`/`pino-pretty` shims.
+- Biome 2.4: config uses `files.includes` (not `experimentalScannerIgnores`) and `css.parser.tailwindDirectives`.
+
+## PR Instructions
+
+- Title format: `[7702] <summary>`
+- Document any environment variable changes in README.md and this file
+- Run `pnpm check` before committing to ensure code style compliance
+- Test the EIP-7702 flow end-to-end before requesting review
+

@@ -17,15 +17,22 @@
 - Populate both files with real Openfort credentials from the dashboard—placeholder values will fail.
 
 ## Testing instructions
-- `pnpm lint` (TypeScript + ESLint checks)
+- `pnpm lint` / `pnpm check` (Biome lint, or lint+format with autofix)
 - `pnpm build` (TypeScript compilation + Vite build)
 - Verify frontend starts without runtime errors after updating environment values.
 
 ## Code style
-- Follows Vite + TypeScript defaults with ESLint (`pnpm lint`).
+- Vite + TypeScript, **Biome** for lint/format (`pnpm lint` / `pnpm check`) — single quotes, no semicolons, 2-space, 120 col.
 - Prefer functional React components and hooks; wallet state is managed through wagmi and `@openfort/react` hooks.
-- Uses `@aave/react`, `@aave/client`, and `@aave/graphql` SDKs for Aave protocol interactions.
+- Uses `@aave/react`, `@aave/client`, `@aave/graphql` (**v6 = Aave v4 hub/spoke model**) for protocol interactions.
 - React Query (`@tanstack/react-query`) is a peer dependency used internally by wagmi and `@aave/react`; application code does not call React Query hooks directly.
+
+## Upgrade notes (Aave v4)
+- This sample uses the Aave **v4** SDK (hub/spoke), not v3 markets. There is no `useAaveMarkets`.
+- Discover reserves with `useReserves({ query: { chainIds: [chainId(n)] }, user })`; the underlying token is at `reserve.asset.underlying.info.symbol` / `.address`, the market supply APY at `reserve.asset.summary.supplyApy.value`, and the supply gate at `reserve.canSupply`.
+- Supply/withdraw key off `reserve.id` (no market/currency/chainId) and run through an execution-plan handler passed to `useSupply`/`useWithdraw` (cases `TransactionRequest` / `Erc20Approval` with `.bySignature`|`.byTransaction` / `PreContractActionRequired`), sending each step via `useSendTransaction`/`useSignTypedData` from `@aave/react/viem`.
+- User positions come from the declarative `useUserSupplies` hook (it auto-refreshes; there is no manual refetch). Balance/token at `position.balance.amount.value` / `position.balance.token.info.symbol`.
+- The supply/withdraw flow compiles but should be re-verified at runtime against a funded testnet wallet.
 
 ## PR instructions
 - Title format: `[aave] <summary>`.
