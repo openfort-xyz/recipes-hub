@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap");
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
@@ -5,9 +6,9 @@
 :root {
   --background: #242424;
   --foreground: rgba(255, 255, 255, 0.87);
-  --primary: hsl(5, 97%, 57%);
-  --primary-hover: hsl(5, 97%, 53%);
-  --primary-foreground: #fff;
+  --primary: #e5e5e5;
+  --primary-hover: #d4d4d4;
+  --primary-foreground: #171717;
   --card: #27272a;
   --card-foreground: rgba(255, 255, 255, 0.87);
   --border: #3f3f46;
@@ -34,7 +35,7 @@
 
 body {
   min-height: 100vh;
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Geist", system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: var(--foreground);

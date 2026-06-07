@@ -18,6 +18,7 @@
 - Linting/formatting is standardizing on **Biome** (single quotes, no semicolons, 2-space, 120 col): `7702`, `agent-permissions`, `mpp`, `x402` (frontend), and the Vite samples `aave`, `morpho`, `vaults-fyi`. `lifi` and `near-intents` still use `next lint` (ESLint).
 - React Native apps (`usdc`, `hyperliquid`) follow Expo Router conventions, functional components, and pnpm.
 - Backend services are Express with Node 18; keep async handlers tidy and leverage existing logging patterns.
+- **Shared theme:** web recipes track the [demo-dashboard](https://github.com/openfort-xyz/demo-directory/tree/main/demo-dashboard) look — **Geist** font, **neutral shadcn** palette (light `#171717` / dark `#e5e5e5` primary), `0.625rem` radius, light+dark. Keep new recipes on these tokens; use the brand color as an accent, not the global primary. The shadcn recipes (`7702`, `lifi`, `near-intents`) share the dashboard's exact `:root`/`.dark` token block.
 
 ## Dependency constraints (read before bumping anything)
 These are non-obvious and will break samples if ignored:
