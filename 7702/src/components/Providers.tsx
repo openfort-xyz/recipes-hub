@@ -1,8 +1,8 @@
 'use client'
 
 import { AccountTypeEnum, AuthProvider, OpenfortProvider } from '@openfort/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { getDefaultConfig, OpenfortWagmiBridge } from '@openfort/react/wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 import { baseSepolia } from 'viem/chains'
 import { createConfig, WagmiProvider } from 'wagmi'
@@ -11,14 +11,14 @@ const config = createConfig(
   getDefaultConfig({
     appName: 'Openfort Next.js demo',
     chains: [baseSepolia], // The chains you want to support
-  }),
+  })
 )
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())
 
   return (
-     <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
       <WagmiProvider config={config}>
         <OpenfortWagmiBridge>
           <OpenfortProvider
@@ -35,12 +35,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
             uiConfig={{
               authProviders: [AuthProvider.EMAIL_OTP, AuthProvider.GUEST, AuthProvider.GOOGLE],
             }}
-            >
+          >
             {children}
-            </OpenfortProvider>
-          </OpenfortWagmiBridge>
-        </WagmiProvider>
-      </QueryClientProvider>
-   
+          </OpenfortProvider>
+        </OpenfortWagmiBridge>
+      </WagmiProvider>
+    </QueryClientProvider>
   )
 }

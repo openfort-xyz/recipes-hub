@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
-import { GraphQLClient, gql } from 'graphql-request';
+import { GraphQLClient, gql } from 'graphql-request'
+import { useEffect, useState } from 'react'
+import { useAccount } from 'wagmi'
 
-const MORPHO_API = "https://api.morpho.org/graphql";
-const VAULT_ADDRESS = "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183";
+const MORPHO_API = 'https://api.morpho.org/graphql'
+const VAULT_ADDRESS = '0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183'
 
 interface VaultApyResponse {
   vaultByAddress?: {
     state?: {
-      netApy?: number | string;
-    };
-  };
+      netApy?: number | string
+    }
+  }
 }
 
 const GET_VAULT_APY = gql`
@@ -19,34 +19,34 @@ const GET_VAULT_APY = gql`
       state { netApy }
     }
   }
-`;
+`
 
 export function useVaultApy() {
-  const [vaultApy, setVaultApy] = useState<string>("0.00");
-  const { address, chainId } = useAccount();
+  const [vaultApy, setVaultApy] = useState<string>('0.00')
+  const { address, chainId } = useAccount()
 
   useEffect(() => {
     const fetchVaultApy = async () => {
-      if (!chainId) return;
+      if (!chainId) return
 
       try {
-        const client = new GraphQLClient(MORPHO_API);
+        const client = new GraphQLClient(MORPHO_API)
         const data = await client.request<VaultApyResponse>(GET_VAULT_APY, {
           vaultAddress: VAULT_ADDRESS,
           chainId: chainId,
-        });
+        })
 
-        const netApy = data?.vaultByAddress?.state?.netApy;
+        const netApy = data?.vaultByAddress?.state?.netApy
         if (netApy) {
-          setVaultApy((Number(netApy) * 100).toFixed(2));
+          setVaultApy((Number(netApy) * 100).toFixed(2))
         }
       } catch (err) {
-        console.error("Error fetching vault APY:", err);
+        console.error('Error fetching vault APY:', err)
       }
-    };
+    }
 
-    fetchVaultApy();
-  }, [address, chainId]);
+    fetchVaultApy()
+  }, [address, chainId])
 
-  return vaultApy;
+  return vaultApy
 }

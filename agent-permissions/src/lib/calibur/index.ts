@@ -78,14 +78,14 @@ export type SelfCall = {
   data: Hex
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CaliburAccountConfig = {
+  // biome-ignore lint/suspicious/noExplicitAny: viem Client's account generic is left open here.
   client: Client<Transport, Chain | undefined, any>
   owner: LocalAccount
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CaliburSessionConfig = {
+  // biome-ignore lint/suspicious/noExplicitAny: viem Client's account generic is left open here.
   client: Client<Transport, Chain | undefined, any>
   signer: LocalAccount
   accountAddress: Address

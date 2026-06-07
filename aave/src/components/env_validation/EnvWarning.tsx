@@ -1,61 +1,57 @@
-import { useState, Component, type ErrorInfo, type ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode, useState } from 'react'
 
 interface EnvWarningProps {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
 interface ErrorBoundaryState {
-  hasError: boolean;
-  error?: Error;
+  hasError: boolean
+  error?: Error
 }
 
 class ErrorBoundary extends Component<{ children: ReactNode; onError?: (error: Error) => void }, ErrorBoundaryState> {
   constructor(props: { children: ReactNode; onError?: (error: Error) => void }) {
-    super(props);
-    this.state = { hasError: false };
+    super(props)
+    this.state = { hasError: false }
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
+    return { hasError: true, error }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
-    this.props.onError?.(error);
+    console.error('Error caught by boundary:', error, errorInfo)
+    this.props.onError?.(error)
   }
 
   render() {
     if (this.state.hasError) {
-      return null; // Let the parent handle the error display
+      return null // Let the parent handle the error display
     }
 
-    return this.props.children;
+    return this.props.children
   }
 }
 
 const EnvWarning: React.FC<EnvWarningProps> = ({ children }) => {
-  const [isDismissed, setIsDismissed] = useState(false);
-  const [renderError, setRenderError] = useState<Error | null>(null);
+  const [isDismissed, setIsDismissed] = useState(false)
+  const [renderError, setRenderError] = useState<Error | null>(null)
 
   const requiredEnvVars = [
     { key: 'VITE_OPENFORT_PUBLISHABLE_KEY', name: 'Openfort Project Publishable Key' },
     { key: 'VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY', name: 'Openfort Shield Publishable Key' },
     { key: 'VITE_BACKEND_URL', name: 'Backend URL' },
     { key: 'VITE_OPENFORT_FEE_SPONSORSHIP_ID', name: 'Openfort Fee Sponsorship ID' },
-  ];
+  ]
 
   const missingEnvVars = requiredEnvVars.filter(
     ({ key }) => !import.meta.env[key] || import.meta.env[key].trim() === ''
-  );
+  )
 
-  const hasIssues = missingEnvVars.length > 0 || renderError !== null;
+  const hasIssues = missingEnvVars.length > 0 || renderError !== null
 
   if (!hasIssues || isDismissed) {
-    return (
-      <ErrorBoundary onError={setRenderError}>
-        {children}
-      </ErrorBoundary>
-    );
+    return <ErrorBoundary onError={setRenderError}>{children}</ErrorBoundary>
   }
 
   return (
@@ -66,7 +62,11 @@ const EnvWarning: React.FC<EnvWarningProps> = ({ children }) => {
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
                 <svg className="w-6 h-6 text-red-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div>
@@ -77,7 +77,8 @@ const EnvWarning: React.FC<EnvWarningProps> = ({ children }) => {
                   {missingEnvVars.length > 0 && (
                     <>
                       <p className="text-sm mb-3">
-                        The following environment variables are missing or empty in your <code className="bg-red-800/50 px-1 py-0.5 rounded text-xs">.env</code> file:
+                        The following environment variables are missing or empty in your{' '}
+                        <code className="bg-red-800/50 px-1 py-0.5 rounded text-xs">.env</code> file:
                       </p>
                       <ul className="text-sm space-y-1 ml-4 mb-4">
                         {missingEnvVars.map(({ key, name }) => (
@@ -93,9 +94,7 @@ const EnvWarning: React.FC<EnvWarningProps> = ({ children }) => {
 
                   {renderError && (
                     <>
-                      <p className="text-sm mb-3">
-                        Application failed to load due to a configuration error:
-                      </p>
+                      <p className="text-sm mb-3">Application failed to load due to a configuration error:</p>
                       <div className="bg-red-800/50 px-3 py-2 rounded text-xs font-mono mb-4">
                         {renderError.message}
                       </div>
@@ -109,7 +108,10 @@ const EnvWarning: React.FC<EnvWarningProps> = ({ children }) => {
                     <ol className="text-sm text-red-200 mt-1 ml-4 space-y-1">
                       {missingEnvVars.length > 0 && (
                         <>
-                          <li>1. Open the <code className="bg-red-700/50 px-1 py-0.5 rounded text-xs">.env</code> file in your project root</li>
+                          <li>
+                            1. Open the <code className="bg-red-700/50 px-1 py-0.5 rounded text-xs">.env</code> file in
+                            your project root
+                          </li>
                           <li>2. Add values for the missing environment variables</li>
                           <li>3. Restart your development server</li>
                         </>
@@ -133,7 +135,11 @@ const EnvWarning: React.FC<EnvWarningProps> = ({ children }) => {
               aria-label="Dismiss warning"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
               </svg>
             </button>
           </div>
@@ -141,7 +147,7 @@ const EnvWarning: React.FC<EnvWarningProps> = ({ children }) => {
       </div>
       {children}
     </>
-  );
-};
+  )
+}
 
-export default EnvWarning;
+export default EnvWarning

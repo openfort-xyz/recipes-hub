@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap");
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
@@ -47,11 +48,11 @@
   }
 
   h1 {
-    @apply text-2xl font-bold
+    @apply text-2xl font-bold;
   }
 
   h2 {
-    @apply text-xl font-bold
+    @apply text-xl font-bold;
   }
 
   .card {
@@ -68,7 +69,7 @@
 }
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Geist", system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -81,9 +82,9 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --color-primary: hsl(5, 97%, 57%);
-  --color-primary-foreground: #fff;
-  --color-primary-hover: hsl(5, 97%, 53%);
+  --color-primary: #171717;
+  --color-primary-foreground: #fafafa;
+  --color-primary-hover: #2b2b2b;
 
   --card-group-width: 58rem;
   --card-width: 29rem;

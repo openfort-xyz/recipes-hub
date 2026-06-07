@@ -1,63 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAaveClient } from "@aave/react";
-import { userSupplies as fetchUserSupplies } from "@aave/client/actions";
-import type { MarketUserReserveSupplyPosition } from "@aave/graphql";
+import { type EvmAddress, chainId as toChainId, useUserSupplies } from '@aave/react'
 
-export function useAaveSupplies(user: any, markets: any) {
-  const aaveClient = useAaveClient();
-  const [userSupplyPositions, setUserSupplyPositions] = useState<MarketUserReserveSupplyPosition[] | undefined>(undefined);
-  const [suppliesLoading, setSuppliesLoading] = useState(true);
-  const [suppliesError, setSuppliesError] = useState<Error | null>(null);
-
-  const refreshUserSupplies = useCallback(async () => {
-    if (!aaveClient || !user) {
-      setUserSupplyPositions(undefined);
-      setSuppliesLoading(false);
-      setSuppliesError(null);
-      return;
-    }
-    if (!markets || markets.length === 0) {
-      if (!markets) {
-        setUserSupplyPositions(undefined);
-        setSuppliesLoading(true);
-      } else {
-        setUserSupplyPositions([]);
-        setSuppliesLoading(false);
-      }
-      setSuppliesError(null);
-      return;
-    }
-
-    setSuppliesLoading(true);
-    setSuppliesError(null);
-
-    const result = await fetchUserSupplies(aaveClient, {
-      markets: markets.map((market: any) => ({
-        chainId: market.chain.chainId,
-        address: market.address,
-      })),
-      user,
-    });
-
-    if (result.isErr()) {
-      console.error("Failed to fetch user supplies:", result.error);
-      setSuppliesError(result.error);
-      setUserSupplyPositions(undefined);
-    } else {
-      setUserSupplyPositions(result.value);
-    }
-
-    setSuppliesLoading(false);
-  }, [aaveClient, user, markets]);
-
-  useEffect(() => {
-    void refreshUserSupplies();
-  }, [refreshUserSupplies]);
+/**
+ * Read the connected user's Aave v4 supply positions on the active chain.
+ *
+ * Aave v4 exposes a declarative `useUserSupplies` hook (hub/spoke model) that
+ * replaces the v3 `userSupplies` client action. The query is paused until both
+ * a user address and a chain are available, and refreshes on its own.
+ */
+export function useAaveSupplies(user: EvmAddress | undefined, currentChainId: number | undefined) {
+  const result = useUserSupplies({
+    query: {
+      userChains: {
+        user,
+        chainIds: currentChainId ? [toChainId(currentChainId)] : [],
+      },
+    },
+    pause: !user || !currentChainId,
+  })
 
   return {
-    userSupplyPositions,
-    suppliesLoading,
-    suppliesError,
-    refreshUserSupplies
-  };
+    userSupplyPositions: result.data,
+    suppliesLoading: result.loading,
+    suppliesError: result.error ?? null,
+  }
 }

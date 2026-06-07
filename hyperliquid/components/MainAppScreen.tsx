@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#0F1419",
   },
   backgroundGradient: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
   },
   wrapper: {
     flex: 1,

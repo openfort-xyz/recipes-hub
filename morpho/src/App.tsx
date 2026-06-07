@@ -1,12 +1,12 @@
-import { useEffect } from 'react';
-import { OpenfortButton, useUser } from "@openfort/react";
-import { BalanceCard } from './components/BalanceCard';
-import { ActionButtons } from './components/ActionButtons';
-import { useVaultOperations } from './hooks/useVaultOperations';
-import { useVaultApy } from './hooks/useVaultApy';
+import { OpenfortButton, useUser } from '@openfort/react'
+import { useEffect } from 'react'
+import { ActionButtons } from './components/ActionButtons'
+import { BalanceCard } from './components/BalanceCard'
+import { useVaultApy } from './hooks/useVaultApy'
+import { useVaultOperations } from './hooks/useVaultOperations'
 
 function App() {
-  const { isAuthenticated } = useUser();
+  const { isAuthenticated } = useUser()
   const {
     isSupplying,
     isWithdrawing,
@@ -14,13 +14,13 @@ function App() {
     userVaultBalance,
     handleSupply,
     handleWithdraw,
-    fetchVaultBalance
-  } = useVaultOperations();
-  const vaultApy = useVaultApy();
+    fetchVaultBalance,
+  } = useVaultOperations()
+  const vaultApy = useVaultApy()
 
   useEffect(() => {
-    fetchVaultBalance();
-  }, [fetchVaultBalance]);
+    fetchVaultBalance()
+  }, [fetchVaultBalance])
 
   return (
     <div className="min-h-screen bg-black/95 flex items-center justify-center p-4 font-figtree">
@@ -30,12 +30,7 @@ function App() {
         </h1>
 
         <div className="flex flex-col md:flex-row gap-6 mb-6 justify-center items-center">
-          <BalanceCard
-            title="Wallet Balance"
-            balance={walletBalance}
-            currency="USDC"
-            isConnected={isAuthenticated}
-          />
+          <BalanceCard title="Wallet Balance" balance={walletBalance} currency="USDC" isConnected={isAuthenticated} />
           <BalanceCard
             title="Morpho Vault"
             balance={userVaultBalance}
@@ -58,7 +53,7 @@ function App() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App

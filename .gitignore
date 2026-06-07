@@ -58,3 +58,6 @@ coverage/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# gstack tooling
+.gstack/

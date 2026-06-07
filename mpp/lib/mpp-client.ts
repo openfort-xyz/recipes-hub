@@ -19,18 +19,8 @@ export async function executeMppRequest(accountId: string, url: string, options?
     methods: [tempo({ account })],
   })
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 30_000)
-
-  try {
-    const response = await mppx.fetch(url, {
-      ...options,
-      signal: controller.signal,
-    })
-    clearTimeout(timeoutId)
-    return response
-  } catch (error) {
-    clearTimeout(timeoutId)
-    throw error
-  }
+  return mppx.fetch(url, {
+    ...options,
+    signal: AbortSignal.timeout(30_000),
+  })
 }

@@ -7,16 +7,16 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "experimentalScannerIgnores": [
-      "node_modules",
-      "**/node_modules",
-      "CHANGELOG.md",
-      "cache",
-      "coverage",
-      ".next",
-      "tsconfig.json",
-      "tsconfig.*.json",
-      "pnpm-lock.yaml"
+    "includes": [
+      "**",
+      "!!**/node_modules",
+      "!!**/CHANGELOG.md",
+      "!!**/cache",
+      "!!**/coverage",
+      "!!**/.next",
+      "!!**/tsconfig.json",
+      "!!**/tsconfig.*.json",
+      "!!**/pnpm-lock.yaml"
     ]
   },
   "formatter": {
@@ -58,6 +58,11 @@
       "trailingCommas": "es5",
       "semicolons": "asNeeded",
       "arrowParentheses": "always"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   },
   "assist": {

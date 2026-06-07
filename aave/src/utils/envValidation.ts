@@ -1,68 +1,68 @@
 interface EnvConfig {
-  VITE_OPENFORT_PUBLISHABLE_KEY: string;
-  VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY: string;
-  VITE_OPENFORT_FEE_SPONSORSHIP_ID: string;
-  VITE_BACKEND_URL: string;
+  VITE_OPENFORT_PUBLISHABLE_KEY: string
+  VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY: string
+  VITE_OPENFORT_FEE_SPONSORSHIP_ID: string
+  VITE_BACKEND_URL: string
 }
 
 interface ValidationError {
-  key: string;
-  message: string;
+  key: string
+  message: string
 }
 
 const ENV_DESCRIPTIONS = {
-  VITE_OPENFORT_PUBLISHABLE_KEY: "Openfort project publishable key for client-side authentication",
-  VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY: "Openfort Shield publishable key for wallet encryption",
-  VITE_OPENFORT_FEE_SPONSORSHIP_ID: "Fee sponsorship ID for Aave protocol configuration",
-  VITE_BACKEND_URL: "Backend API URL for Aave operations"
-};
+  VITE_OPENFORT_PUBLISHABLE_KEY: 'Openfort project publishable key for client-side authentication',
+  VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY: 'Openfort Shield publishable key for wallet encryption',
+  VITE_OPENFORT_FEE_SPONSORSHIP_ID: 'Fee sponsorship ID for Aave protocol configuration',
+  VITE_BACKEND_URL: 'Backend API URL for Aave operations',
+}
 
 export function validateEnvironmentVariables(): ValidationError[] {
-  const errors: ValidationError[] = [];
+  const errors: ValidationError[] = []
 
   const requiredVars: Array<keyof EnvConfig> = [
     'VITE_OPENFORT_PUBLISHABLE_KEY',
     'VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY',
-    'VITE_BACKEND_URL'
-  ];
+    'VITE_BACKEND_URL',
+  ]
 
-  requiredVars.forEach(key => {
-    const value = import.meta.env[key];
+  requiredVars.forEach((key) => {
+    const value = import.meta.env[key]
 
     if (!value || value.trim() === '') {
       errors.push({
         key,
-        message: `${ENV_DESCRIPTIONS[key]} is required but not set`
-      });
-      return;
+        message: `${ENV_DESCRIPTIONS[key]} is required but not set`,
+      })
+      return
     }
 
     if (key === 'VITE_BACKEND_URL') {
       try {
-        new URL(value);
+        new URL(value)
       } catch {
         errors.push({
           key,
-          message: `${ENV_DESCRIPTIONS[key]} must be a valid URL`
-        });
+          message: `${ENV_DESCRIPTIONS[key]} must be a valid URL`,
+        })
       }
     }
 
     if (key === 'VITE_OPENFORT_PUBLISHABLE_KEY' && !value.startsWith('pk_')) {
       errors.push({
         key,
-        message: 'Openfort publishable key should start with "pk_"'
-      });
+        message: 'Openfort publishable key should start with "pk_"',
+      })
     }
-  });
+  })
 
-  return errors;
+  return errors
 }
 
 export function getEnvironmentStatus() {
-  const errors = validateEnvironmentVariables();
+  const errors = validateEnvironmentVariables()
   return {
     isValid: errors.length === 0,
-    errors
-  };
+    errors,
+  }
 }

@@ -10,7 +10,7 @@
 
 - `node -v` → ensure Node 18+.
 - `pnpm install`
-- `cp .env.example .env.local` and fill in `OPENFORT_SECRET_KEY`, `OPENFORT_WALLET_SECRET`, `TREASURY_WALLET_ID`, `MPP_RECIPIENT`.
+- `cp .env.example .env.local` and fill in `OPENFORT_SECRET_KEY`, `OPENFORT_WALLET_SECRET`, `TREASURY_WALLET_ID`, `MPP_RECIPIENT`, `MPP_SECRET_KEY`.
 - `pnpm dev` → http://localhost:3000
 
 ## Testing instructions

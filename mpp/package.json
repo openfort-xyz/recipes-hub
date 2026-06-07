@@ -12,21 +12,21 @@
   },
   "dependencies": {
     "@openfort/openfort-node": "0.10.5",
-    "mppx": "0.3.6",
-    "next": "16.1.6",
-    "ox": "0.12.4",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "viem": "2.46.2"
+    "mppx": "0.6.30",
+    "next": "16.2.7",
+    "ox": "0.14.29",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "viem": "2.52.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.4",
-    "@tailwindcss/postcss": "4.1.4",
-    "@types/node": "22.15.3",
-    "@types/react": "19.1.2",
-    "@types/react-dom": "19.1.2",
-    "tailwindcss": "4.1.4",
-    "typescript": "5.8.3"
+    "@biomejs/biome": "2.4.16",
+    "@tailwindcss/postcss": "4.3.0",
+    "@types/node": "22.19.20",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "tailwindcss": "4.3.0",
+    "typescript": "6.0.3"
   },
   "packageManager": "pnpm@10.30.3"
 }

@@ -21,8 +21,12 @@
 - Ensure the external backend is running with populated Shield credentials prior to UI testing.
 
 ## Code style
-- Uses Vite + TypeScript; follow existing Tailwind + hooks patterns.
+- Vite + TypeScript, **Biome** for lint/format (`pnpm lint` / `pnpm check`); follow existing Tailwind + hooks patterns.
 - Keep components focused and hooks reusable.
+
+## Upgrade notes (June 2026)
+- Migrated from ESLint to **Biome** (config in `biome.json`, `files.includes` + `css.parser.tailwindDirectives`) and runs on **Vite 8**.
+- Keep `wagmi` on `^2` / `@wagmi/connectors` on `^5` — `@openfort/react` peer-caps wagmi at 2.x. Tailwind stays on v3.
 
 ## PR instructions
 - Title format: `[morpho] <summary>`.

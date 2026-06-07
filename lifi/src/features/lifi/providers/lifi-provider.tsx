@@ -1,60 +1,38 @@
 "use client";
 
-import { useSyncWagmiConfig } from "@lifi/wallet-management";
 import { useQuery } from "@tanstack/react-query";
-import { type FC, type PropsWithChildren, useEffect, useState } from "react";
-import type { Config, CreateConnectorFn } from "wagmi";
+import { type FC, type PropsWithChildren, useState } from "react";
+import type { Config } from "wagmi";
 import { initializeLiFiConfig, loadSupportedChains } from "../services/lifi-config";
 import { useEthereumEmbeddedWallet } from "@openfort/react/ethereum";
 
 interface LiFiProviderProps extends PropsWithChildren {
   wagmiConfig: Config;
-  connectors: CreateConnectorFn[];
 }
 
-export const LiFiProvider: FC<LiFiProviderProps> = ({
-  children,
-  wagmiConfig,
-  connectors,
-}) => {
+export const LiFiProvider: FC<LiFiProviderProps> = ({ children, wagmiConfig }) => {
   const { isLoading: isLoadingWallets } = useEthereumEmbeddedWallet();
-  const [isInitialized, setIsInitialized] = useState(false);
   const isReady = !isLoadingWallets;
 
-  const {
-    data: chains,
-    error: chainsError,
-    isLoading: chainsLoading,
-  } = useQuery({
+  // v4's createClient is synchronous, so initialize once before any action
+  // (loadSupportedChains and the swap hooks all read the shared client).
+  const [isInitialized] = useState(() => {
+    initializeLiFiConfig(wagmiConfig);
+    return true;
+  });
+
+  const { error: chainsError, isLoading: chainsLoading } = useQuery({
     queryKey: ["lifi-chains"],
     queryFn: loadSupportedChains,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     retry: 3,
     retryDelay: 1000,
-    enabled: isReady,
+    enabled: isReady && isInitialized,
   });
 
-  useEffect(() => {
-    if (isReady && !isInitialized) {
-      try {
-        initializeLiFiConfig(wagmiConfig);
-        setIsInitialized(true);
-      } catch (error) {
-        console.error("Failed to initialize LiFi config", error);
-        setIsInitialized(false);
-      }
-    }
-  }, [isReady, isInitialized, wagmiConfig]);
-
-  useSyncWagmiConfig(wagmiConfig, connectors, chains);
-
-  if (!isReady || chainsLoading || !isInitialized) {
-    const message = !isReady
-      ? "Loading Openfort session..."
-      : chainsLoading
-      ? "Loading LiFi chains..."
-      : "Configuring LiFi...";
+  if (!isReady || chainsLoading) {
+    const message = !isReady ? "Loading Openfort session..." : "Loading LiFi chains...";
 
     return (
       <div className="flex justify-center items-center h-[100px] text-sm opacity-70">

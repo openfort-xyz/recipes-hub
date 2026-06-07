@@ -8,10 +8,7 @@ import { OpenfortWagmiBridge } from "@openfort/react/wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import type { PropsWithChildren } from "react";
-import type { CreateConnectorFn } from "wagmi";
 import { WagmiProvider } from "wagmi";
-
-const connectors: CreateConnectorFn[] = [];
 
 export const AppProviders = ({ children }: PropsWithChildren) => {
   const [queryClient] = useState(() => new QueryClient());
@@ -27,7 +24,7 @@ export const AppProviders = ({ children }: PropsWithChildren) => {
         <WagmiProvider config={wagmiConfig}>
           <OpenfortWagmiBridge>
             <OpenfortProviderBoundary>
-              <LiFiProvider wagmiConfig={wagmiConfig} connectors={connectors}>
+              <LiFiProvider wagmiConfig={wagmiConfig}>
                 {children}
               </LiFiProvider>
             </OpenfortProviderBoundary>

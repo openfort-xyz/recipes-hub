@@ -38,7 +38,6 @@ export async function POST(req: Request) {
   }
 
   try {
-
     const openfort = getOpenfort()
 
     // Get the backend wallet and wrap it as a viem LocalAccount

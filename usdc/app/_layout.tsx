@@ -14,7 +14,7 @@ export default function RootLayout() {
       <OpenfortProvider
         publishableKey={publishableKey}
         walletConfig={{
-          ethereumProviderPolicyId,
+          feeSponsorshipId: ethereumProviderPolicyId,
           shieldPublishableKey,
           getEncryptionSession: getEncryptionSessionFromEndpoint,
         }}

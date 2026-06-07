@@ -21,7 +21,7 @@ function Providers() {
       publishableKey={publishableKey}
       walletConfig={{
         shieldPublishableKey,
-        ethereumProviderPolicyId,
+        feeSponsorshipId: ethereumProviderPolicyId,
         getEncryptionSession: getEncryptionSessionFromEndpoint,
         debug: false,
       }}

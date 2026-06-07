@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.6/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
   "root": true,
   "vcs": {
     "enabled": true,
@@ -32,6 +32,7 @@
       },
       "suspicious": {
         "recommended": true,
+        "noExplicitAny": "warn",
         "noUnknownAtRules": "off"
       },
       "style": {
@@ -47,6 +48,11 @@
       "semicolons": "asNeeded"
     }
   },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
   "overrides": [
     {
       "includes": ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
@@ -54,6 +60,9 @@
         "rules": {
           "correctness": {
             "useExhaustiveDependencies": "warn"
+          },
+          "suspicious": {
+            "noExplicitAny": "warn"
           }
         }
       }

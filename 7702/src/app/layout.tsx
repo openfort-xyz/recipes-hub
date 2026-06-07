@@ -7,6 +7,10 @@ export const metadata: Metadata = {
   description: 'A demo of Openfort embedded wallets with EIP-7702 authorization and gasless transactions',
 }
 
+// The Openfort provider needs a publishable key at render time, so pages are
+// rendered on demand rather than statically prerendered at build.
+export const dynamic = 'force-dynamic'
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">

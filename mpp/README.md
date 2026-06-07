@@ -70,6 +70,7 @@ OPENFORT_SECRET_KEY=sk_test_...
 OPENFORT_WALLET_SECRET=...
 TREASURY_WALLET_ID=acc_...        # backend wallet pre-funded with PathUSD on Tempo
 MPP_RECIPIENT=0x...               # Tempo address that receives payments
+MPP_SECRET_KEY=...                # secret the seller route uses to HMAC-bind payment challenges
 ```
 
 To create and fund a treasury wallet:

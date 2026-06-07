@@ -9,8 +9,8 @@ import {
   getChains,
   getTokens,
 } from "@lifi/sdk";
+import { getLiFiClient } from "../services/lifi-config";
 import { formatUnits, parseUnits } from "viem";
-import { useSwitchChain } from "wagmi";
 import { useOpenfortWallet } from "@/features/openfort/hooks/use-openfort-wallet";
 import { DEFAULT_SWAP_AMOUNT } from "../constants";
 import {
@@ -87,7 +87,6 @@ export const useSwapController = (): SwapController => {
     isReady,
     isStatusLoading,
   } = useOpenfortWallet();
-  const { switchChainAsync } = useSwitchChain();
 
   const [swapState, setSwapState] = useState<SwapState>(INITIAL_STATE);
   const [chains, setChains] = useState<Chain[]>([]);
@@ -124,11 +123,11 @@ export const useSwapController = (): SwapController => {
       const toChainId = prev.toChain?.id;
 
       route.steps.forEach((step, stepIndex) => {
-        if (!step.execution?.process) {
+        if (!step.execution?.actions) {
           return;
         }
 
-        step.execution.process.forEach((process) => {
+        step.execution.actions.forEach((action) => {
           let chainId: number | undefined;
 
           if (stepIndex === 0) {
@@ -139,16 +138,16 @@ export const useSwapController = (): SwapController => {
             chainId = toChainId;
           }
 
-          const progressKey = `${stepIndex}-${process.type}`;
+          const progressKey = `${stepIndex}-${action.type}`;
 
           const progressItem: ExecutionProgress = {
             stepIndex,
-            stepType: process.type,
-            status: process.status,
-            txHash: process.txHash,
-            explorerLink: process.explorerLink,
+            stepType: action.type,
+            status: action.status,
+            txHash: action.txHash,
+            explorerLink: action.txLink,
             chainId,
-            message: ensureExplorerMessage(process.type, process.status),
+            message: ensureExplorerMessage(action.type, action.status),
           };
 
           const existingIndex = prev.executionProgress.findIndex(
@@ -221,7 +220,7 @@ export const useSwapController = (): SwapController => {
 
     const fetchChains = async () => {
       try {
-        const availableChains = await getChains();
+        const availableChains = await getChains(getLiFiClient());
         setChains(availableChains);
 
         const preferredChain = getPreferredChain(availableChains, walletChainId);
@@ -263,8 +262,8 @@ export const useSwapController = (): SwapController => {
         const toChainId = toChain.id;
 
         const [fromTokensResponse, toTokensResponse] = await Promise.all([
-          getTokens({ chains: [fromChainId] }),
-          getTokens({ chains: [toChainId] }),
+          getTokens(getLiFiClient(), { chains: [fromChainId] }),
+          getTokens(getLiFiClient(), { chains: [toChainId] }),
         ]);
 
         const fromTokensList = fromTokensResponse.tokens[fromChainId] || [];
@@ -365,14 +364,6 @@ export const useSwapController = (): SwapController => {
       window.clearTimeout(timeoutId);
     };
   }, [estimationInputs, isReady, walletAddress]);
-
-  const switchToChain = useCallback(async (targetChainId: number) => {
-    try {
-      await switchChainAsync({ chainId: targetChainId });
-    } catch (error) {
-      throw error;
-    }
-  }, [switchChainAsync]);
 
   const handleGetRoutes = useCallback(async () => {
     const {
@@ -504,12 +495,7 @@ Do you want to continue?`
           );
           return accepted;
         },
-        switchChainHook: async (chainId) => {
-          await switchToChain(chainId);
-          return undefined;
-        },
         executeInBackground: false,
-        disableMessageSigning: false,
       });
     } catch (error) {
       setSwapState((prev) => ({
@@ -520,7 +506,7 @@ Do you want to continue?`
         isExecuting: false,
       }));
     }
-  }, [swapState, isReady, walletAddress, monitorRouteExecution, switchToChain]);
+  }, [swapState, isReady, walletAddress, monitorRouteExecution]);
 
   const handleResumeRoute = useCallback(async () => {
     if (!swapState.activeRoute) {
