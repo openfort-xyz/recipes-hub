@@ -1,24 +1,24 @@
-import { OpenfortButton } from "@openfort/react";
+import { OpenfortButton } from '@openfort/react'
 
 interface UsdcSupplyData {
-  rawBalance: string;
-  apy: string;
+  rawBalance: string
+  apy: string
 }
 
 interface ActionButtonsProps {
-  isConnected: boolean;
-  isLoading: boolean;
-  usdcReserve: any;
-  usdcBalance: bigint | undefined;
-  usdcSupplyData: UsdcSupplyData;
-  isSupplying: boolean;
-  supplyingLoading: boolean;
-  isWithdrawing: boolean;
-  withdrawingLoading: boolean;
-  onDepositToAave: () => void;
-  onWithdrawFromAave: () => void;
-  supplyError: string | null;
-  withdrawError: string | null;
+  isConnected: boolean
+  isLoading: boolean
+  usdcReserve: any
+  usdcBalance: bigint | undefined
+  usdcSupplyData: UsdcSupplyData
+  isSupplying: boolean
+  supplyingLoading: boolean
+  isWithdrawing: boolean
+  withdrawingLoading: boolean
+  onDepositToAave: () => void
+  onWithdrawFromAave: () => void
+  supplyError: string | null
+  withdrawError: string | null
 }
 
 export function ActionButtons({
@@ -36,22 +36,19 @@ export function ActionButtons({
   supplyError,
   withdrawError,
 }: ActionButtonsProps) {
-  const supplyCapReached = usdcReserve?.supplyCapReached ?? false;
+  const supplyCapReached = usdcReserve?.supplyCapReached ?? false
 
   const handleSupplyClick = () => {
-    if (!usdcBalance || usdcBalance < BigInt(100000)) { // 0.1 USDC = 100,000 (6 decimals)
-      alert('Insufficient balance. You need at least 0.1 USDC to supply to the pool.');
-      return;
+    if (!usdcBalance || usdcBalance < BigInt(100000)) {
+      // 0.1 USDC = 100,000 (6 decimals)
+      alert('Insufficient balance. You need at least 0.1 USDC to supply to the pool.')
+      return
     }
-    onDepositToAave();
-  };
+    onDepositToAave()
+  }
   return (
     <div className="bg-neutral-900 rounded-2xl border border-neutral-700 shadow-xl p-8 mb-6 flex flex-col items-center justify-center space-y-4">
-      <OpenfortButton
-        showBalance={false}
-        showAvatar={true}
-        label="Connect Wallet"
-      />
+      <OpenfortButton showBalance={false} showAvatar={true} label="Connect Wallet" />
 
       {isConnected && (
         <div className="w-80 space-y-4">
@@ -64,9 +61,7 @@ export function ActionButtons({
               <>
                 <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin mr-2"></div>
                 <span>
-                  {isSupplying ? 'Supplying...' :
-                    supplyingLoading ? 'Preparing...' :
-                      'Sending Transaction...'}
+                  {isSupplying ? 'Supplying...' : supplyingLoading ? 'Preparing...' : 'Sending Transaction...'}
                 </span>
               </>
             ) : (
@@ -77,7 +72,9 @@ export function ActionButtons({
             )}
           </button>
           {supplyCapReached && (
-            <p className="text-yellow-400 text-xs">The USDC supply cap for this market is full. Try on mainnet or wait for capacity to free up.</p>
+            <p className="text-yellow-400 text-xs">
+              The USDC supply cap for this market is full. Try on mainnet or wait for capacity to free up.
+            </p>
           )}
 
           <button
@@ -89,9 +86,7 @@ export function ActionButtons({
               <>
                 <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin mr-2"></div>
                 <span>
-                  {isWithdrawing ? 'Withdrawing...' :
-                    withdrawingLoading ? 'Preparing...' :
-                      'Sending Transaction...'}
+                  {isWithdrawing ? 'Withdrawing...' : withdrawingLoading ? 'Preparing...' : 'Sending Transaction...'}
                 </span>
               </>
             ) : (
@@ -101,14 +96,10 @@ export function ActionButtons({
               </>
             )}
           </button>
-          {supplyError && (
-            <p className="text-red-400 text-sm">{supplyError}</p>
-          )}
-          {withdrawError && (
-            <p className="text-red-400 text-sm">{withdrawError}</p>
-          )}
+          {supplyError && <p className="text-red-400 text-sm">{supplyError}</p>}
+          {withdrawError && <p className="text-red-400 text-sm">{withdrawError}</p>}
         </div>
       )}
     </div>
-  );
+  )
 }

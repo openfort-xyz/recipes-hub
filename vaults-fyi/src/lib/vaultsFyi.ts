@@ -8,9 +8,6 @@
  * Spec: https://docs.vaults.fyi/sdk/reference
  */
 
-import { VaultsSdk } from "@vaultsfyi/sdk";
+import { VaultsSdk } from '@vaultsfyi/sdk'
 
-export const sdk = new VaultsSdk(
-  { apiKey: "proxied" },
-  { apiBaseUrl: `${window.location.origin}/api/vaults-fyi` },
-);
+export const sdk = new VaultsSdk({ apiKey: 'proxied' }, { apiBaseUrl: `${window.location.origin}/api/vaults-fyi` })

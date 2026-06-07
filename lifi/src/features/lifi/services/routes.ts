@@ -9,6 +9,7 @@ import {
   type Route,
   type RouteExtended,
 } from "@lifi/sdk";
+import { getLiFiClient } from "./lifi-config";
 
 interface FetchRoutesParams {
   fromChainId: number;
@@ -27,7 +28,7 @@ export const fetchSwapRoutes = async ({
   amount,
   walletAddress,
 }: FetchRoutesParams) =>
-  getRoutes({
+  getRoutes(getLiFiClient(), {
     fromChainId,
     toChainId,
     fromTokenAddress,
@@ -44,11 +45,12 @@ export const fetchSwapRoutes = async ({
   });
 
 export const executeSwapRoute = (route: Route, options: ExecutionOptions) =>
-  executeRoute(route, options);
+  executeRoute(getLiFiClient(), route, options);
 
 export const getActiveSwapRoutes = () => getActiveRoutes();
 
-export const resumeSwapRoute = (route: RouteExtended) => resumeRoute(route);
+export const resumeSwapRoute = (route: RouteExtended) =>
+  resumeRoute(getLiFiClient(), route);
 
 export const stopSwapRouteExecution = (route: RouteExtended) =>
   stopRouteExecution(route);

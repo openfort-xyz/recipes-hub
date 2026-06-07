@@ -1,12 +1,12 @@
 interface ActionButtonsProps {
-  isSupplying: boolean;
-  isWithdrawing: boolean;
-  onSupply: () => void;
-  onWithdraw: () => void;
+  isSupplying: boolean
+  isWithdrawing: boolean
+  onSupply: () => void
+  onWithdraw: () => void
 }
 
 export function ActionButtons({ isSupplying, isWithdrawing, onSupply, onWithdraw }: ActionButtonsProps) {
-  const isLoading = isSupplying || isWithdrawing;
+  const isLoading = isSupplying || isWithdrawing
 
   return (
     <div className="w-80 space-y-4">
@@ -46,5 +46,5 @@ export function ActionButtons({ isSupplying, isWithdrawing, onSupply, onWithdraw
         )}
       </button>
     </div>
-  );
+  )
 }

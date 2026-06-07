@@ -61,7 +61,7 @@ export default function OpenfortConnectButton({
           <span>{copied ? "Copied!" : displayName}</span>
           {copied ? <Check className="h-3 w-3 shrink-0" /> : <Copy className="h-3 w-3 shrink-0 opacity-50" />}
         </button>
-        <Button variant="secondary" size="sm" onClick={signOut}>
+        <Button variant="secondary" size="sm" onClick={() => signOut()}>
           Sign Out
         </Button>
       </div>
@@ -97,7 +97,7 @@ export default function OpenfortConnectButton({
           ))}
         </div>
       </div>
-      <Button variant="secondary" onClick={signOut}>
+      <Button variant="secondary" onClick={() => signOut()}>
         Sign Out
       </Button>
     </div>

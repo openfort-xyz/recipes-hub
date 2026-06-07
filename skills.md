@@ -12,7 +12,6 @@ Quick reference mapping each recipe to the capabilities and integrations it demo
 | [morpho](./morpho/) | DeFi vault operations (Morpho Blue), supply/withdraw, WalletConnect, embedded wallets | Vite + React, GraphQL, ESLint |
 | [usdc](./usdc/) | USDC transfers, faucet funding, wallet creation, sponsored transactions on mobile | Expo React Native, Openfort React Native SDK |
 | [x402](./x402/) | x402 payment protocol, paywall content access, backend wallet management, CDP authentication, Shield sessions | React + Vite (frontend), Express 5 (backend), Biome |
-| [mpp-solana](./mpp-solana/) | Machine Payments Protocol (MPP), HTTP 402 paywall, Solana charge method, backend-wallet → `@solana/kit` signer bridge, on-chain settlement (no facilitator), agent payer + dashboard | Node + TypeScript, `@solana/mpp`, `mppx`, `@solana/kit`, Openfort Node SDK |
 
 ## Common Across All Recipes
 

@@ -88,10 +88,7 @@ export const Balance = () => {
     return { Authorization: `Bearer ${token}` }
   }, [getAccessToken])
 
-  const {
-    data: balance,
-    isLoading: isBalanceLoading,
-  } = useReadContract({
+  const { data: balance, isLoading: isBalanceLoading } = useReadContract({
     address: USDC_ADDRESS,
     abi: erc20Abi,
     functionName: 'balanceOf',
@@ -379,7 +376,6 @@ export const Balance = () => {
               <AddressLink addr={dcaStatus.agentAddress} label="Agent:" />
             </p>
           )}
-
         </div>
       )}
 
@@ -388,8 +384,11 @@ export const Balance = () => {
         <div className="p-4 border border-border rounded-lg space-y-2">
           <h3 className="text-sm font-semibold">Purchase History</h3>
           <div className="max-h-48 overflow-y-auto space-y-1">
-            {dcaStatus.purchases.map((p, i) => (
-              <div key={`${p.timestamp}-${i}`} className="text-xs p-2 bg-muted/30 rounded flex justify-between">
+            {dcaStatus.purchases.map((p) => (
+              <div
+                key={`${p.timestamp}-${p.usdcSpent}`}
+                className="text-xs p-2 bg-muted/30 rounded flex justify-between"
+              >
                 <span>{new Date(p.timestamp).toLocaleTimeString()}</span>
                 <span>-{p.usdcSpent} USDC</span>
                 <span>+{p.wethReceived} WETH</span>

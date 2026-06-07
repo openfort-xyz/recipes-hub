@@ -13,6 +13,10 @@ export const metadata: Metadata = {
     "An Openfort embedded wallet experience powered by LI.FI routing. Bridge tokens across chains with trusted co-branded flows and real-time execution tracking.",
 };
 
+// The Openfort provider needs a publishable key at render time, so pages are
+// rendered on demand rather than statically prerendered at build.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: {

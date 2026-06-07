@@ -1,9 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import { Providers } from "./Providers";
-import { EnvValidationWrapper } from './components/env_validation/EnvValidationWrapper';
 import App from './App.tsx'
+import { EnvValidationWrapper } from './components/env_validation/EnvValidationWrapper'
+import { Providers } from './Providers'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -12,5 +12,5 @@ createRoot(document.getElementById('root')!).render(
         <App />
       </Providers>
     </EnvValidationWrapper>
-  </StrictMode>,
+  </StrictMode>
 )

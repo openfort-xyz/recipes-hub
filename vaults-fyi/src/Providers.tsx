@@ -1,21 +1,20 @@
-import type { ReactNode } from "react";
-import { OpenfortProvider } from "@openfort/react";
-import { getDefaultConfig, OpenfortWagmiBridge } from "@openfort/react/wagmi";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiProvider, createConfig } from "wagmi";
-import { base } from "viem/chains";
+import { OpenfortProvider } from '@openfort/react'
+import { getDefaultConfig, OpenfortWagmiBridge } from '@openfort/react/wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
+import { base } from 'viem/chains'
+import { createConfig, WagmiProvider } from 'wagmi'
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient()
 
 const wagmiConfig = createConfig(
   getDefaultConfig({
-    appName: "Openfort × vaults.fyi",
-    walletConnectProjectId:
-      import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || "demo",
+    appName: 'Openfort × vaults.fyi',
+    walletConnectProjectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || 'demo',
     chains: [base],
     ssr: false,
-  }),
-);
+  })
+)
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
@@ -25,12 +24,10 @@ export function Providers({ children }: { children: ReactNode }) {
           <OpenfortProvider
             publishableKey={import.meta.env.VITE_OPENFORT_PUBLISHABLE_KEY}
             walletConfig={{
-              shieldPublishableKey: import.meta.env
-                .VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY,
+              shieldPublishableKey: import.meta.env.VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY,
               createEncryptedSessionEndpoint: `${import.meta.env.VITE_BACKEND_URL}/api/protected-create-encryption-session`,
               ethereum: {
-                ethereumFeeSponsorshipId:
-                  import.meta.env.VITE_OPENFORT_FEE_SPONSORSHIP_ID || undefined,
+                ethereumFeeSponsorshipId: import.meta.env.VITE_OPENFORT_FEE_SPONSORSHIP_ID || undefined,
               },
             }}
           >
@@ -39,5 +36,5 @@ export function Providers({ children }: { children: ReactNode }) {
         </OpenfortWagmiBridge>
       </WagmiProvider>
     </QueryClientProvider>
-  );
+  )
 }

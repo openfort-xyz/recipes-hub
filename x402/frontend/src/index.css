@@ -47,11 +47,11 @@
   }
 
   h1 {
-    @apply text-2xl font-bold
+    @apply text-2xl font-bold;
   }
 
   h2 {
-    @apply text-xl font-bold
+    @apply text-xl font-bold;
   }
 
   .card {

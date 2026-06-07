@@ -6,11 +6,11 @@ import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createPublicClient, http, zeroAddress } from 'viem'
 import { createBundlerClient, createPaymasterClient, toSimple7702SmartAccount } from 'viem/account-abstraction'
+import { toAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'
 import { useAccount, useSwitchChain, useWalletClient } from 'wagmi'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { toAccount } from 'viem/accounts'
 
 // Simple7702Account implementation (eth-infinitism) — default in viem's toSimple7702SmartAccount
 const SIMPLE_7702_ADDRESS = '0xe6Cae83BdE06E4c305530e199D7217f42808555B'
@@ -27,7 +27,7 @@ export function UserOperation() {
   const { signAuthorization } = use7702Authorization()
 
   const walletClient = useWalletClient()
-  const { chainId,  } = useAccount()
+  const { chainId } = useAccount()
   const { switchChain } = useSwitchChain()
   const { wallets, activeWallet, setActive } = useEthereumEmbeddedWallet()
 
@@ -35,13 +35,13 @@ export function UserOperation() {
     if (wallets.length > 0 && !activeWallet) {
       setActive({ address: wallets[0].address }).catch(() => {})
     }
-  }, [wallets.length, activeWallet, setActive])
+  }, [wallets.length, activeWallet, setActive, wallets[0].address])
 
   useEffect(() => {
     if (chainId !== baseSepolia.id) {
       switchChain(
         { chainId: baseSepolia.id },
-        { onError: (err) => setError(`Please switch to Base Sepolia manually. ${err.message}`) },
+        { onError: (err) => setError(`Please switch to Base Sepolia manually. ${err.message}`) }
       )
     }
   }, [chainId, switchChain])

@@ -10,17 +10,17 @@
     "dev": "tsc && node --watch dist/server.js"
   },
   "dependencies": {
-    "@coinbase/cdp-sdk": "^1.44.0",
-    "@openfort/openfort-node": "^0.10.1",
-    "dotenv": "^16.3.1",
+    "@coinbase/cdp-sdk": "^1.51.0",
+    "@openfort/openfort-node": "^0.10.5",
+    "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
-    "viem": "^2.46.3"
+    "viem": "^2.52.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.4",
-    "@types/node": "^22.0.0",
-    "typescript": "^5.7.0"
+    "@types/node": "^22.19.20",
+    "typescript": "^5.9.3"
   },
   "keywords": [
     "openfort",

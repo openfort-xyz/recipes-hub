@@ -1,10 +1,10 @@
 import "../polyfills";
 import * as Hyperliquid from "@nktkas/hyperliquid";
-import { actionSorter, createL1ActionHash } from "@nktkas/hyperliquid/signing";
+import { createL1ActionHash } from "@nktkas/hyperliquid/signing";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ethers } from "ethers";
 
-import type { Book, FrontendOrder } from "@nktkas/hyperliquid";
+import type { FrontendOpenOrdersResponse, L2BookResponse } from "@nktkas/hyperliquid/api/info";
 
 import {
   HYPE_ASSET_ID,
@@ -49,7 +49,18 @@ const DEFAULT_HYPE_SIZING: HypeSizing = {
 export const DEFAULT_MIN_HYPE_ORDER_SIZE = DEFAULT_HYPE_SIZING.minSize;
 const IS_TESTNET = HYPERLIQUID_TESTNET_HTTP_URL.toLowerCase().includes("testnet");
 
-type OrderAction = ReturnType<typeof actionSorter.order>;
+// @nktkas/hyperliquid 0.32 removed `actionSorter`; the order action is a plain
+// object built in Hyperliquid's canonical field order (a, b, p, s, r, t), which
+// is what `createL1ActionHash` hashes over.
+type OrderWire = {
+  a: number;
+  b: boolean;
+  p: string;
+  s: string;
+  r: boolean;
+  t: { limit: { tif: "Gtc" } };
+};
+type OrderAction = { type: "order"; orders: OrderWire[]; grouping: "na" };
 
 type EmbeddedWalletSigner = {
     signTypedData?: (
@@ -337,7 +348,7 @@ export const useHypeUsdc = (intervalMs = PRICE_POLL_INTERVAL_MS) => {
 };
 
 export const useHypeOrderBook = (intervalMs = PRICE_POLL_INTERVAL_MS) => {
-    const [book, setBook] = useState<Book | null>(null);
+    const [book, setBook] = useState<L2BookResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const hasLoadedRef = useRef(false);
@@ -403,7 +414,7 @@ export const useHypeOpenOrders = (
     address: `0x${string}` | undefined,
     intervalMs = PRICE_POLL_INTERVAL_MS
 ) => {
-    const [orders, setOrders] = useState<FrontendOrder[]>([]);
+    const [orders, setOrders] = useState<FrontendOpenOrdersResponse>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const hasLoadedRef = useRef(false);
@@ -676,11 +687,11 @@ export const buy = async (
             }
         }
 
-        const action = actionSorter.order({
+        const action: OrderAction = {
             type: "order",
             orders: [orderWire],
             grouping: "na",
-        });
+        };
         console.log('Final action structure:', JSON.stringify(action, null, 2));
 
         result = await signAndSubmitOrder({
@@ -823,11 +834,11 @@ export const sell = async (
             }
         }
 
-        const action = actionSorter.order({
+        const action: OrderAction = {
             type: "order",
             orders: [orderWire],
             grouping: "na",
-        });
+        };
         console.log('Final action structure:', JSON.stringify(action, null, 2));
 
         result = await signAndSubmitOrder({

@@ -19,43 +19,15 @@ body {
 
 @layer components {
   .button-primary {
-    @apply bg-[#FC3627] hover:bg-[#E02D1F] focus:bg-[#E02D1F] active:bg-[#C72718]
-           disabled:bg-gray-300 disabled:cursor-not-allowed
-           text-white font-medium
-           px-4 py-2 rounded-md
-           border border-transparent
-           transition-colors duration-200 ease-in-out
-           focus:outline-none focus:ring-2 focus:ring-[#FC3627] focus:ring-offset-2
-           inline-flex items-center justify-center
-           text-sm leading-5 cursor-pointer;
+    @apply bg-[#FC3627] hover:bg-[#E02D1F] focus:bg-[#E02D1F] active:bg-[#C72718] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium px-4 py-2 rounded-md border border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#FC3627] focus:ring-offset-2 inline-flex items-center justify-center text-sm leading-5 cursor-pointer;
   }
 
   .button-outline {
-    @apply flex flex-row items-center
-           px-4 py-2 gap-1 cursor-pointer
-           h-9 rounded-full
-           bg-transparent border border-[#FC3627]
-           text-[#FC3627] font-medium text-sm leading-tight
-           hover:bg-[#FC3627] hover:text-white
-           focus:bg-[#FC3627] focus:text-white
-           active:bg-[#E02D1F]
-           focus:outline-none focus:ring-2 focus:ring-[#FC3627] focus:ring-offset-2
-           transition-all duration-200 ease-in-out
-           disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply flex flex-row items-center px-4 py-2 gap-1 cursor-pointer h-9 rounded-full bg-transparent border border-[#FC3627] text-[#FC3627] font-medium text-sm leading-tight hover:bg-[#FC3627] hover:text-white focus:bg-[#FC3627] focus:text-white active:bg-[#E02D1F] focus:outline-none focus:ring-2 focus:ring-[#FC3627] focus:ring-offset-2 transition-all duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .button {
-    @apply flex flex-row items-center
-           px-3 py-2 gap-3 cursor-pointer
-           bg-white border border-[#E2E3F0] rounded-xl
-           text-[#040217] font-normal text-base leading-6
-           hover:bg-gray-50 hover:border-gray-300
-           focus:bg-gray-50 focus:border-gray-300
-           active:bg-gray-100
-           focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2
-           transition-all duration-200 ease-in-out
-           disabled:opacity-50 disabled:cursor-not-allowed
-           box-border;
+    @apply flex flex-row items-center px-3 py-2 gap-3 cursor-pointer bg-white border border-[#E2E3F0] rounded-xl text-[#040217] font-normal text-base leading-6 hover:bg-gray-50 hover:border-gray-300 focus:bg-gray-50 focus:border-gray-300 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed box-border;
   }
 
   .text-primary {
