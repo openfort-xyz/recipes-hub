@@ -22,15 +22,42 @@ function EnvNotice({ missing }: { missing: string[] }) {
 }
 
 function PaymentPanel() {
-  const { phase, response, selected, step, txId, error, fetchOptions, selectOption, submitCollectedData, reset, fail } =
-    usePayment()
+  const {
+    phase,
+    response,
+    selected,
+    step,
+    txId,
+    error,
+    isSample,
+    fetchOptions,
+    loadSample,
+    selectOption,
+    submitCollectedData,
+    reset,
+    fail,
+  } = usePayment()
 
   if (phase === 'idle' || phase === 'fetching') {
-    return <PaymentForm onSubmit={fetchOptions} isLoading={phase === 'fetching'} />
+    return (
+      <PaymentForm
+        onSubmit={fetchOptions}
+        onPickSample={(sample) => loadSample(sample.response)}
+        isLoading={phase === 'fetching'}
+      />
+    )
   }
 
   if (phase === 'review' && response) {
-    return <PaymentOptions info={response.info} options={response.options} onSelect={selectOption} />
+    return (
+      <PaymentOptions
+        info={response.info}
+        options={response.options}
+        onSelect={selectOption}
+        onBack={reset}
+        isSample={isSample}
+      />
+    )
   }
 
   if (phase === 'collect' && selected?.collectData?.url) {

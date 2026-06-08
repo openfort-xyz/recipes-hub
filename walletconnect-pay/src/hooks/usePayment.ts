@@ -74,6 +74,7 @@ export function usePayment() {
   const [step, setStep] = useState<SigningStep>()
   const [txId, setTxId] = useState<string>()
   const [error, setError] = useState<string>()
+  const [isSample, setIsSample] = useState(false)
 
   const reset = useCallback(() => {
     setPhase('idle')
@@ -82,6 +83,16 @@ export function usePayment() {
     setStep(undefined)
     setTxId(undefined)
     setError(undefined)
+    setIsSample(false)
+  }, [])
+
+  // Preview the options screen with representative data (no live link, no signing).
+  const loadSample = useCallback((sample: PaymentOptionsResponse) => {
+    setError(undefined)
+    setSelected(undefined)
+    setIsSample(true)
+    setResponse(sample)
+    setPhase('review')
   }, [])
 
   const fail = useCallback((message: string) => {
@@ -115,7 +126,7 @@ export function usePayment() {
 
   const runPayment = useCallback(
     async (option: PaymentOption, collectedData?: CollectDataFieldResult[]) => {
-      if (!response || !connector) return
+      if (isSample || !response || !connector) return
       setSelected(option)
       setError(undefined)
       setPhase('signing')
@@ -141,7 +152,7 @@ export function usePayment() {
         setPhase('failed')
       }
     },
-    [response, connector, switchChainAsync, chainId]
+    [isSample, response, connector, switchChainAsync, chainId]
   )
 
   const selectOption = useCallback(
@@ -170,7 +181,9 @@ export function usePayment() {
     step,
     txId,
     error,
+    isSample,
     fetchOptions,
+    loadSample,
     selectOption,
     submitCollectedData,
     reset,
