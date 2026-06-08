@@ -5,6 +5,10 @@ import { useEthereumEmbeddedWallet } from '@openfort/react/ethereum'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createPublicClient, http, zeroAddress } from 'viem'
+// These ERC-4337 clients come from viem itself (an existing dependency), NOT from
+// permissionless/pimlico. They are pointed at Openfort's own bundler + paymaster
+// (https://api.openfort.io/rpc/<chainId>) and sponsored by an Openfort fee-sponsorship
+// policy — i.e. this is Openfort infrastructure, with viem as the thin 4337 transport.
 import { createBundlerClient, createPaymasterClient, toSimple7702SmartAccount } from 'viem/account-abstraction'
 import { toAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'
@@ -35,7 +39,7 @@ export function UserOperation() {
     if (wallets.length > 0 && !activeWallet) {
       setActive({ address: wallets[0].address }).catch(() => {})
     }
-  }, [wallets.length, activeWallet, setActive, wallets[0].address])
+  }, [wallets.length, activeWallet, setActive, wallets[0]?.address])
 
   useEffect(() => {
     if (chainId !== baseSepolia.id) {
