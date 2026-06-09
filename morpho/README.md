@@ -8,47 +8,24 @@ Interact with a Morpho Blue USDC vault on Base using Openfort embedded wallets a
 pnpx gitpick openfort-xyz/recipes-hub/tree/main/morpho openfort-morpho && cd openfort-morpho
 ```
 
-## 2. Setup Backend
-
-This sample requires a backend server for Openfort Shield authentication. Set up the Openfort Backend Quickstart:
-
-```bash
-git clone https://github.com/openfort-xyz/openfort-backend-quickstart.git
-cd openfort-backend-quickstart
-cp .env.example .env
-```
-
-Add your Openfort credentials to `.env`:
-
-```env
-OPENFORT_API_KEY=sk_your_secret_key
-OPENFORT_SHIELD_SECRET_KEY=your_shield_secret_key
-```
-
-Then start the backend:
-
-```bash
-pnpm install
-pnpm dev
-```
-
-The backend will run on `http://localhost:3000`. For more details, see the [Openfort Backend Quickstart repository](https://github.com/openfort-xyz/openfort-backend-quickstart).
-
-## 3. Get Openfort Credentials
+## 2. Get Openfort Credentials
 
 From your [Openfort dashboard](https://dashboard.openfort.io):
 
 1. **Publishable Key**: Go to **Developers** → **API Keys** → copy your publishable key
-2. **Shield Public Key**: Go to **Developers** → **API Keys** → copy your Shield public key
+2. **Shield Publishable Key**: Go to **Developers** → **API Keys** → copy your Shield publishable key
 3. **Fee Sponsorship ID** (optional): Go to **Policies** → select or create a fee sponsorship → copy the fee sponsorship ID
 
-## 4. Get WalletConnect Project ID
+This recipe uses **passkey** wallet recovery (client-side WebAuthn), so the Shield
+publishable key is all you need — no Shield secret and no backend server.
+
+## 3. Get WalletConnect Project ID
 
 1. Go to [WalletConnect Cloud](https://cloud.walletconnect.com/)
 2. Create a new project or use an existing one
 3. Copy the Project ID
 
-## 5. Configure Environment
+## 4. Configure Environment
 
 ```bash
 cp .env.example .env
@@ -61,10 +38,9 @@ VITE_OPENFORT_PUBLISHABLE_KEY=pk_your_publishable_key
 VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY=pk_your_shield_publishable_key
 VITE_OPENFORT_FEE_SPONSORSHIP_ID=pol_optional_fee_sponsorship
 VITE_WALLET_CONNECT_PROJECT_ID=your_walletconnect_project_id
-VITE_BACKEND_URL=http://localhost:3000
 ```
 
-## 6. Install & Start
+## 5. Install & Start
 
 ```bash
 pnpm i
