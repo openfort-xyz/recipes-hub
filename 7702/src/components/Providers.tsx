@@ -1,6 +1,6 @@
 'use client'
 
-import { AccountTypeEnum, AuthProvider, OpenfortProvider } from '@openfort/react'
+import { AccountTypeEnum, AuthProvider, OpenfortProvider, RecoveryMethod } from '@openfort/react'
 import { getDefaultConfig, OpenfortWagmiBridge } from '@openfort/react/wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -30,10 +30,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 accountType: AccountTypeEnum.EOA,
                 ethereumFeeSponsorshipId: process.env.NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID, // The fee sponsorship ID for sponsoring transactions
               },
-              createEncryptedSessionEndpoint: process.env.NEXT_PUBLIC_CREATE_ENCRYPTED_SESSION_ENDPOINT, // The endpoint to create an encryption session for automatic wallet recovery
+              // Passkey recovery is client-side (WebAuthn); no encryption-session backend required.
             }}
             uiConfig={{
               authProviders: [AuthProvider.EMAIL_OTP, AuthProvider.GUEST, AuthProvider.GOOGLE],
+              walletRecovery: {
+                defaultMethod: RecoveryMethod.PASSKEY,
+              },
             }}
           >
             {children}
