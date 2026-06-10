@@ -2,7 +2,6 @@ interface EnvConfig {
   VITE_OPENFORT_PUBLISHABLE_KEY: string
   VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY: string
   VITE_OPENFORT_FEE_SPONSORSHIP_ID: string
-  VITE_BACKEND_URL: string
 }
 
 interface ValidationError {
@@ -14,17 +13,12 @@ const ENV_DESCRIPTIONS = {
   VITE_OPENFORT_PUBLISHABLE_KEY: 'Openfort project publishable key for client-side authentication',
   VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY: 'Openfort Shield publishable key for wallet encryption',
   VITE_OPENFORT_FEE_SPONSORSHIP_ID: 'Fee sponsorship ID for Aave protocol configuration',
-  VITE_BACKEND_URL: 'Backend API URL for Aave operations',
 }
 
 export function validateEnvironmentVariables(): ValidationError[] {
   const errors: ValidationError[] = []
 
-  const requiredVars: Array<keyof EnvConfig> = [
-    'VITE_OPENFORT_PUBLISHABLE_KEY',
-    'VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY',
-    'VITE_BACKEND_URL',
-  ]
+  const requiredVars: Array<keyof EnvConfig> = ['VITE_OPENFORT_PUBLISHABLE_KEY', 'VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY']
 
   requiredVars.forEach((key) => {
     const value = import.meta.env[key]
@@ -35,17 +29,6 @@ export function validateEnvironmentVariables(): ValidationError[] {
         message: `${ENV_DESCRIPTIONS[key]} is required but not set`,
       })
       return
-    }
-
-    if (key === 'VITE_BACKEND_URL') {
-      try {
-        new URL(value)
-      } catch {
-        errors.push({
-          key,
-          message: `${ENV_DESCRIPTIONS[key]} must be a valid URL`,
-        })
-      }
     }
 
     if (key === 'VITE_OPENFORT_PUBLISHABLE_KEY' && !value.startsWith('pk_')) {

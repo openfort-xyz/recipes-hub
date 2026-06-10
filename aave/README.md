@@ -21,7 +21,10 @@ pnpx gitpick openfort-xyz/recipes-hub/tree/main/aave openfort-aave && cd openfor
 1. Navigate to **Developers** → **API Keys**
 2. Copy your **Publishable Key** (starts with `pk_`)
 3. Navigate to **Shield** section
-4. Copy your **Shield Public Key**
+4. Copy your **Shield Publishable Key**
+
+This recipe uses **passkey** wallet recovery (client-side WebAuthn), so the Shield
+publishable key is all you need — no Shield secret and no backend server.
 
 ### Create a Fee Sponsorship (Optional)
 
@@ -29,32 +32,7 @@ pnpx gitpick openfort-xyz/recipes-hub/tree/main/aave openfort-aave && cd openfor
 2. Create a new fee sponsorship to sponsor user transactions
 3. Copy the **Fee Sponsorship ID**
 
-## 3. Setup Backend
-
-This app requires a backend server for Shield authentication sessions.
-
-```sh
-git clone https://github.com/openfort-xyz/openfort-backend-quickstart.git
-cd openfort-backend-quickstart
-cp .env.example .env
-```
-
-Add your Openfort **Secret Key** to the backend `.env`:
-
-```env
-OPENFORT_SECRET_KEY=sk_...
-```
-
-Start the backend:
-
-```sh
-pnpm i
-pnpm dev  # Runs on http://localhost:3001
-```
-
-## 4. Configure Environment
-
-Return to the aave project directory and configure the frontend:
+## 3. Configure Environment
 
 ```sh
 cp .env.example .env
@@ -66,10 +44,9 @@ Add your credentials to `.env`:
 VITE_OPENFORT_PUBLISHABLE_KEY=pk_...
 VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY=...
 VITE_OPENFORT_FEE_SPONSORSHIP_ID=pol_...     # Optional
-VITE_BACKEND_URL=http://localhost:3001
 ```
 
-## 5. Install & Run
+## 4. Install & Run
 
 ```sh
 pnpm i

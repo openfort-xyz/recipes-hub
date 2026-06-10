@@ -7,6 +7,12 @@ const nextConfig = {
       net: false,
       tls: false,
       '@react-native-async-storage/async-storage': false,
+      // Optional wagmi 3 connector peer deps, loaded via guarded import().catch().
+      // Not used by this recipe; stub them so webpack doesn't hard-fail at build.
+      accounts: false,
+      porto: false,
+      '@base-org/account': false,
+      '@metamask/connect-evm': false,
     }
 
     // Ignore pino-pretty optional dependency
