@@ -11,9 +11,51 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useAccount, useBalance } from "wagmi";
-import { zeroAddress } from "viem";
+import { useAccount, useBalance, useReadContract } from "wagmi";
+import { erc20Abi, formatUnits, zeroAddress } from "viem";
 import { useVirtualizer } from "@tanstack/react-virtual";
+
+// wagmi v3 removed `token` from useBalance (native-only). Fetch native balances
+// with useBalance and ERC-20 balances with useReadContract(balanceOf).
+function useTokenBalance({
+  address,
+  chainId,
+  token,
+  decimals,
+  enabled,
+}: {
+  address?: `0x${string}`;
+  chainId?: number;
+  token?: `0x${string}`;
+  decimals?: number;
+  enabled: boolean;
+}): { formatted: string; isFetching: boolean } {
+  const isNative = !token;
+  const native = useBalance({
+    address,
+    chainId,
+    query: { enabled: enabled && isNative },
+  });
+  const erc20 = useReadContract({
+    abi: erc20Abi,
+    address: token,
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
+    chainId,
+    query: { enabled: enabled && !isNative && Boolean(address) },
+  });
+  if (isNative) {
+    return {
+      formatted: native.data ? formatUnits(native.data.value, native.data.decimals) : "0.00",
+      isFetching: native.isFetching,
+    };
+  }
+  return {
+    formatted:
+      erc20.data != null && decimals != null ? formatUnits(erc20.data, decimals) : "0.00",
+    isFetching: erc20.isFetching,
+  };
+}
 
 interface SwapFormProps {
   fromChain: Chain | null;
@@ -66,34 +108,21 @@ export default function SwapForm({
     return token.address as `0x${string}`;
   };
 
-  const {
-    data: fromBalanceData,
-    isFetching: isFetchingFromBalances,
-  } = useBalance({
+  const { formatted: fromTokenBalance, isFetching: isLoadingFromBalances } = useTokenBalance({
     address: walletAddress,
     chainId: fromChain?.id,
     token: resolveTokenAddress(fromToken),
-    query: {
-      enabled: Boolean(walletAddress && fromChain && fromToken),
-    },
+    decimals: fromToken?.decimals,
+    enabled: Boolean(walletAddress && fromChain && fromToken),
   });
 
-  const {
-    data: toBalanceData,
-    isFetching: isFetchingToBalances,
-  } = useBalance({
+  const { formatted: toTokenBalance, isFetching: isLoadingToBalances } = useTokenBalance({
     address: walletAddress,
     chainId: toChain?.id,
     token: resolveTokenAddress(toToken),
-    query: {
-      enabled: Boolean(walletAddress && toChain && toToken),
-    },
+    decimals: toToken?.decimals,
+    enabled: Boolean(walletAddress && toChain && toToken),
   });
-
-  const fromTokenBalance = fromBalanceData?.formatted ?? "0.00";
-  const toTokenBalance = toBalanceData?.formatted ?? "0.00";
-  const isLoadingFromBalances = isFetchingFromBalances;
-  const isLoadingToBalances = isFetchingToBalances;
 
   // Modal handlers
   const handleChainSelect = useCallback((chain: Chain) => {

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { ArrowDown, ChevronDown } from "lucide-react";
-import { formatUnits } from "viem";
-import { useBalance } from "wagmi";
+import { erc20Abi, formatUnits } from "viem";
+import { useBalance, useReadContract } from "wagmi";
 import {
   chainLabel,
   isOriginBlockchain,
@@ -239,6 +239,48 @@ interface AssetFieldProps {
   children: React.ReactNode;
 }
 
+// wagmi v3 removed `token` from useBalance (native-only). Fetch native balances
+// with useBalance and ERC-20 balances with useReadContract(balanceOf).
+function useTokenBalance({
+  address,
+  chainId,
+  token,
+  decimals,
+  enabled,
+}: {
+  address?: `0x${string}`;
+  chainId?: number;
+  token?: `0x${string}`;
+  decimals?: number;
+  enabled: boolean;
+}): { formatted: string; isFetching: boolean } {
+  const isNative = !token;
+  const native = useBalance({
+    address,
+    chainId,
+    query: { enabled: enabled && isNative },
+  });
+  const erc20 = useReadContract({
+    abi: erc20Abi,
+    address: token,
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
+    chainId,
+    query: { enabled: enabled && !isNative && Boolean(address) },
+  });
+  if (isNative) {
+    return {
+      formatted: native.data ? formatUnits(native.data.value, native.data.decimals) : "0",
+      isFetching: native.isFetching,
+    };
+  }
+  return {
+    formatted:
+      erc20.data != null && decimals != null ? formatUnits(erc20.data, decimals) : "0",
+    isFetching: erc20.isFetching,
+  };
+}
+
 function AssetField({
   label,
   asset,
@@ -250,13 +292,12 @@ function AssetField({
   const balanceEnabled = Boolean(
     showBalance && walletAddress && asset && asset.isEvm && asset.chainId
   );
-  const { data: balance, isFetching } = useBalance({
+  const { formatted: balanceFormatted, isFetching } = useTokenBalance({
     address: walletAddress ? (walletAddress as `0x${string}`) : undefined,
     chainId: asset?.chainId,
     token: asset?.contractAddress,
-    query: {
-      enabled: balanceEnabled,
-    },
+    decimals: asset?.decimals,
+    enabled: balanceEnabled,
   });
 
   return (
@@ -296,7 +337,7 @@ function AssetField({
             ? "—"
             : isFetching
               ? "…"
-              : `${Number(balance?.formatted ?? "0").toFixed(4)} ${asset.symbol}`}
+              : `${Number(balanceFormatted).toFixed(4)} ${asset.symbol}`}
         </div>
       )}
     </div>
