@@ -12,15 +12,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@openfort/react": "1.0.16",
+    "@openfort/react": "^1.1.1",
     "@tanstack/react-query": "^5.101.0",
     "@walletconnect/pay": "^1.0.8",
-    "@wagmi/connectors": "^5.11.2",
+    "@wagmi/connectors": "^8.0.15",
     "lucide-react": "^1.17.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "viem": "^2.52.2",
-    "wagmi": "^2.19.5"
+    "wagmi": "^3.6.16"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",

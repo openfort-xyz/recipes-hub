@@ -1,2 +1,0 @@
-patchedDependencies:
-  '@openfort/react@1.0.16': patches/@openfort__react@1.0.16.patch
