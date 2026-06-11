@@ -47,6 +47,9 @@ ONECLICK_JWT=...                                    # Optional, server-side only
 Sign-in is restricted to **email** and **external wallet**. The wallet option only
 appears when `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` is set (free at
 [cloud.reown.com](https://cloud.reown.com)); without it, email sign-in is used.
+External wallet sign-in is EVM-only (WalletConnect `eip155`): multichain wallets
+like Phantom connect through their EVM accounts, and Solana-only wallets cannot
+pair — Solana is supported as a *destination* via the recipient address.
 
 ## 4. Install & Start
 
@@ -67,7 +70,9 @@ pnpm dev
 - **Openfort embedded wallets** with email/social authentication
 - **Single-deposit UX** — solvers handle routing and settlement; no NEAR keys needed
 - **Gas sponsorship** with Openfort policies (optional)
-- **Live status tracking** with explorer links
+- **Live status tracking** with explorer links — the 1Click status response's
+  `explorerUrl` is only trusted when absolute; otherwise links fall back to a
+  per-chain explorer map (origin and destination), or show the raw hash
 
 ## Notes
 

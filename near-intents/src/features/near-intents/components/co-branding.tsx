@@ -69,13 +69,18 @@ export function CoBrandHero({ className }: { className?: string }) {
         className
       )}
     >
-      <div className="flex flex-col items-center gap-4 text-center">
-        <CoBrandLogos />
+      <div className="flex flex-col items-center gap-4 text-center lg:items-start lg:text-left">
+        <CoBrandLogos className="lg:justify-start" />
+        <h1 className="text-2xl font-bold">Cross-Chain Swap</h1>
         <p className="text-sm text-muted-foreground max-w-sm">
           This recipe pairs Openfort&apos;s embedded wallets with NEAR
           Intents&apos; 1Click API. Your wallet signs a single deposit on the
           origin chain and a network of solvers settles the swap on the
           destination chain.
+        </p>
+        <p className="text-sm text-muted-foreground max-w-sm">
+          Send from any EVM chain, receive on 30+ chains — including Solana,
+          Bitcoin and more.
         </p>
       </div>
     </section>

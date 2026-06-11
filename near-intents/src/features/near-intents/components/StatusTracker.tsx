@@ -2,7 +2,7 @@
 
 import { CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { getExplorerUrl } from "@/lib/utils";
+import { getExplorerUrl, resolveTxExplorerUrl } from "@/lib/utils";
 import type {
   ExecutionStatusResponse,
   SwapAsset,
@@ -14,6 +14,7 @@ interface StatusTrackerProps {
   detail: ExecutionStatusResponse | null;
   depositTxHash: string | null;
   fromAsset: SwapAsset;
+  toAsset: SwapAsset | null;
 }
 
 const STAGES: { key: SwapStatus; label: string }[] = [
@@ -37,6 +38,7 @@ export default function StatusTracker({
   detail,
   depositTxHash,
   fromAsset,
+  toAsset,
 }: StatusTrackerProps) {
   const current = status ?? "PENDING_DEPOSIT";
   const rank = STAGE_RANK[current];
@@ -98,16 +100,22 @@ export default function StatusTracker({
 
         <div className="space-y-2 border-t border-border pt-4 text-sm">
           {depositExplorer && (
-            <TxRow label="Deposit transaction" href={depositExplorer} />
+            <TxRow label="Deposit transaction" hash={depositTxHash ?? ""} href={depositExplorer} />
           )}
           {originTxs.map((tx) => (
-            <TxRow key={tx.hash} label="Origin chain" href={tx.explorerUrl} />
+            <TxRow
+              key={tx.hash}
+              label="Origin chain"
+              hash={tx.hash}
+              href={resolveTxExplorerUrl(tx, fromAsset.blockchain)}
+            />
           ))}
           {destinationTxs.map((tx) => (
             <TxRow
               key={tx.hash}
               label="Destination chain"
-              href={tx.explorerUrl}
+              hash={tx.hash}
+              href={resolveTxExplorerUrl(tx, toAsset?.blockchain)}
             />
           ))}
         </div>
@@ -116,18 +124,32 @@ export default function StatusTracker({
   );
 }
 
-function TxRow({ label, href }: { label: string; href: string }) {
+function TxRow({
+  label,
+  hash,
+  href,
+}: {
+  label: string;
+  hash: string;
+  href: string | null;
+}) {
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-muted-foreground">{label}</span>
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400"
-      >
-        View
-      </a>
+      {href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400"
+        >
+          View
+        </a>
+      ) : (
+        <span className="font-mono text-xs" title={hash}>
+          {hash.slice(0, 8)}…{hash.slice(-6)}
+        </span>
+      )}
     </div>
   );
 }

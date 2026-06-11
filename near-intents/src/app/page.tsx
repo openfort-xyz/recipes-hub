@@ -5,7 +5,7 @@ import SwapFlow from "@/features/near-intents/components/SwapFlow";
 
 export default function Main() {
   return (
-    <PageLayout>
+    <PageLayout maxWidth="5xl">
       <SwapFlow />
     </PageLayout>
   );
