@@ -32,7 +32,7 @@ pnpx gitpick openfort-xyz/recipes-hub/tree/main/walletconnect-pay openfort-walle
 2. **Developers → API Keys**: copy your **Publishable Key** (`pk_...`).
 3. **Shield**: copy your **Shield Publishable Key**.
 4. (Optional) **Gas Policies**: create a fee sponsorship and copy the **Fee Sponsorship ID** to
-   sponsor the on-chain payment transactions.
+   sponsor the on-chain payment transactions (see [Gasless payments](#gasless-payments)).
 
 ## 3. Get WalletConnect Pay Credentials
 
@@ -71,6 +71,20 @@ Sign in with the embedded wallet, paste a WalletConnect Pay link, and complete t
 
 Base, Ethereum, Polygon, Arbitrum, and Optimism. WalletConnect Pay settles in stablecoins
 (USDC, USDT, EURC, PYUSD, USDG) and picks the source chain based on the wallet's balances.
+
+## Gasless payments
+
+Out of the box the embedded wallet is an EOA, so the user pays gas for each
+`eth_sendTransaction`. To make payments fully gasless:
+
+- **EVM** — delegate the EOA to a smart account with [EIP-7702](https://www.openfort.io/blog/openfort-delegator-account-7702)
+  and attach a gas policy. Create a **Fee Sponsorship** in the dashboard, set
+  `VITE_OPENFORT_FEE_SPONSORSHIP_ID`, and the sponsor pays gas — users only need
+  stablecoins, never ETH. See the [7702 recipe](../7702) for a full walkthrough.
+- **Solana** — use Openfort's [Kora integration](https://www.openfort.io/blog/solana-gasless-transactions).
+  Kora (the Solana Foundation's fee relayer) is set as the transaction `feePayer`; Openfort
+  validates your gas policy (`sponsorSolTransaction`) and co-signs, so no SOL is deducted
+  from the user. No paymaster contract needed — Solana supports fee payers natively.
 
 ## Resources
 
