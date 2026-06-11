@@ -28,9 +28,11 @@ export default function SwapFlow() {
     (TERMINAL_STATUSES as readonly string[]).includes(state.status);
 
   return (
-    <main className="flex flex-1 items-center justify-center p-6">
-      <div className="flex w-full max-w-md flex-col items-center gap-6">
+    <main className="flex flex-1 items-center justify-center">
+      <div className="grid w-full items-center gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-10">
         <CoBrandHero />
+
+        <div className="flex w-full flex-col items-center gap-4 justify-self-center lg:max-w-md">
 
         {isStatusLoading ? (
           <InfoCard>Loading wallet…</InfoCard>
@@ -86,6 +88,7 @@ export default function SwapFlow() {
                 detail={state.statusDetail}
                 depositTxHash={state.depositTxHash}
                 fromAsset={state.fromAsset}
+                toAsset={state.toAsset}
               />
             )}
 
@@ -102,16 +105,17 @@ export default function SwapFlow() {
           </>
         )}
 
-        {state.error && (
-          <Card className="w-full max-w-md border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
-            <CardContent className="flex items-center gap-3 p-4">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-              <p className="text-sm text-red-700 dark:text-red-300">
-                {state.error}
-              </p>
-            </CardContent>
-          </Card>
-        )}
+          {state.error && (
+            <Card className="w-full max-w-md border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+              <CardContent className="flex items-center gap-3 p-4">
+                <AlertTriangle className="h-5 w-5 text-red-500" />
+                <p className="text-sm text-red-700 dark:text-red-300">
+                  {state.error}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </main>
   );

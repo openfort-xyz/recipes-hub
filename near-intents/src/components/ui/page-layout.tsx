@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 interface PageLayoutProps {
   children: ReactNode;
-  maxWidth?: "sm" | "lg" | "xl";
+  maxWidth?: "sm" | "lg" | "xl" | "5xl";
   className?: string;
 }
 
@@ -16,6 +16,7 @@ export function PageLayout({
     sm: "max-w-sm",
     lg: "max-w-lg",
     xl: "max-w-xl",
+    "5xl": "max-w-5xl",
   };
 
   return (

@@ -15,19 +15,23 @@ export interface OpenfortWalletState {
 export const useOpenfortWallet = (): OpenfortWalletState => {
   const wallet = useEthereumEmbeddedWallet();
   const { user, isAuthenticated } = useUser();
-  const { address } = useAccount();
+  const { address, status: accountStatus } = useAccount();
   const chainId = useChainId();
 
   const walletAddress = address ?? "";
-  const isConnected = wallet.status === "connected" && isAuthenticated;
-  const isReady = !wallet.isLoading && isConnected && !!walletAddress;
+  // Sign-in can use an Openfort embedded wallet or an external wallet (SIWE).
+  // Both surface through wagmi, so the wagmi account is the connection source
+  // of truth — the embedded-wallet status alone would never report external
+  // wallets as connected.
+  const isConnected = accountStatus === "connected" && isAuthenticated;
+  const isReady = isConnected && !!walletAddress;
 
   return {
     address: walletAddress,
     chainId,
     isReady,
     isConnected,
-    isStatusLoading: wallet.isLoading,
+    isStatusLoading: wallet.isLoading && !isConnected,
     isAuthenticated,
     playerName:
       user?.name ||

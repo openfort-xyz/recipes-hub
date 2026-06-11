@@ -64,17 +64,9 @@ export default function SwapForm({
   return (
     <div className="w-full max-w-md">
       <div className="rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-lg">
-        <div className="mb-6 text-center">
-          <h1 className="mb-2 text-2xl font-bold">Cross-Chain Swap</h1>
-          <p className="text-sm text-muted-foreground">
-            Send from any EVM chain, receive on 30+ chains — including Solana,
-            Bitcoin and more
-          </p>
-          {walletAddress && (
-            <div className="mt-3">
-              <FundWallet walletAddress={walletAddress} />
-            </div>
-          )}
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold">Swap</h2>
+          {walletAddress && <FundWallet walletAddress={walletAddress} />}
         </div>
 
         <AssetField
