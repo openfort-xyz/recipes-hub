@@ -6,12 +6,14 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   return (
-    <div className="min-h-screen bg-black/95 flex items-center justify-center p-4 font-figtree">
-      <div className="w-full max-w-md mx-auto text-center flex flex-col items-center justify-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight text-balance">
-          Openfort <span className="text-neutral-500">×</span> WalletConnect Pay
-        </h1>
-        <p className="text-neutral-400 mb-8 text-sm">Pay a merchant link with your embedded wallet.</p>
+    <div className="flex min-h-[100dvh] flex-col bg-black/95 font-figtree sm:items-center sm:justify-center">
+      <div className="mx-auto flex w-full flex-1 flex-col px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] sm:max-w-md sm:flex-none sm:px-4 sm:py-10">
+        <header className="mb-6 text-center sm:mb-8">
+          <h1 className="text-2xl font-bold tracking-tight text-balance text-white sm:text-3xl md:text-4xl">
+            Openfort <span className="text-neutral-500">×</span> WalletConnect Pay
+          </h1>
+          <p className="mt-2 text-sm text-neutral-400">Pay a merchant link with your embedded wallet.</p>
+        </header>
         {children}
       </div>
     </div>

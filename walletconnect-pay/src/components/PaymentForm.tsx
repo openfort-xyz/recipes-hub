@@ -27,12 +27,19 @@ export function PaymentForm({ onSubmit, onPickSample, isLoading }: PaymentFormPr
           value={link}
           onChange={(event) => setLink(event.target.value)}
           placeholder="https://pay.walletconnect.com/?pid=…"
-          className="w-full rounded-lg bg-neutral-800 border border-neutral-700 text-white px-4 py-3 placeholder:text-neutral-500 focus:border-neutral-400 focus:ring-0"
+          type="url"
+          inputMode="url"
+          autoCapitalize="none"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
+          enterKeyHint="go"
+          className="min-h-[52px] w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-3 text-base text-white placeholder:text-neutral-500 focus:border-neutral-400 focus:ring-0"
         />
         <button
           type="submit"
           disabled={isLoading || !link.trim()}
-          className="w-full bg-white text-black font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex min-h-[52px] w-full items-center justify-center rounded-lg bg-white px-6 py-3.5 font-semibold text-black shadow-lg transition-colors duration-200 hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isLoading ? (
             <>
@@ -70,11 +77,11 @@ export function PaymentForm({ onSubmit, onPickSample, isLoading }: PaymentFormPr
             key={merchant.id}
             onClick={() => onPickSample(merchant)}
             disabled={isLoading}
-            className="w-full flex items-center gap-3 rounded-lg bg-neutral-800/60 border border-neutral-700 px-4 py-3 text-left hover:border-neutral-400 transition-colors disabled:opacity-50"
+            className="flex min-h-[52px] w-full select-none items-center gap-3 rounded-lg border border-neutral-700 bg-neutral-800/60 px-4 py-3 text-left transition-colors hover:border-neutral-400 active:border-neutral-400 active:bg-neutral-800 disabled:opacity-50"
           >
-            <span className="text-xl">{merchant.emoji}</span>
-            <span className="text-white text-sm">{merchant.label}</span>
-            <span className="ml-auto text-neutral-500 text-xs">Preview →</span>
+            <span className="text-2xl">{merchant.emoji}</span>
+            <span className="text-sm text-white">{merchant.label}</span>
+            <span className="ml-auto text-xs text-neutral-500">Preview →</span>
           </button>
         ))}
       </div>

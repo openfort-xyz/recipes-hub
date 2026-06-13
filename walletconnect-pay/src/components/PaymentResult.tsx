@@ -31,7 +31,10 @@ export function PaymentResult({ phase, step, txId, error, onReset }: PaymentResu
         <CheckCircle2 className="w-10 h-10 text-green-400" />
         <p className="text-white font-semibold">Payment complete</p>
         {txId && <p className="text-neutral-500 text-xs break-all">{txId}</p>}
-        <button onClick={onReset} className="mt-2 text-sm text-neutral-300 underline hover:text-white">
+        <button
+          onClick={onReset}
+          className="mt-2 rounded-md px-3 py-2 text-sm text-neutral-300 underline transition-colors hover:text-white active:text-white"
+        >
           Make another payment
         </button>
       </div>
@@ -43,7 +46,10 @@ export function PaymentResult({ phase, step, txId, error, onReset }: PaymentResu
       <XCircle className="w-10 h-10 text-red-400" />
       <p className="text-white font-semibold">Payment failed</p>
       {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-      <button onClick={onReset} className="mt-2 text-sm text-neutral-300 underline hover:text-white">
+      <button
+        onClick={onReset}
+        className="mt-2 rounded-md px-3 py-2 text-sm text-neutral-300 underline transition-colors hover:text-white active:text-white"
+      >
         Try again
       </button>
     </div>

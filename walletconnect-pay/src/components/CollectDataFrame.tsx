@@ -26,7 +26,7 @@ export function CollectDataFrame({ url, onComplete, onError }: CollectDataFrameP
       <iframe
         title="Merchant data collection"
         src={url}
-        className="w-full h-96 rounded-lg border border-neutral-700 bg-white"
+        className="h-[55dvh] min-h-[20rem] w-full rounded-lg border border-neutral-700 bg-white"
       />
     </div>
   )

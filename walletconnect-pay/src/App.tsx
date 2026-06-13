@@ -77,7 +77,7 @@ function App() {
 
   return (
     <MainLayout>
-      <div className="bg-neutral-900 rounded-2xl border border-neutral-700 shadow-xl p-6 w-full flex flex-col items-center gap-6">
+      <div className="flex w-full flex-col items-center gap-6 rounded-2xl border border-neutral-800 bg-neutral-900 p-5 sm:border-neutral-700 sm:p-6 sm:shadow-xl">
         {missing.length > 0 && <EnvNotice missing={missing} />}
         <OpenfortButton showBalance={false} showAvatar={true} label="Connect Wallet" />
         {isAuthenticated && missing.length === 0 && <PaymentPanel />}
