@@ -36,11 +36,9 @@
 - Vite + TypeScript, **Biome** for lint/format — single quotes, no semicolons, 2-space, 120 col.
 - Functional React components and hooks; wallet state via wagmi and `@openfort/react` hooks.
 
-## Patched dependency (important)
-- `patches/@openfort__react@1.0.16.patch` removes three `/* @vite-ignore */` comments from `@openfort/react`'s `OpenfortProvider.js` lazy imports (Solana context, wagmi sync, ConnectModal). Registered in `pnpm-workspace.yaml` under `patchedDependencies`; applied automatically on `pnpm i`.
-- Why: with the comments, Vite's dep pre-bundler keeps those relative dynamic imports external, and they resolve against `node_modules/.vite/deps` instead of the package — the dev server 500s with "Failed to resolve import ../../solana/SolanaContext.js" and the app white-screens. Removing them lets esbuild bundle the chunks (and their CommonJS deps) with proper interop in one pass.
-- This affects every Vite recipe using `@openfort/react@1.0.16`, not just this one. The real fix belongs upstream in the SDK (drop the `@vite-ignore` lazy imports or ship them as resolvable subpath exports). Re-check whether the patch is still needed when bumping `@openfort/react`.
-- `@openfort/react` is pinned to an exact `1.0.16` (no caret) so the patch key always matches the resolved version; bumping it means regenerating or removing the patch.
+## Dependencies
+- Runs on `@openfort/react@^1.1.1` with **wagmi 3** and **viem 2** (`react@19`, `vite@8`). `@openfort/react` 1.1.1 requires wagmi 3.x.
+- No dependency patches and no `pnpm-workspace.yaml` overrides. The earlier Vite pre-bundling failure — `@openfort/react@1.0.16` left `/* @vite-ignore */` lazy imports in `OpenfortProvider.js`, so Vite externalized them and the dev server 500'd with "Failed to resolve import ../../solana/SolanaContext.js" — is fixed upstream in 1.1.1. If you ever pin back to 1.0.16 you'd need that patch again.
 
 ## PR instructions
 - Title format: `[walletconnect-pay] <summary>`.
