@@ -21,6 +21,7 @@ This repository contains comprehensive samples demonstrating how to integrate Op
 | **[Yield with vaults.fyi](./vaults-fyi/)** | Discover, deposit into and track USDC vaults across 80+ protocols through the vaults.fyi API, plus rewards claims. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/vaults-fyi openfort-vaults-fyi && cd openfort-vaults-fyi` |
 | **[Private invoice payments](./private-payments/)** | Pay supplier invoices from an embedded wallet through Unlink's shielded pool on Monad testnet, breaking the on-chain link between payer and supplier. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/private-payments openfort-private-payments && cd openfort-private-payments` |
 | **[Bank rails with Lightspark Grid](./lightspark-grid/)** | Fund an embedded wallet from a bank account and cash it back out. Grid converts USD ↔ USDC on Base; the wallet sends USDC to Grid's deposit address with sponsored gas. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/lightspark-grid openfort-lightspark-grid && cd openfort-lightspark-grid` |
+| **[Gnosis Pay card](./gnosis-pay/)** | Issue a Gnosis Pay Visa card to an Openfort embedded wallet: SIWE sign-in, KYC onboarding, Safe account provisioning and a virtual card through the Gnosis Pay User API, then fund the Safe with EURe on Gnosis Chain. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/gnosis-pay openfort-gnosis-pay && cd openfort-gnosis-pay` |
 
 ## Getting Started
 
@@ -42,4 +43,5 @@ Each sample is completely self-contained with its own setup instructions, enviro
 | **Telegram bot**        | -            | Node.js    | Base Sepolia      | `grammy`, `@openfort/openfort-node`, `viem`          |
 | **Lighter**             | React Native | Node.js    | Ethereum mainnet  | `@openfort/react-native`, vendored `lighter-go` WASM |
 | **Lightspark Grid**     | Next.js 15   | Next.js API routes | Base Sepolia | `@openfort/react`, `@openfort/openfort-node`, `wagmi` |
+| **Gnosis Pay**          | React Native | -          | Gnosis Chain      | `@openfort/react-native`, Gnosis Pay User API, `viem` |
 
