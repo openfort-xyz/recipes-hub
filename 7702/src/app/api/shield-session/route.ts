@@ -19,7 +19,7 @@ export async function POST(_req: NextRequest) {
     const session = await openfort.createEncryptionSession(
       process.env.NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY as string,
       process.env.OPENFORT_SHIELD_SECRET_KEY as string,
-      process.env.OPENFORT_SHIELD_ENCRYPTION_SHARE as string
+      process.env.OPENFORT_SHIELD_ENCRYPTION_KEY as string
     )
 
     return NextResponse.json({ session })

@@ -11,7 +11,7 @@
 - `pnpm run ios` or `pnpm run android` after the dev server is running
 
 ## Environment
-- `.env.local` requires `OPENFORT_PROJECT_PUBLISHABLE_KEY`, `OPENFORT_SHIELD_PUBLISHABLE_KEY`, `OPENFORT_SHIELD_ENCRYPTION_SHARE`, `OPENFORT_SHIELD_RECOVERY_BASE_URL`, `OPENFORT_ETHEREUM_PROVIDER_POLICY_ID`, and `HYPERLIQUID_WALLET_ADDRESS`.
+- `.env.local` requires `OPENFORT_PUBLISHABLE_KEY`, `OPENFORT_SHIELD_PUBLISHABLE_KEY`, `OPENFORT_SHIELD_ENCRYPTION_KEY`, `OPENFORT_SHIELD_RECOVERY_BASE_URL`, `OPENFORT_ETHEREUM_PROVIDER_POLICY_ID`, and `HYPERLIQUID_WALLET_ADDRESS`.
 - Confirm your Shield recovery endpoint is reachable from the target device prior to login.
 - Keep Hyperliquid faucet balances refreshed so polling and trade previews succeed.
 

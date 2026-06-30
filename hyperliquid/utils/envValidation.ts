@@ -25,7 +25,7 @@ const PLACEHOLDER_VALUES = new Set([
 const ENV_RULES: EnvRule[] = [
   {
     extraKey: "openfortPublishableKey",
-    envName: "OPENFORT_PROJECT_PUBLISHABLE_KEY",
+    envName: "OPENFORT_PUBLISHABLE_KEY",
     description: "Openfort publishable key for initializing the client",
     required: true,
     validate: (value) =>
@@ -41,7 +41,7 @@ const ENV_RULES: EnvRule[] = [
   },
   {
     extraKey: "openfortShieldEncryptionShare",
-    envName: "OPENFORT_SHIELD_ENCRYPTION_SHARE",
+    envName: "OPENFORT_SHIELD_ENCRYPTION_KEY",
     description: "Shield encryption share required for signing requests",
     required: true,
   },

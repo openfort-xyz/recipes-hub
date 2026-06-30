@@ -31,7 +31,7 @@ NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID=your_policy_id
 # Openfort Shield Keys
 NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY=your_shield_key
 OPENFORT_SHIELD_SECRET_KEY=your_shield_secret_key
-OPENFORT_SHIELD_ENCRYPTION_SHARE=your_encryption_share
+OPENFORT_SHIELD_ENCRYPTION_KEY=your_encryption_share
 
 # Encrypted Session Endpoint
 NEXT_PUBLIC_CREATE_ENCRYPTED_SESSION_ENDPOINT=your_session_endpoint
