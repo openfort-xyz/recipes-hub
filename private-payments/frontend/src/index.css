@@ -1,0 +1,81 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+:root {
+  --radius-md: 0.625rem;
+
+  --demo-bg: #f4f4f5;
+  --demo-surface: #ffffff;
+  --demo-surface-soft: #fafafa;
+  --demo-surface-muted: #f1f1f3;
+  --demo-border: #e4e4e7;
+  --demo-bezel: #18181b;
+
+  --demo-ink-900: #0a0a0a;
+  --demo-ink-700: #3f3f46;
+  --demo-ink-500: #71717a;
+  --demo-ink-400: #a1a1aa;
+  --demo-ink-300: #d4d4d8;
+
+  --demo-chip-bg: #f4f4f5;
+  --demo-chip-border: #e4e4e7;
+  --demo-accent: #6366f1;
+  --demo-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.dark {
+  --demo-bg: #09090b;
+  --demo-surface: #18181b;
+  --demo-surface-soft: #1f1f23;
+  --demo-surface-muted: #27272a;
+  --demo-border: #27272a;
+  --demo-bezel: #000000;
+
+  --demo-ink-900: #fafafa;
+  --demo-ink-700: #d4d4d8;
+  --demo-ink-500: #a1a1aa;
+  --demo-ink-400: #71717a;
+  --demo-ink-300: #52525b;
+
+  --demo-chip-bg: #27272a;
+  --demo-chip-border: #3f3f46;
+  --demo-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--demo-bg);
+  color: var(--demo-ink-900);
+  font-family: "Manrope", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes pd-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pd-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pd-spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
