@@ -105,7 +105,7 @@ export function loadConfig(): Config {
       shield: {
         publishableKey: process.env.OPENFORT_SHIELD_PUBLISHABLE_KEY ?? "",
         secretKey: process.env.OPENFORT_SHIELD_SECRET_KEY ?? "",
-        encryptionShare: process.env.OPENFORT_SHIELD_ENCRYPTION_SHARE ?? "",
+        encryptionShare: process.env.OPENFORT_SHIELD_ENCRYPTION_KEY ?? "",
       },
     },
   };

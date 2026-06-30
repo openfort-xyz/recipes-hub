@@ -38,7 +38,7 @@ cp .env.example .env.local
 Add your Openfort credentials to `.env.local`:
 
 ```env
-OPENFORT_PROJECT_PUBLISHABLE_KEY=pk_test_your_publishable_key
+OPENFORT_PUBLISHABLE_KEY=pk_test_your_publishable_key
 OPENFORT_SHIELD_PUBLISHABLE_KEY=pk_test_your_shield_key
 OPENFORT_SHIELD_RECOVERY_BASE_URL=http://localhost:3000
 OPENFORT_ETHEREUM_PROVIDER_POLICY_ID=pol_your_policy_id

@@ -12,7 +12,7 @@
 - `pnpm run ios` or `pnpm run android` to launch on a device/emulator
 
 ## Environment
-- `.env.local` must define `OPENFORT_PROJECT_PUBLISHABLE_KEY`, `OPENFORT_SHIELD_PUBLISHABLE_KEY`, `OPENFORT_SHIELD_RECOVERY_BASE_URL`, and `OPENFORT_ETHEREUM_PROVIDER_POLICY_ID`.
+- `.env.local` must define `OPENFORT_PUBLISHABLE_KEY`, `OPENFORT_SHIELD_PUBLISHABLE_KEY`, `OPENFORT_SHIELD_RECOVERY_BASE_URL`, and `OPENFORT_ETHEREUM_PROVIDER_POLICY_ID`.
 - Make sure the Shield recovery service URL resolves from the target device so account restoration succeeds.
 - Faucet links rely on Sepolia support; verify the provider policy covers the same chain IDs before testing transfers.
 
