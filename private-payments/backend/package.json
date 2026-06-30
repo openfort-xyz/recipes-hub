@@ -1,0 +1,38 @@
+{
+  "name": "openfort-private-payments-backend",
+  "version": "1.0.0",
+  "description": "Backend that registers Unlink users and issues authorization tokens for the non-custodial private invoice payments recipe",
+  "main": "dist/server.js",
+  "type": "module",
+  "packageManager": "pnpm@10.30.3",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsc && node --watch dist/server.js",
+    "check": "biome check --write .",
+    "lint": "biome lint .",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "@openfort/openfort-node": "^0.10.5",
+    "@unlink-xyz/sdk": "0.3.0-canary.638",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.16",
+    "@types/express": "^5.0.4",
+    "@types/node": "^22.19.20",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "openfort",
+    "unlink",
+    "privacy",
+    "non-custodial",
+    "monad"
+  ],
+  "author": "Openfort",
+  "license": "MIT"
+}
