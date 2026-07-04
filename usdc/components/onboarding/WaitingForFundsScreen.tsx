@@ -6,6 +6,7 @@ import { UserWallet, WalletData } from "@/types/wallet";
 import { formatUSDC } from "../../utils/format";
 import { ERC20_BALANCE_TIMEOUT_MS } from "../../constants/erc20";
 import { useUsdcBalance } from "../../utils/erc20";
+import { colors, radii } from "../../constants/theme";
 
 interface Props {
   walletB: WalletData | null;
@@ -15,127 +16,72 @@ interface Props {
   activeWallet: UserWallet | null;
 }
 
+const truncateAddress = (address: string) =>
+  address ? `${address.slice(0, 6)}···${address.slice(-4)}` : "";
+
 export const WaitingForFundsScreen = ({ walletB, onNext, onBack, onUpdateBalance, activeWallet }: Props) => {
   const { balance: currentBalance, hasBalance } = useUsdcBalance({
     activeWalletOrProvider: activeWallet,
     ownerAddress: walletB?.address,
     onBalanceUpdate: onUpdateBalance,
-    options: { pollIntervalMs: 5000, stopWhenPositive: true, timeoutMs: ERC20_BALANCE_TIMEOUT_MS }
+    options: { pollIntervalMs: 5000, stopWhenPositive: true, timeoutMs: ERC20_BALANCE_TIMEOUT_MS },
   });
-  const truncateAddress = (address: string) => {
-    if (!address) return '';
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>
-          {
-            hasBalance
-              ? "Success!"
-              : "Waiting for Funds"
-          }
-        </Text>
-        <Text style={styles.subtitle}>
-          {hasBalance 
-            ? "Funds received successfully" 
-            : "Please wait for USDC tokens to arrive"}
-        </Text>
-      </View>
-      
-      {/* Main Balance Display - Centerpiece */}
-      <View style={styles.balanceContainer}>
-        <View style={styles.balanceCard}>
-          {/* Balance Amount */}
-          <View style={styles.balanceDisplay}>
-            <Text style={[
-              styles.balanceAmount,
-              hasBalance && styles.balanceAmountSuccess
-            ]}>
-              {formatUSDC(currentBalance)}
-            </Text>
-            <Text style={[
-              styles.balanceCurrency,
-              hasBalance && styles.balanceCurrencySuccess
-            ]}>
-              USDC
-            </Text>
-          </View>
-          
-          {/* Status Indicator */}
-          <View style={styles.statusIndicator}>
-            {!hasBalance ? (
-              <View style={styles.loadingIndicator}>
-                <ActivityIndicator size="small" color="#0066CC" />
-                <Text style={styles.loadingText}>Checking balance...</Text>
-              </View>
-            ) : (
-              <View style={styles.successIndicator}>
-                <View style={styles.successBadge}>
-                  <Text style={styles.successIcon}>✓</Text>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.hero}>
+          <Text style={styles.eyebrow}>{hasBalance ? "Funds received" : "Waiting for funds"}</Text>
+
+          <Text style={[styles.amount, hasBalance && styles.amountSuccess]} numberOfLines={1} adjustsFontSizeToFit>
+            ${formatUSDC(currentBalance)}
+          </Text>
+          <Text style={styles.currency}>USDC · Ethereum Sepolia</Text>
+
+          <View style={[styles.statusChip, hasBalance && styles.statusChipSuccess]}>
+            {hasBalance ? (
+              <>
+                <View style={styles.checkBadge}>
+                  <Text style={styles.checkIcon}>✓</Text>
                 </View>
-                <Text style={styles.successText}>Funds received!</Text>
-              </View>
+                <Text style={styles.statusTextSuccess}>Ready to go</Text>
+              </>
+            ) : (
+              <>
+                <ActivityIndicator size="small" color={colors.textMuted} />
+                <Text style={styles.statusText}>Checking balance…</Text>
+              </>
             )}
           </View>
         </View>
-        
-        {/* Wallet Address */}
-        <View style={styles.walletInfo}>
-          <Text style={styles.walletLabel}>Wallet Address</Text>
-          <Pressable
-            style={styles.addressContainer}
-            onPress={() => {
-              const address = walletB?.address || '';
-              Clipboard.setStringAsync(address);
-            }}
-          >
-            <Text style={styles.addressText}>
-              {truncateAddress(walletB?.address || '')}
-            </Text>
-          </Pressable>
-        </View>
-      </View>
 
-      {/* Action Buttons */}
-      <View style={styles.actionsContainer}>
+        <Pressable
+          style={styles.addressChip}
+          onPress={() => Clipboard.setStringAsync(walletB?.address || "")}
+        >
+          <Text style={styles.addressLabel}>Wallet B</Text>
+          <Text style={styles.addressText}>{truncateAddress(walletB?.address || "")}</Text>
+        </Pressable>
+
+        {!hasBalance ? (
+          <Text style={styles.hint}>Circle usually delivers within 30–60 seconds. Tap the address to copy it.</Text>
+        ) : null}
+      </ScrollView>
+
+      <View style={styles.footer}>
         {hasBalance ? (
           <Pressable
-            style={({ pressed }) => [
-              styles.primaryButton,
-              pressed && styles.buttonPressed
-            ]}
+            style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}
             onPress={onNext}
           >
-            <Text style={styles.primaryButtonText}>Continue to App</Text>
+            <Text style={styles.primaryButtonText}>Continue</Text>
           </Pressable>
         ) : (
-          <View style={styles.waitingInfo}>
-            <View style={styles.infoCard}>
-              <Text style={styles.infoIcon}>ℹ️</Text>
-              <Text style={styles.infoText}>
-                The Circle faucet usually delivers funds within 30-60 seconds
-              </Text>
-            </View>
-          </View>
-        )}
-        
-        <View style={styles.secondaryActions}>
-          <Text style={styles.troubleText}>Having trouble?</Text>
-          <Pressable
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.buttonPressed
-            ]}
-            onPress={onBack}
-          >
-            <Text style={styles.secondaryButtonText}>Go Back to Faucet</Text>
+          <Pressable style={({ pressed }) => [styles.ghostButton, pressed && styles.buttonPressed]} onPress={onBack}>
+            <Text style={styles.ghostButtonText}>Back to faucet</Text>
           </Pressable>
-        </View>
+        )}
       </View>
-      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -143,210 +89,139 @@ export const WaitingForFundsScreen = ({ walletB, onNext, onBack, onUpdateBalance
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fafbfc',
+    backgroundColor: colors.bg,
   },
   container: {
     flexGrow: 1,
-    paddingVertical: 24,
-    justifyContent: 'center',
+    padding: 24,
+    justifyContent: "center",
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-    paddingHorizontal: 24,
+  hero: {
+    alignItems: "center",
+    marginBottom: 40,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#1a1f36',
-    marginBottom: 8,
-    letterSpacing: -0.5,
+  eyebrow: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.textMuted,
+    marginBottom: 12,
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#8898aa',
-    textAlign: 'center',
-    fontWeight: '400',
+  amount: {
+    fontSize: 68,
+    fontWeight: "800",
+    color: colors.text,
+    letterSpacing: -2,
+    fontVariant: ["tabular-nums"],
   },
-
-  // Balance Container - The Centerpiece
-  balanceContainer: {
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    marginBottom: 32,
+  amountSuccess: {
+    color: colors.greenPressed,
   },
-  balanceCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 32,
-    width: '100%',
-    maxWidth: 400,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e6ebf1',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+  currency: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.textMuted,
+    marginTop: 6,
   },
-  balanceDisplay: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  balanceAmount: {
-    fontSize: 48,
-    fontWeight: '600',
-    color: '#8898aa',
-  },
-  balanceAmountSuccess: {
-    color: '#1a1f36',
-  },
-  balanceCurrency: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#8898aa',
-    marginTop: 4,
-  },
-  balanceCurrencySuccess: {
-    color: '#424770',
-  },
-
-  // Status Indicators
-  statusIndicator: {
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  statusChip: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
+    marginTop: 24,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: radii.pill,
   },
-  loadingText: {
-    fontSize: 14,
-    color: '#8898aa',
+  statusChipSuccess: {
+    backgroundColor: colors.greenSoft,
   },
-  successIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  statusText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.textMuted,
   },
-  successBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#00d924',
-    alignItems: 'center',
-    justifyContent: 'center',
+  statusTextSuccess: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.greenPressed,
   },
-  successIcon: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+  checkBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.green,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  successText: {
-    fontSize: 14,
-    color: '#1a1f36',
-    fontWeight: '500',
-  },
-
-  // Wallet Info
-  walletInfo: {
-    marginTop: 20,
-    alignItems: 'center',
-    width: '100%',
-  },
-  walletLabel: {
+  checkIcon: {
+    color: colors.onGreen,
     fontSize: 12,
-    color: '#8898aa',
-    fontWeight: '500',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 6,
+    fontWeight: "800",
   },
-  addressContainer: {
-    backgroundColor: '#f6f9fc',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#e6ebf1',
+  addressChip: {
+    alignSelf: "center",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: radii.card,
+  },
+  addressLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   addressText: {
-    fontFamily: 'monospace',
-    fontSize: 13,
-    color: '#6772e5',
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.text,
+    fontVariant: ["tabular-nums"],
   },
-
-  // Actions Container
-  actionsContainer: {
+  hint: {
+    textAlign: "center",
+    fontSize: 14,
+    fontWeight: "500",
+    color: colors.textMuted,
+    lineHeight: 20,
+    marginTop: 20,
     paddingHorizontal: 24,
-    width: '100%',
-    maxWidth: 400,
-    alignSelf: 'center',
+  },
+  footer: {
+    padding: 24,
+    paddingTop: 8,
   },
   primaryButton: {
-    backgroundColor: '#6772e5',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 6,
-    alignItems: 'center',
-    marginBottom: 24,
+    height: 58,
+    borderRadius: radii.pill,
+    backgroundColor: colors.green,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryButtonPressed: {
+    backgroundColor: colors.greenPressed,
+    transform: [{ scale: 0.99 }],
   },
   primaryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
+    color: colors.onGreen,
+    fontSize: 18,
+    fontWeight: "700",
   },
-
-  // Waiting Info
-  waitingInfo: {
-    marginBottom: 24,
+  ghostButton: {
+    height: 58,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  infoCard: {
-    backgroundColor: '#fff',
-    borderRadius: 6,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderWidth: 1,
-    borderColor: '#e6ebf1',
-  },
-  infoIcon: {
-    fontSize: 16,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#525f7f',
-    lineHeight: 20,
-    flex: 1,
-  },
-
-  // Secondary Actions
-  secondaryActions: {
-    alignItems: 'center',
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#e6ebf1',
-  },
-  troubleText: {
-    fontSize: 14,
-    color: '#8898aa',
-    marginBottom: 8,
-  },
-  secondaryButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  secondaryButtonText: {
-    color: '#6772e5',
-    fontSize: 14,
-    fontWeight: '500',
+  ghostButtonText: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "700",
   },
   buttonPressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.98 }],
+    opacity: 0.8,
   },
 });

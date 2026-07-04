@@ -24,8 +24,8 @@
 - Stick to Expo Router conventions and functional React components with hooks.
 - Keep Openfort state updates inside existing context/providers; avoid introducing new global singletons.
 
-## Upgrade notes (June 2026)
-- Targets **Expo SDK 56 / React Native 0.85**. Realign the `expo-*`/RN matrix with `pnpm expo install --fix`, not by hand.
+## Upgrade notes (July 2026)
+- Targets **Expo SDK 57 / React Native 0.86**. Realign the `expo-*`/RN matrix with `pnpm expo install --fix`, not by hand.
 - `@openfort/react-native` walletConfig key is **`feeSponsorshipId`** (renamed from `ethereumProviderPolicyId`); value still read from `OPENFORT_ETHEREUM_PROVIDER_POLICY_ID`.
 - Typecheck passes (`pnpm exec tsc --noEmit`); native build/run is unverified here — launch on a device/simulator before merge.
 
