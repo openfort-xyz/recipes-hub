@@ -8,12 +8,7 @@ import { formatUSDC } from "../utils/format";
 import { transferUSDC } from "../utils/erc20";
 import { CHAIN_IDS, CHAIN_IDS_HEX } from "../constants/network";
 import { ConnectedEmbeddedEthereumWallet } from "@openfort/react-native";
-
-const CopyIcon = ({ size = 16, color = "#6772e5" }) => (
-  <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-    <Text style={{ fontSize: size * 0.9, color, fontWeight: '400', lineHeight: size }}>⧉</Text>
-  </View>
-);
+import { colors, radii, cardShadow, avatarColor } from "../constants/theme";
 
 interface MainAppScreenProps {
   walletA: WalletData | null;
@@ -25,10 +20,13 @@ interface MainAppScreenProps {
   isInitialLoad: boolean;
   updateBalances: () => Promise<void>;
   logout: () => void;
-  ethBalances: {[key: string]: string};
+  ethBalances: { [key: string]: string };
   activeWallet: ConnectedEmbeddedEthereumWallet | null;
   setActiveWallet: (options?: any) => Promise<any>;
 }
+
+const truncate = (address?: string) =>
+  address ? `${address.slice(0, 6)}···${address.slice(-4)}` : "";
 
 export const MainAppScreen = ({
   walletA,
@@ -47,10 +45,20 @@ export const MainAppScreen = ({
   const [isSwitching, setIsSwitching] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
 
-  const copyToClipboard = useCallback(async (address: string) => {
+  const isA = activeWallet?.address === walletA?.address;
+  const sender = isA ? walletA : walletB;
+  const receiver = isA ? walletB : walletA;
+  const senderLabel = isA ? "Wallet A" : "Wallet B";
+  const receiverLabel = isA ? "Wallet B" : "Wallet A";
+  const gas = ethBalances[activeWallet?.address || ""] || "0";
+
+  const senderBalance = isInitialLoad && !sender?.balance ? null : formatUSDC(sender?.balance || "0");
+
+  const copyToClipboard = useCallback(async (address?: string) => {
+    if (!address) return;
     await Clipboard.setStringAsync(address);
     setCopiedAddress(address);
-    setTimeout(() => setCopiedAddress(null), 2000);
+    setTimeout(() => setCopiedAddress(null), 1500);
   }, []);
 
   const onTransfer = useCallback(
@@ -79,170 +87,99 @@ export const MainAppScreen = ({
     [activeWallet, setActiveWallet, setIsTransferring, setTransferAmount, updateBalances]
   );
 
+  const onSwitch = useCallback(async () => {
+    const target = isA ? walletB : walletA;
+    if (!target) return;
+    try {
+      setIsSwitching(true);
+      await setActiveWallet({ address: target.address, chainId: CHAIN_IDS.ETHEREUM_SEPOLIA });
+    } catch (e: any) {
+      Alert.alert("Switch Failed", e?.message || "Could not switch wallet");
+    } finally {
+      setIsSwitching(false);
+    }
+  }, [isA, walletA, walletB, setActiveWallet]);
+
+  const canSend = !!(sender && receiver && transferAmount && activeWallet && !isTransferring);
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>USDC Transfer</Text>
-
-      <View style={[styles.section, styles.activeSection]}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.label}>Sender Wallet</Text>
-          <Text style={styles.badge}>ACTIVE</Text>
-        </View>
-        <View style={styles.addressContainer}>
-          <Text style={[styles.address, styles.addressActive]} numberOfLines={1} ellipsizeMode="middle">
-            {activeWallet?.address === walletA?.address ? walletA?.address : walletB?.address}
-          </Text>
-          <Pressable
-            style={({ pressed }) => [
-              styles.copyButton,
-              pressed && styles.buttonPressed
-            ]}
-            onPress={() => {
-              const address = activeWallet?.address === walletA?.address ? walletA?.address : walletB?.address;
-              if (address) copyToClipboard(address);
-            }}
-          >
-            <View style={styles.iconContainer}>
-              {copiedAddress === (activeWallet?.address === walletA?.address ? walletA?.address : walletB?.address) ? (
-                <Text style={styles.copiedText}>✓</Text>
-              ) : (
-                <CopyIcon size={16} />
-              )}
-            </View>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <View style={styles.topBar}>
+          <View style={[styles.avatar, { backgroundColor: avatarColor(sender?.address) }]}>
+            <Text style={styles.avatarText}>{senderLabel.slice(-1)}</Text>
+          </View>
+          <Pressable hitSlop={8} onPress={logout}>
+            <Text style={styles.logout}>Log out</Text>
           </Pressable>
         </View>
-        <Text style={styles.balance}>
-          {(() => {
-            const val = activeWallet?.address === walletA?.address ? walletA?.balance : walletB?.balance;
-            if (isInitialLoad && !val) return 'Loading...';
-            return `USDC: ${formatUSDC(val || '0')} USDC`;
-          })()}
-        </Text>
-        <Text style={styles.gasBalance}>
-          ETH: {ethBalances[activeWallet?.address || ""] || "0"} (gas)
-        </Text>
-      </View>
 
-      <View style={[styles.section, styles.otherSection]}>
-        <Text style={styles.label}>Receiver Wallet</Text>
-        <View style={styles.addressContainer}>
-          <Text style={styles.address} numberOfLines={1} ellipsizeMode="middle">
-            {activeWallet?.address === walletA?.address ? walletB?.address : walletA?.address}
+        <View style={styles.hero}>
+          <Text style={styles.heroLabel}>{senderLabel} · Sender</Text>
+          <Text style={styles.balance} numberOfLines={1} adjustsFontSizeToFit>
+            {senderBalance === null ? "$—" : `$${senderBalance}`}
           </Text>
-          <Pressable
-            style={({ pressed }) => [
-              styles.copyButton,
-              pressed && styles.buttonPressed
-            ]}
-            onPress={() => {
-              const address = activeWallet?.address === walletA?.address ? walletB?.address : walletA?.address;
-              if (address) copyToClipboard(address);
-            }}
-          >
-            <View style={styles.iconContainer}>
-              {copiedAddress === (activeWallet?.address === walletA?.address ? walletB?.address : walletA?.address) ? (
-                <Text style={styles.copiedText}>✓</Text>
-              ) : (
-                <CopyIcon size={16} />
-              )}
-            </View>
+          <Pressable hitSlop={8} onPress={() => copyToClipboard(sender?.address)}>
+            <Text style={styles.heroMeta}>
+              {truncate(sender?.address)} · {gas} ETH gas
+              {copiedAddress === sender?.address ? "  ✓ copied" : ""}
+            </Text>
           </Pressable>
         </View>
-        <Text style={styles.balance}>
-          {(() => {
-            const val = activeWallet?.address === walletA?.address ? walletB?.balance : walletA?.balance;
-            if (isInitialLoad && !val) return 'Loading...';
-            return `USDC: ${formatUSDC(val || '0')} USDC`;
-          })()}
-        </Text>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Amount (USDC)</Text>
-        <TextInput
-          style={styles.input}
-          value={transferAmount}
-          onChangeText={setTransferAmount}
-          keyboardType="numeric"
-          placeholder="Enter amount"
-        />
-      </View>
+        <View style={styles.amountCard}>
+          <Text style={styles.cardCaption}>You send</Text>
+          <View style={styles.amountRow}>
+            <Text style={styles.amountSign}>$</Text>
+            <TextInput
+              style={styles.amountInput}
+              value={transferAmount}
+              onChangeText={setTransferAmount}
+              keyboardType="decimal-pad"
+              placeholder="0"
+              placeholderTextColor={colors.textMuted}
+            />
+            <Text style={styles.amountUnit}>USDC</Text>
+          </View>
+        </View>
 
-      <View style={styles.buttonRow}>
-        <View style={styles.buttonFlex}>
+        <View style={styles.recipientCard}>
+          <View style={[styles.avatarSm, { backgroundColor: avatarColor(receiver?.address) }]}>
+            <Text style={styles.avatarSmText}>{receiverLabel.slice(-1)}</Text>
+          </View>
+          <Pressable style={styles.recipientText} onPress={() => copyToClipboard(receiver?.address)}>
+            <Text style={styles.cardCaption}>To</Text>
+            <Text style={styles.recipientName}>{receiverLabel}</Text>
+            <Text style={styles.recipientAddress}>
+              {copiedAddress === receiver?.address ? "Copied ✓" : truncate(receiver?.address)}
+            </Text>
+          </Pressable>
           <Pressable
-            style={({ pressed }) => [
-              styles.customButton,
-              styles.secondaryButton,
-              isSwitching && styles.buttonDisabled,
-              pressed && !isSwitching && styles.buttonPressed
-            ]}
+            style={({ pressed }) => [styles.switchChip, isSwitching && styles.chipDisabled, pressed && !isSwitching && styles.pressed]}
             disabled={isSwitching}
-            onPress={async () => {
-              const target = activeWallet?.address === walletA?.address ? walletB : walletA;
-              if (!target) return;
-              try {
-                setIsSwitching(true);
-                await setActiveWallet({ address: target.address, chainId: CHAIN_IDS.ETHEREUM_SEPOLIA });
-              } catch (e: any) {
-                Alert.alert("Switch Failed", e?.message || "Could not switch wallet");
-              } finally {
-                setIsSwitching(false);
-              }
-            }}
+            onPress={onSwitch}
           >
-            <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-              {isSwitching ? "Switching..." : "Switch Wallet"}
-            </Text>
+            <Text style={styles.switchChipText}>{isSwitching ? "…" : "Switch"}</Text>
           </Pressable>
         </View>
-        <View style={styles.buttonFlex}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.customButton,
-              styles.primaryButton,
-              (isTransferring || !walletA || !walletB || !transferAmount || !activeWallet) && styles.buttonDisabled,
-              pressed && !(isTransferring || !walletA || !walletB || !transferAmount || !activeWallet) && styles.buttonPressed
-            ]}
-            disabled={isTransferring || !walletA || !walletB || !transferAmount || !activeWallet}
-            onPress={() => {
-              const from = activeWallet?.address === walletA?.address ? walletA : walletB;
-              const to = activeWallet?.address === walletA?.address ? walletB : walletA;
-              if (from && to) onTransfer(from, to.address, transferAmount);
-            }}
-          >
-            <Text style={[styles.buttonText, styles.primaryButtonText]}>
-              {isTransferring ? "Transferring..." : "Transfer USDC"}
-            </Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.buttonWrap}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.customButton,
-            styles.secondaryButton,
-            pressed && styles.buttonPressed
-          ]}
-          onPress={updateBalances}>
-          <Text style={[styles.buttonText, styles.secondaryButtonText]}>Refresh Balances</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.buttonWrap}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.customButton,
-            styles.secondaryButton,
-            pressed && styles.buttonPressed
-          ]}
-          onPress={logout}>
-          <Text style={[styles.buttonText, styles.secondaryButtonText]}>Logout</Text>
-        </Pressable>
-      </View>
       </ScrollView>
+
+      <View style={styles.footer}>
+        <Pressable
+          style={({ pressed }) => [styles.primaryButton, !canSend && styles.buttonDisabled, pressed && canSend && styles.primaryButtonPressed]}
+          disabled={!canSend}
+          onPress={() => {
+            if (sender && receiver) onTransfer(sender, receiver.address, transferAmount);
+          }}
+        >
+          <Text style={styles.primaryButtonText}>
+            {isTransferring ? "Sending…" : `Send $${transferAmount || "0"} USDC`}
+          </Text>
+        </Pressable>
+        <Pressable style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} onPress={updateBalances}>
+          <Text style={styles.secondaryButtonText}>Refresh balances</Text>
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 };
@@ -250,184 +187,187 @@ export const MainAppScreen = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fafbfc',
+    backgroundColor: colors.bg,
   },
   container: {
-    flexGrow: 1,
-    padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
-  section: {
-    width: '100%',
-    maxWidth: 400,
-    marginBottom: 16,
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#424770',
-    marginBottom: 6,
-    letterSpacing: 0.2,
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '600',
-    marginBottom: 32,
-    textAlign: 'center',
-    color: '#1a1f36',
-    letterSpacing: -0.5,
+  avatarText: {
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "800",
   },
-  address: {
-    fontFamily: 'monospace',
-    fontSize: 13,
-    backgroundColor: '#f6f9fc',
-    color: '#6772e5',
-    padding: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#e6ebf1',
-    flex: 1,
-    marginRight: 8,
+  logout: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.textMuted,
+  },
+  hero: {
+    alignItems: "center",
+    paddingVertical: 24,
+  },
+  heroLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.textMuted,
+    marginBottom: 8,
   },
   balance: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#1a1f36',
+    fontSize: 60,
+    fontWeight: "800",
+    color: colors.text,
+    letterSpacing: -1.5,
+    fontVariant: ["tabular-nums"],
   },
-  gasBalance: {
+  heroMeta: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.textMuted,
+    marginTop: 10,
+    fontVariant: ["tabular-nums"],
+  },
+  amountCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.card,
+    padding: 20,
+    marginBottom: 16,
+  },
+  cardCaption: {
     fontSize: 13,
-    fontWeight: '400',
-    color: '#8898aa',
-    marginTop: 4,
+    fontWeight: "700",
+    color: colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#e6ebf1',
-    borderRadius: 6,
-    padding: 14,
-    fontSize: 16,
-    marginTop: 4,
-    backgroundColor: '#fff',
-    color: '#1a1f36',
+  amountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
   },
-  buttonWrap: {
-    width: '100%',
-    maxWidth: 400,
-    marginTop: 12,
+  amountSign: {
+    fontSize: 34,
+    fontWeight: "800",
+    color: colors.text,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  badge: {
-    backgroundColor: '#00d924',
-    color: '#fff',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    overflow: 'hidden',
-    fontSize: 11,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  activeSection: {
-    backgroundColor: '#fff',
-    borderColor: '#e6ebf1',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-  otherSection: {
-    backgroundColor: '#fff',
-    borderColor: '#e6ebf1',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 16,
-  },
-  addressActive: {
-    backgroundColor: '#f8fbff',
-    borderColor: '#d6e3f0',
-    borderWidth: 1,
-  },
-  buttonRow: {
-    width: '100%',
-    maxWidth: 400,
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-  },
-  buttonFlex: {
+  amountInput: {
     flex: 1,
+    fontSize: 34,
+    fontWeight: "800",
+    color: colors.text,
+    paddingVertical: 0,
+    marginLeft: 2,
+    fontVariant: ["tabular-nums"],
   },
-  customButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
+  amountUnit: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.textMuted,
+  },
+  recipientCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: colors.bg,
+    borderRadius: radii.card,
     borderWidth: 1,
-    width: '100%',
+    borderColor: colors.surfaceBorder,
+    padding: 16,
+    ...cardShadow,
   },
-  primaryButton: {
-    backgroundColor: '#6772e5',
-    borderColor: '#6772e5',
+  avatarSm: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  secondaryButton: {
-    backgroundColor: '#fff',
-    borderColor: '#e6ebf1',
+  avatarSmText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "800",
   },
-  buttonDisabled: {
+  recipientText: {
+    flex: 1,
+    gap: 2,
+  },
+  recipientName: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: colors.text,
+  },
+  recipientAddress: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: colors.textMuted,
+    fontVariant: ["tabular-nums"],
+  },
+  switchChip: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: radii.pill,
+  },
+  switchChipText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.text,
+  },
+  chipDisabled: {
     opacity: 0.5,
   },
-  buttonText: {
-    fontSize: 15,
-    fontWeight: '500',
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 12,
+    gap: 12,
+  },
+  primaryButton: {
+    height: 58,
+    borderRadius: radii.pill,
+    backgroundColor: colors.green,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryButtonPressed: {
+    backgroundColor: colors.greenPressed,
+    transform: [{ scale: 0.99 }],
   },
   primaryButtonText: {
-    color: '#fff',
+    color: colors.onGreen,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  secondaryButton: {
+    height: 52,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
   },
   secondaryButtonText: {
-    color: '#424770',
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "700",
   },
-  addressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+  buttonDisabled: {
+    opacity: 0.4,
   },
-  copyButton: {
-    padding: 8,
-    borderRadius: 6,
-    backgroundColor: '#f6f9fc',
-    borderWidth: 1,
-    borderColor: '#e6ebf1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 32,
-    minHeight: 32,
-  },
-  copiedText: {
-    color: '#00d924',
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 16,
-  },
-  iconContainer: {
-    width: 16,
-    height: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonPressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.98 }],
+  pressed: {
+    opacity: 0.8,
   },
 });
