@@ -331,3 +331,42 @@ than `upstream/main`'s hyperliquid where the two differ).
 issue, but worth flagging for anyone reproducing this build from scratch — the WASM vendoring
 step has a hard dependency on a local Go toolchain, which is unusual for a `recipes-hub` sample
 otherwise entirely TypeScript/Expo.
+
+## 2026-07-10 — [minor] Onboarding briefly showed the mainnet deposit card while `serverConfig` was still loading
+
+`OnboardingStatusScreen.tsx` derived `isTestnet` from `serverConfig?.network === "testnet"`.
+While `serverConfig` was still `null` (before the first `/api/lighter/config` fetch resolved),
+`isTestnet` evaluated to `false`, so the "deposit" step briefly rendered the mainnet "Deposit
+USDC / Real gas, real funds" card instead of a neutral loading state — never the testnet faucet
+card first, on every fresh mount. Cosmetic (self-corrects within ~1 render once `serverConfig`
+loads) but genuinely wrong content, caught via a live cold-reload in the simulator.
+
+**Fix:** gate both deposit cards on `serverConfig` being non-null (`step === "deposit" &&
+serverConfig && isTestnet` / `... && !isTestnet`), and show the spinner whenever `serverConfig`
+hasn't loaded yet, not just when `isLoading` is combined with `!account`.
+
+**Investigation note (live trading-bug report):** this fix came out of live-verifying a separate
+report — "every order attempt shows an error like 'no match between the buffers'". That string is
+almost certainly `TradingScreen.tsx`'s real "No match within the slippage buffer — nothing was
+charged." status text. Reproduced the app's exact order-construction logic directly against the
+live `:3008` server (fresh order-book price, and separately a deliberately 3s-stale price to
+match the app's worst-case poll staleness) for both a perp market (ETH) and a spot market
+(LIT/USDC), buy and sell: every attempt filled correctly. Server nonce handling, WASM signing,
+and per-market precision all checked out — none of the three suspected root causes (nonce
+desync, WASM buffer/precision bug, client/server contract drift) reproduced. Best-supported
+conclusion: the order pipeline itself is currently correct; the user's specific attempt likely
+hit genuine (if unlucky) testnet illiquidity — the observed order books are thin and bot-driven
+(e.g. LIT/USDC showed a resting ask at 100.0000 against a best bid of 0.0001, a ~1,000,000x
+spread), which a fixed 0.5% slippage buffer won't always clear.
+
+Separately, while live-testing via the simulator (Cmd+D dev menu, Cmd+R reload, and a hard
+`simctl terminate`+`launch` app relaunch — none of which a real user does when just
+backgrounding/reopening the app), the embedded wallet's `useEmbeddedEthereumWallet` create-vs-
+reconnect effect in `UserScreen.tsx` landed on `status: "disconnected"` with an empty `wallets`
+list after a hard relaunch and created a fresh wallet, orphaning the session from the
+already-registered account 171. This matches the SDK's own documented usage pattern exactly (see
+`useEmbeddedEthereumWallet.d.ts`'s example), so it isn't clearly a bug in this recipe's code —
+more likely a characteristic of guest-session persistence under a hard process kill, which normal
+iOS backgrounding doesn't trigger. Flagged, not fixed, since account 171's funds and server
+registration are unaffected (verified directly against Lighter's API) and reproducing it safely
+needs a real device/guest-auth investigation outside this session's scope.

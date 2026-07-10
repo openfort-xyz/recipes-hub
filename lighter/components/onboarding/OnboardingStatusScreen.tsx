@@ -126,11 +126,11 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
         </View>
       )}
 
-      {isLoading && !account && step === "deposit" ? (
+      {step === "deposit" && (isLoading || !serverConfig) && !account ? (
         <ActivityIndicator color={COLORS.accent} style={styles.spinner} />
       ) : null}
 
-      {step === "deposit" && isTestnet && (
+      {step === "deposit" && serverConfig && isTestnet && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Get testnet funds</Text>
           <Text style={styles.cardBody}>One tap. No signature, no real money.</Text>
@@ -138,7 +138,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
         </View>
       )}
 
-      {step === "deposit" && !isTestnet && (
+      {step === "deposit" && serverConfig && !isTestnet && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Deposit USDC</Text>
           <Text style={styles.cardBody}>Real gas, real funds. Minimum 1 USDC.</Text>
