@@ -5,6 +5,67 @@ APIs, workarounds, multi-attempt problems. Severity: blocker / major / minor.
 
 ---
 
+## 2026-07-10 — [major] Guest sign-up errors were completely silent
+
+First live simulator run: tapping "Continue as Guest" against a misconfigured Openfort project
+did nothing visible — no error, no navigation, dead button. Root cause: `LoginScreen.tsx` called
+`signUpGuest()` fire-and-forget (never awaited, never inspected the result) and the error banner
+only ever rendered `useOAuth().error`, never `useGuestAuth().error`. `signUpGuest()` does return a
+`{ user?, error? }` result rather than throwing, so the failure was there the whole time, just
+never read. Found only by attaching a debugger during live simulator testing — `tsc`/`eslint`
+have no way to catch "awaited but unused return value inspection," and there was no way to
+exercise this path without a real (mis)configured project.
+
+**Fix:** await `signUpGuest()`, `console.error` on `result.error`, and merge every auth path's
+error into one displayed banner (`guestError ?? emailError`, see the LoginScreen OTP rewrite).
+
+## 2026-07-10 — [major] `INVALID_CONFIGURATION` ("Storage is not accessible...") on the FIRST auth call, not at provider init — caused by CODE_SIGNING_ALLOWED=NO
+
+Building and running the iOS app on the simulator with `CODE_SIGNING_ALLOWED=NO` (a common
+speed-up for simulator-only builds — skips codesigning entirely) produces an app that boots fine,
+renders the login screen fine, and only throws `OpenfortError` /
+`INVALID_CONFIGURATION` ("Storage is not accessible...") the moment ANY auth call fires (guest
+sign-up, OAuth, email OTP — doesn't matter which). The error message gives no hint that
+code-signing is the cause. Root cause: `expo-secure-store` (and by extension
+`@openfort/openfort-js`'s token/session storage) needs the iOS Keychain, and an unsigned app
+binary cannot access the simulator's keychain — the SDK only touches storage lazily, on the first
+authenticated action, not at `OpenfortProvider` init, so the failure is delayed and disconnected
+from its actual cause. Cost a full debugging round before the connection was made.
+
+**Fix:** none needed in code — just never build with `CODE_SIGNING_ALLOWED=NO` for any recipe
+using Openfort's embedded wallet (or any other keychain-dependent SDK). Documented in AGENTS.md.
+
+## 2026-07-10 — [major] Testnet is completely undocumented on apidocs.lighter.xyz — and its faucet endpoint doesn't exist in any doc at all
+
+Every page checked on `apidocs.lighter.xyz` (get-started, deposits, api-keys, account-types,
+trading, the llms.txt index) has zero testnet mentions, despite `https://testnet.zklighter.elliot.ai`
+being a fully live, working environment. Had to establish testnet ground truth entirely from the
+official Python SDK source (`lighter-python/lighter/endpoint_profiles.py` — the definitive list of
+all four network profiles and their chain ids) and by probing the live API directly.
+
+The funding mechanism was the biggest find: `GET /api/v1/faucet?l1_address=<addr>` isn't mentioned
+anywhere, but calling `GET /api/v1/faucet` with no params returns HTTP 400 "invalid param" instead
+of 404 — a strong signal the route exists and just wants an argument. `?l1_address=` was a guess
+that happened to work, verified live (instantly credited a fresh address with USDC/ETH/LIT and
+created its account, no wallet signature). Also found `GET /api/v1/layer1BasicInfo` (also
+undocumented) confirms the same `FaucetContract` address exists in its `contract_addresses` list,
+alongside testnet's L1 deposit contract and test-USDC addresses — cross-checking the SAME endpoint
+on mainnet independently reproduced the exact contract addresses already reconstructed from
+Blockscout in an earlier session, which was reassuring but came after the harder work was done.
+
+Chased the on-chain deposit path for testnet before finding the faucet: `layer1BasicInfo` reports
+testnet's L1 as `chainId 123456`, which turned out to be a red herring — that chain id belongs to
+an entirely unrelated public chain ("ADIL Devnet" on chainlist.org), and no RPC subdomain guess
+(`testnet-rpc.zklighter.elliot.ai` etc.) resolved. Concluded there's no usable public RPC for
+Lighter's own testnet L1, and the faucet is the only implementable funding path. Also flagged:
+testnet's `GET /api/v1/deposit/networks` lists Base/Arbitrum/Avalanche using their MAINNET chain
+ids (8453/42161/43114), not testnet equivalents — looks like a config copy-paste bug on Lighter's
+side, not a real CCTP-testnet integration; didn't build against it.
+
+**Workaround:** none available (can't fix Lighter's docs) — documented everything found in
+`docs/lighter-signing-notes.md` §3 with the exact commands used, so nobody has to redo this
+exploration.
+
 ## 2026-07-10 — [major] No official TypeScript SDK for Lighter
 
 Lighter only ships official SDKs in Python (`lighter-sdk` on PyPI) and Go

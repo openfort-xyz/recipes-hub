@@ -94,9 +94,47 @@ also applies the L2 Poseidon-Schnorr signature from the (server-held) API key be
 Two other tx types also carry an `L1SignatureBody` (found via `rg -n GetL1SignatureBody`):
 `L2TransferTxInfo` and `L2ApproveIntegratorTxInfo`, using the `TemplateTransfer` and
 `TemplateL2ApproveIntegrator` templates respectively — same `personal_sign` mechanism, just
-different message text. Not used by this recipe (we route transfers/withdrawals through the L1
-contract's `withdraw`/`fastwithdraw`, not the L2 transfer tx type), but worth knowing the pattern
-is consistent across all L1-authorized L2 tx types.
+different message text. Not used by this recipe. Withdrawals, by contrast, use `L2WithdrawTxInfo`
+(`types/txtypes/withdraw.go`), which has NO `L1SignatureBody` and no destination-address field at
+all — Lighter's server routes withdrawals exclusively to the account's own registered L1 address,
+so the server's API key alone is sufficient authorization (see `server/src/orders.ts#submitWithdraw`,
+which signs and submits it as a normal L2 `sendTx`, same as an order — not an L1 contract call).
+
+## 3. Testnet vs mainnet
+
+Confirmed live and from source, not apidocs.lighter.xyz (which has zero testnet mentions across
+every page checked — see `FRICTION_LOG.md`):
+
+| | testnet (default) | mainnet |
+|---|---|---|
+| API base URL | `https://testnet.zklighter.elliot.ai` | `https://mainnet.zklighter.elliot.ai` |
+| L2 signing domain (`chainId`) | `300` | `304` |
+| Account creation + funding | `GET /api/v1/faucet?l1_address=<addr>` — one unauthenticated REST call both creates AND credits the account (verified live: instantly credited 10,000+ USDC margin, ETH, LIT to a fresh address). No wallet signature or on-chain tx. | Real deposit: `approve` + `deposit(address,uint16,uint8,uint256)` on the L1 contract (see §1) |
+| ChangePubKey | Identical mechanism and message template — the template text has no chain id embedded in it, only the underlying Poseidon signature's domain differs | same |
+
+Sourced: the L2 signing domain values come from the official Python SDK,
+`lighter/endpoint_profiles.py` (`TESTNET.chain_id = 300`, `MAINNET.chain_id = 304`, plus
+`ROBINHOOD.chain_id = 466324` and `ROBINHOOD_TESTNET.chain_id = 300` for completeness), and
+independently corroborated by a commented-out constant in `lighter-go`'s own
+`wasm/main.go:21` (`//var chainId uint32 = 300 // testnet`). Verified end-to-end live: signed a
+cancel-order tx with `chainId=300` against a real faucet-funded testnet account and got a
+specific semantic error (`21109 "api key not found"`) rather than a signature-format rejection,
+confirming the domain value is correct.
+
+The faucet endpoint itself (`/api/v1/faucet`) is undocumented anywhere on apidocs.lighter.xyz —
+found by noticing `GET /api/v1/faucet` (no params) returns HTTP 400 "invalid param" rather than
+404, which suggested the endpoint exists and just wants a parameter; `?l1_address=` was the guess
+that worked. `GET /api/v1/layer1BasicInfo` (also undocumented) additionally confirms it exists via
+a `FaucetContract` address in `contract_addresses`, alongside testnet's `ZkLighterContract` and
+`USDCContract` — but the faucet REST call is the actually-usable path; testnet's L1 side reports a
+custom `chainId 123456` with no discoverable public RPC (it collides with an unrelated public
+chain, "ADIL Devnet" — see `FRICTION_LOG.md`), so the on-chain deposit flow isn't reachable on
+testnet even if you wanted to exercise it directly.
+
+`GET /api/v1/deposit/networks` on testnet lists Base/Arbitrum One/Avalanche C-Chain using their
+MAINNET chain ids (8453/42161/43114, not the corresponding Sepolia/testnet ids) — almost certainly
+a config artifact on Lighter's side rather than a real CCTP-testnet integration; not something
+this recipe builds against.
 
 ## Why source, not docs
 
