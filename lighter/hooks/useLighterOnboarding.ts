@@ -28,7 +28,7 @@ function deriveStep(account: AccountResponse["account"], apiKeys: AccountRespons
   return "ready";
 }
 
-export function useLighterOnboarding(l1Address: string | undefined, pollMs = 8000): OnboardingState {
+export function useLighterOnboarding(l1Address: string | undefined, pollMs = 2000): OnboardingState {
   const [account, setAccount] = useState<AccountResponse["account"]>(null);
   const [apiKeys, setApiKeys] = useState<AccountResponse["apiKeys"]>([]);
   const [serverConfig, setServerConfig] = useState<LighterServerConfig | null>(null);
@@ -54,7 +54,7 @@ export function useLighterOnboarding(l1Address: string | undefined, pollMs = 800
   }, [l1Address]);
 
   useEffect(() => {
-    // See useLighterMarket.ts for why this poll effect is exempted from set-state-in-effect.
+    // See useLighterMarkets.ts for why this poll effect is exempted from set-state-in-effect.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
     const interval = setInterval(refresh, pollMs);

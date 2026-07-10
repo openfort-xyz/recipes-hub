@@ -30,6 +30,8 @@ function StepBadge({ index, active, done }: { index: number; active: boolean; do
 }
 
 export function OnboardingStatusScreen({ walletAddress, provider, onReady }: OnboardingStatusScreenProps) {
+  // Fast (2s) polling means the UI advances on its own the moment an action lands — no manual
+  // "pull to refresh" needed anywhere in this screen.
   const onboarding = useLighterOnboarding(walletAddress);
   const [depositAmount, setDepositAmount] = useState("10");
   const [isDepositing, setIsDepositing] = useState(false);
@@ -54,23 +56,13 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
     setIsFauceting(true);
     try {
       await requestFaucet(walletAddress);
-      Alert.alert(
-        "Testnet funds requested",
-        "Lighter takes a few seconds to create and credit your account. Pull to refresh below once it lands.",
-      );
+      // No success alert — the 2s poll advances the step automatically the moment it lands.
+    } catch {
+      // The server already retried a few times — Lighter's testnet faucet is intermittently
+      // flaky (see FRICTION_LOG.md). Refresh immediately in case an earlier retry actually
+      // succeeded upstream despite this final attempt reporting failure.
       await refresh();
-    } catch (err) {
-      // The server already retried a few times before surfacing this — Lighter's testnet faucet
-      // is intermittently flaky (see FRICTION_LOG.md). Refresh immediately: an earlier retry may
-      // have actually succeeded upstream even though this final attempt reported failure, so the
-      // background poll (see useLighterOnboarding) would advance the step anyway within 8s — this
-      // just makes that visible right away instead of making the user wait.
-      await refresh();
-      const detail = err instanceof Error ? err.message : "Unknown error";
-      Alert.alert(
-        "Faucet request failed",
-        `Lighter's testnet faucet is intermittently unavailable — try again.\n\n${detail}`,
-      );
+      Alert.alert("Faucet unavailable", "Try again — Lighter's testnet faucet is a bit flaky.");
     } finally {
       setIsFauceting(false);
     }
@@ -87,14 +79,9 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
       const requiredAllowance = parseUnits(depositAmount, 6);
       const currentAllowance = await getUsdcAllowance(provider, walletAddress);
       if (currentAllowance < requiredAllowance) {
-        const approveTx = await approveUsdc(provider, walletAddress, depositAmount);
-        console.log("USDC approve tx:", approveTx);
+        await approveUsdc(provider, walletAddress, depositAmount);
       }
-      const depositTx = await depositUsdc(provider, walletAddress, depositAmount);
-      Alert.alert(
-        "Deposit sent",
-        `Transaction submitted: ${depositTx}\n\nLighter credits deposits within a few minutes. Pull to refresh below once it lands.`,
-      );
+      await depositUsdc(provider, walletAddress, depositAmount);
       await refresh();
     } catch (err) {
       Alert.alert("Deposit failed", err instanceof Error ? err.message : "Unknown error");
@@ -123,7 +110,6 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Set up your account</Text>
-      <Text style={styles.subtitle}>Complete these steps once to start trading on Lighter.</Text>
 
       <View style={styles.stepList}>
         {steps.map((s, index) => (
@@ -147,10 +133,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
       {step === "deposit" && isTestnet && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Get testnet funds</Text>
-          <Text style={styles.cardBody}>
-            Lighter testnet creates and credits your account in one step — no signature, no real money. Tap below
-            to request funds; this takes a few seconds to land.
-          </Text>
+          <Text style={styles.cardBody}>One tap. No signature, no real money.</Text>
           <PillButton title="Get testnet funds" onPress={handleFaucet} loading={isFauceting} />
         </View>
       )}
@@ -158,10 +141,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
       {step === "deposit" && !isTestnet && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Deposit USDC</Text>
-          <Text style={styles.cardBody}>
-            Lighter creates your account on your first deposit. Minimum 1 USDC. Your embedded wallet will approve
-            and deposit USDC to the Lighter contract on Ethereum mainnet — this uses real gas and real funds.
-          </Text>
+          <Text style={styles.cardBody}>Real gas, real funds. Minimum 1 USDC.</Text>
           <View style={styles.amountRow}>
             <Text style={styles.amountPrefix}>$</Text>
             <TextInput
@@ -171,6 +151,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
               keyboardType="decimal-pad"
               placeholder="10"
               placeholderTextColor={COLORS.textTertiary}
+              autoFocus
             />
             <Text style={styles.amountSuffix}>USDC</Text>
           </View>
@@ -181,10 +162,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
       {step === "registerApiKey" && account && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Authorize trading</Text>
-          <Text style={styles.cardBody}>
-            Account #{account.index} is funded. Now sign a message authorizing a server-held key to place and
-            cancel orders on your behalf — it can never withdraw your funds anywhere but your own wallet.
-          </Text>
+          <Text style={styles.cardBody}>Sign to let the server trade for you — it can never withdraw elsewhere.</Text>
           <PillButton title="Sign & authorize" onPress={handleRegister} loading={isRegistering} />
         </View>
       )}
@@ -193,9 +171,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Activate the server</Text>
           <Text style={styles.cardBody}>
-            Trading is authorized on-chain. The recipe server generated a fresh key it hasn&apos;t loaded yet — copy the
-            values it printed to its console into <Text style={styles.code}>server/.env.local</Text> and restart it,
-            then check again.
+            Copy these into <Text style={styles.code}>server/.env.local</Text> and restart it.
           </Text>
           {registrationResult && (
             <View style={styles.credentialBox}>
@@ -228,11 +204,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     color: COLORS.textPrimary,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: COLORS.textSecondary,
-    lineHeight: 22,
   },
   stepList: {
     gap: 16,
