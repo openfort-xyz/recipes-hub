@@ -104,8 +104,8 @@ faucet to real deposit automatically — no app-side config needed.
 - Asset selector across every active market (perp + spot — 5 on testnet today, discovered live,
   never hardcoded) with a mini portfolio card (balance + open positions)
 - Cash App-style buy/sell flow per asset with a live order book, IOC marketable-limit orders, and
-  an order confirmation screen (fill status inferred from a position/balance diff — `sendTx`
-  itself reports none)
+  an order confirmation screen showing the actual matched size/price — the server polls Lighter's
+  own trade record before responding, since `sendTx` itself reports no fill status
 - Open orders list with cancel, and a withdraw flow (always to your own wallet — Lighter's
   withdrawal transaction carries no destination address)
 

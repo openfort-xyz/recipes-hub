@@ -353,11 +353,11 @@ live `:3008` server (fresh order-book price, and separately a deliberately 3s-st
 match the app's worst-case poll staleness) for both a perp market (ETH) and a spot market
 (LIT/USDC), buy and sell: every attempt filled correctly. Server nonce handling, WASM signing,
 and per-market precision all checked out — none of the three suspected root causes (nonce
-desync, WASM buffer/precision bug, client/server contract drift) reproduced. Best-supported
-conclusion: the order pipeline itself is currently correct; the user's specific attempt likely
-hit genuine (if unlucky) testnet illiquidity — the observed order books are thin and bot-driven
-(e.g. LIT/USDC showed a resting ask at 100.0000 against a best bid of 0.0001, a ~1,000,000x
-spread), which a fixed 0.5% slippage buffer won't always clear.
+desync, WASM buffer/precision bug, client/server contract drift) reproduced.
+
+**Correction:** concluded from this that the user likely hit genuine testnet illiquidity. That
+was wrong — see the next entry for the actual confirmed root cause (a fill-detection race, found
+by checking the account's real trade history) and its fix.
 
 Separately, while live-testing via the simulator (Cmd+D dev menu, Cmd+R reload, and a hard
 `simctl terminate`+`launch` app relaunch — none of which a real user does when just
@@ -370,3 +370,65 @@ more likely a characteristic of guest-session persistence under a hard process k
 iOS backgrounding doesn't trigger. Flagged, not fixed, since account 171's funds and server
 registration are unaffected (verified directly against Lighter's API) and reproducing it safely
 needs a real device/guest-auth investigation outside this session's scope.
+
+## 2026-07-10 — [blocker] Fill-detection was a race, not an illiquidity problem — confirmed via the account's own trade history
+
+Following up on the entry above: the team lead pushed back on the illiquidity conclusion because
+it didn't explain "every asset" — unlucky books wouldn't hit uniformly. Right call. Two things
+proved it:
+
+1. **The user's orders had actually been filling all along.** `GET /api/v1/trades` (undocumented
+   on apidocs.lighter.xyz beyond a bare parameter list; requires `sort_by`+`limit` or it 400s with
+   `invalid param`, and an `authorization` header for any account-scoped query) returned account
+   171's full trade history. Cross-referencing against every order this session's own testing
+   placed left 7 unaccounted-for fills — spanning ETH and SOL, both directions, timestamped
+   13:45–14:19 UTC, squarely inside the window the user was reported testing in. Those are almost
+   certainly the user's own attempts, and they filled. The app was telling him "no match" for
+   trades that had actually gone through.
+2. **Reproduced the exact race.** `TradingScreen.tsx`'s old flow captured a "before" balance,
+   submitted the order, slept a flat 2000ms, then read the balance once more and diffed. Submitted
+   an order and checked the position with *zero* delay: it read the pre-fill value. The trade
+   confirmed in `/api/v1/trades` a moment later. A flat delay with a single check has no way to
+   distinguish "still processing" from "genuinely didn't match" — any execution latency spike past
+   2000ms (real, since Lighter's testnet matching engine's own timing varies — see below) reads as
+   a false negative, and the message shown for that was "No match within the slippage buffer —
+   nothing was charged", actively telling the user money never moved when it had.
+
+**Also newly confirmed:** `predicted_execution_time_ms` (present on `sendTx`'s response, silently
+discarded until now) is a Unix **timestamp** in milliseconds, not a duration — decoded a live
+sample (`1783695021910`) against wall-clock time at response receipt and it landed ~470ms in the
+future, consistently across 5 back-to-back samples (~460–500ms each). Useful as a lower bound for
+how long to wait before checking at all, but not something to trust as an upper bound — Lighter
+gives no matching guarantee, and thin/erratic testnet books mean actual latency isn't provably
+capped at whatever this field says.
+
+**Fix — moved fill confirmation server-side, made it authoritative, dropped the balance-diff
+guess entirely:**
+- `server/src/fillConfirmation.ts` (new): `waitForFillConfirmation` polls an injectable
+  `fetchTrades` for a tx_hash match, bounded by a real timeout (8s poll budget after an initial
+  wait derived from `predicted_execution_time_ms` via `computeInitialWaitMs`, clamped 300ms–5s).
+  Fully unit-tested with an injected virtual clock (`fillConfirmation.test.ts`) — no real waiting,
+  no flaky fake-timer edge cases — covering: immediate match, match after several empty polls
+  (the exact race this replaces), genuine timeout with no match ever appearing, a transient
+  fetch error mid-poll, and a trade present but for a different tx_hash.
+- `server/src/lighterApi.ts`: new `getAccountTrades` wraps `/api/v1/trades`; `sendTx`'s return
+  type now actually carries `predicted_execution_time_ms` instead of dropping it.
+- `server/src/orders.ts`: `submitCreateOrder` now waits for and confirms the fill itself before
+  returning — `{ txHash, signedHash, filled: boolean, trade?: {size, price} }`. `filled: false`
+  means "no matching trade observed within the wait budget", never "confirmed no match" — IOC
+  orders that genuinely expire unmatched leave no record either way, so there's no way to prove a
+  negative here, only to stop claiming one.
+- New `GET /api/lighter/trades` route + `getRecentTrades` (mirrors `getAuthToken`'s pattern) for
+  any future use of the authoritative trade record.
+- `TradingScreen.tsx`: deleted the `getRelevantBalance` diff entirely, the `account` prop it
+  needed, and the flat `sleep(2000)`. `handleSubmit` now just awaits `createOrder` (which can take
+  a few seconds — already covered by the Confirm button's existing spinner) and trusts its
+  `filled`/`trade` fields directly. Confirmation screen shows "Filled" with the actual matched
+  size/price when confirmed, or "Couldn't confirm" with "Didn't see it land within a few seconds —
+  check your portfolio before retrying" when not — never "nothing was charged" again.
+
+Live-verified end to end through the user's own `:3008` instance post-fix: a real ETH buy returned
+`{"filled":true,"trade":{"size":"0.0084","price":"1786.35"}}` in 4.5s total. A deliberately
+unmatchable order (priced at half the market, guaranteed not to cross) correctly returned
+`{"filled":false}` with no fabricated trade, after exhausting the full ~10s wait — the honest
+"couldn't confirm" path, not a lie in either direction.
