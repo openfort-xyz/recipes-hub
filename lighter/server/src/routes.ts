@@ -182,8 +182,8 @@ export async function handleTrades(req: Request, res: Response, config: Config):
 
 export async function handleChangePubKeyMessage(req: Request, res: Response, config: Config): Promise<void> {
   const { accountIndex } = req.body as { accountIndex?: number };
-  if (typeof accountIndex !== "number") {
-    res.status(400).json({ error: "Body must include numeric accountIndex." });
+  if (typeof accountIndex !== "number" || !Number.isFinite(accountIndex)) {
+    res.status(400).json({ error: "Body must include a finite numeric accountIndex." });
     return;
   }
   try {
@@ -249,6 +249,23 @@ export async function handleCreateOrder(req: Request, res: Response, config: Con
     });
     return;
   }
+  // typeof x === "number" is true for NaN/Infinity — reject those explicitly so a malformed
+  // request fails with a clean 400 here instead of an opaque error from the WASM signer.
+  if (
+    !Number.isFinite(body.accountIndex) ||
+    !Number.isFinite(body.marketIndex) ||
+    !Number.isFinite(body.clientOrderIndex) ||
+    !Number.isFinite(body.orderType) ||
+    !Number.isFinite(body.timeInForce) ||
+    !Number.isFinite(body.orderExpiry) ||
+    !Number.isFinite(body.baseAmount) ||
+    body.baseAmount <= 0 ||
+    !Number.isFinite(body.price) ||
+    body.price <= 0
+  ) {
+    res.status(400).json({ error: "Numeric fields must be finite; baseAmount and price must be positive." });
+    return;
+  }
   const mismatch = checkAccountMatch(config.lighter.accountIndex, body.accountIndex);
   if (mismatch) {
     res.status(409).json({ error: mismatch });
@@ -283,6 +300,10 @@ export async function handleCancelOrder(req: Request, res: Response, config: Con
   };
   if (typeof accountIndex !== "number" || typeof marketIndex !== "number" || typeof orderIndex !== "number") {
     res.status(400).json({ error: "Body must include numeric accountIndex, marketIndex and orderIndex." });
+    return;
+  }
+  if (!Number.isFinite(accountIndex) || !Number.isFinite(marketIndex) || !Number.isFinite(orderIndex)) {
+    res.status(400).json({ error: "accountIndex, marketIndex and orderIndex must be finite numbers." });
     return;
   }
   const mismatch = checkAccountMatch(config.lighter.accountIndex, accountIndex);
