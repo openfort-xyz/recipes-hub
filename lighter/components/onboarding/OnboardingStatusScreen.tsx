@@ -42,7 +42,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
     accountIndex: number;
   } | null>(null);
 
-  const { step, account, serverConfig, isLoading, error, refresh } = onboarding;
+  const { step, account, serverConfig, accountMismatch, isLoading, error, refresh } = onboarding;
   const isTestnet = serverConfig?.network === "testnet";
   const [isFauceting, setIsFauceting] = useState(false);
   const [isCheckingAgain, setIsCheckingAgain] = useState(false);
@@ -177,7 +177,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
         </View>
       )}
 
-      {step === "activateServer" && (
+      {step === "activateServer" && !accountMismatch && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Activate the server</Text>
           <Text style={styles.cardBody}>
@@ -191,6 +191,33 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
                 LIGHTER_API_KEY_PRIVATE_KEY={registrationResult.apiKeyPrivateKey}
               </Text>
             </View>
+          )}
+          <PillButton title="Check again" onPress={handleCheckAgain} variant="secondary" loading={isCheckingAgain} />
+        </View>
+      )}
+
+      {step === "activateServer" && accountMismatch && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Wrong account on the server</Text>
+          <Text style={styles.cardBody}>
+            Server is signing for account {serverConfig?.accountIndex}, yours is {account?.index} — copy the
+            printed values into <Text style={styles.code}>server/.env.local</Text> and restart it.
+          </Text>
+          {registrationResult ? (
+            <View style={styles.credentialBox}>
+              <Text style={styles.credentialLine}>LIGHTER_ACCOUNT_INDEX={registrationResult.accountIndex}</Text>
+              <Text style={styles.credentialLine}>LIGHTER_API_KEY_INDEX={registrationResult.apiKeyIndex}</Text>
+              <Text style={styles.credentialLine} numberOfLines={2}>
+                LIGHTER_API_KEY_PRIVATE_KEY={registrationResult.apiKeyPrivateKey}
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.cardBody}>
+                This session doesn&apos;t have those values anymore — re-authorize to get a fresh set.
+              </Text>
+              <PillButton title="Re-authorize" onPress={handleRegister} loading={isRegistering} />
+            </>
           )}
           <PillButton title="Check again" onPress={handleCheckAgain} variant="secondary" loading={isCheckingAgain} />
         </View>

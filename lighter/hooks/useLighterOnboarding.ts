@@ -16,15 +16,27 @@ export interface OnboardingState {
   account: AccountResponse["account"];
   apiKeys: AccountResponse["apiKeys"];
   serverConfig: LighterServerConfig | null;
+  /** True when the server is configured but signing for a DIFFERENT account than this one —
+   * e.g. re-onboarded into a new wallet without restarting the server. Distinct from "not
+   * configured yet" so the UI can show the right recovery message for each. */
+  accountMismatch: boolean;
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+}
+
+function accountsMismatch(account: AccountResponse["account"], serverConfig: LighterServerConfig | null): boolean {
+  return Boolean(account && serverConfig?.serverWalletConfigured && serverConfig.accountIndex !== account.index);
 }
 
 function deriveStep(account: AccountResponse["account"], apiKeys: AccountResponse["apiKeys"], serverConfig: LighterServerConfig | null): OnboardingStep {
   if (!account) return "deposit";
   if (apiKeys.length === 0) return "registerApiKey";
   if (!serverConfig?.serverWalletConfigured) return "activateServer";
+  // Not enough that SOME key is configured — it has to be signing for THIS account, or trades
+  // silently execute on whatever account the server env is actually pinned to (see
+  // FRICTION_LOG.md's split-brain entry).
+  if (accountsMismatch(account, serverConfig)) return "activateServer";
   return "ready";
 }
 
@@ -66,6 +78,7 @@ export function useLighterOnboarding(l1Address: string | undefined, pollMs = 200
     account,
     apiKeys,
     serverConfig,
+    accountMismatch: accountsMismatch(account, serverConfig),
     isLoading,
     error,
     refresh,

@@ -18,6 +18,9 @@ export interface LighterServerConfig {
   chainId: number;
   network: "testnet" | "mainnet";
   serverWalletConfigured: boolean;
+  /** Which account the server actually signs for — not a secret, just an integer, used to catch
+   * the server env pointing at a different account than the one the app is showing/trading. */
+  accountIndex: number | null;
 }
 
 export function fetchServerConfig(): Promise<LighterServerConfig> {
@@ -160,6 +163,9 @@ export function submitChangePubKey(accountIndex: number, l1Sig: string): Promise
 }
 
 export interface CreateOrderRequest {
+  /** The app's own account index — the server 409s if this doesn't match who it's configured to
+   * sign for, so a stale/mismatched server env can't silently trade the wrong account. */
+  accountIndex: number;
   marketIndex: number;
   clientOrderIndex: number;
   baseAmount: number;
@@ -192,8 +198,11 @@ export function createOrder(order: CreateOrderRequest): Promise<CreateOrderRespo
   return request("/api/lighter/order", { method: "POST", body: JSON.stringify(order) });
 }
 
-export function cancelOrder(marketIndex: number, orderIndex: number): Promise<SubmitOrderResponse> {
-  return request("/api/lighter/order/cancel", { method: "POST", body: JSON.stringify({ marketIndex, orderIndex }) });
+export function cancelOrder(accountIndex: number, marketIndex: number, orderIndex: number): Promise<SubmitOrderResponse> {
+  return request("/api/lighter/order/cancel", {
+    method: "POST",
+    body: JSON.stringify({ accountIndex, marketIndex, orderIndex }),
+  });
 }
 
 export interface WithdrawResponse {
