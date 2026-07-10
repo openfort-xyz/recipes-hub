@@ -6,7 +6,7 @@ export const UNLINK_ENVIRONMENT = import.meta.env.VITE_UNLINK_ENVIRONMENT ?? 'mo
 export const MONAD_CHAIN_ID = 10143
 
 /**
- * Client-side derivation namespace. `account.fromMetaMask` mixes this into the
+ * Client-side derivation namespace. `account.fromWallet` mixes this into the
  * BIP-32 path so the same EOA yields a stable Unlink address. It is a label, not
  * a server credential.
  */
@@ -37,7 +37,7 @@ export async function buildUnlinkClient(opts: {
 }): Promise<{ client: UnlinkClient; eoaAddress: string }> {
   const { provider, getAccessToken } = opts
 
-  const { account: unlinkAccount, address: eoaAddress } = await account.fromMetaMask({
+  const { account: unlinkAccount, address: eoaAddress } = await account.fromWallet({
     provider,
     appId: UNLINK_APP_ID,
     chainId: MONAD_CHAIN_ID,

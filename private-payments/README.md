@@ -37,7 +37,7 @@ contrast, is a normal `transfer` and shows the payer → supplier edge directly.
 
 ### Custody
 
-This is the **non-custodial (browser) Unlink model**: `account.fromMetaMask` derives the Unlink keys from
+This is the **non-custodial (browser) Unlink model**: `account.fromWallet` derives the Unlink keys from
 the embedded EOA's signature, and the spending key stays in the browser. The backend (`/api/unlink/register`
 and `/api/unlink/authorization-token`) authenticates the Openfort session and talks to the Unlink admin API;
 it cannot move funds. See Unlink's [custody models](https://docs.unlink.xyz/custody-models#app-backend).
@@ -142,14 +142,14 @@ private-payments/
 │  └─ src/server.ts                 # App wiring + CORS (allows the Authorization header)
 └─ frontend/                        # Vite + React payer console (+ supplier panel)
    ├─ src/openfort/                 # Monad + EOA + passkey provider stack
-   ├─ src/unlink/                   # Browser Unlink client (account.fromMetaMask) + bootstrap
+   ├─ src/unlink/                   # Browser Unlink client (account.fromWallet) + bootstrap
    ├─ src/screens/                  # Auth, Wallets, PayerDashboard, SupplierPanel
    └─ src/components/               # PhoneFrame + shared style tokens
 ```
 
 ## Key integration points
 
-- **Non-custodial Unlink client** — `frontend/src/unlink/unlink.ts` calls `account.fromMetaMask({ provider })`
+- **Non-custodial Unlink client** — `frontend/src/unlink/unlink.ts` calls `account.fromWallet({ provider })`
   with the embedded EOA's EIP-1193 provider, then `createUnlinkClient(...)`. A `customFetch` attaches the
   Openfort bearer token to `/api/unlink/*` calls only, leaving Engine requests (which carry their own
   authorization token) untouched.
@@ -168,5 +168,8 @@ private-payments/
 - **Funding.** The recipe seeds the shielded balance with the Unlink faucet for a frictionless demo. In
   production you would deposit from the treasury EOA (`depositWithApproval`); deposits are public by design,
   the withdraw is what breaks the link.
-- This is an MVP focused on the integration shape, verified against `@unlink-xyz/sdk@0.3.0-canary.638` and
+- This is an MVP focused on the integration shape, verified against `@unlink-xyz/sdk@0.3.0-canary.717` and
   `@openfort/react@1.3.0`. Add operator auth and a real store before production.
+- **`account.fromWallet` naming.** It is live on the latest `@unlink-xyz/sdk` `canary` dist-tag and lands in
+  the next stable release. On older builds the method was `account.fromMetaMask` (still exported as a
+  deprecated alias with the same options).
