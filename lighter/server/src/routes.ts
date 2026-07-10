@@ -202,11 +202,13 @@ export async function handleChangePubKeySubmit(req: Request, res: Response, conf
   }
   try {
     const result = await submitChangePubKeyRegistration(config, accountIndex, l1Sig);
+    // The private key itself goes back in the response body only (the app displays it on-screen
+    // for the operator to copy) — never to server logs, which are far more likely than the app's
+    // ephemeral UI to be captured, persisted, or shipped to a log aggregator.
     console.warn(
-      "[lighter-server] New Lighter API key generated — copy this into your server .env NOW, it will not be shown again:\n" +
-        `  LIGHTER_API_KEY_PRIVATE_KEY=${result.apiKeyPrivateKey}\n` +
-        `  LIGHTER_API_KEY_INDEX=${result.apiKeyIndex}\n` +
-        `  LIGHTER_ACCOUNT_INDEX=${result.accountIndex}`,
+      `[lighter-server] New Lighter API key generated for account ${result.accountIndex} ` +
+        `(apiKeyIndex ${result.apiKeyIndex}) — copy the credentials from the app screen into your ` +
+        "server .env.local NOW, they will not be shown again.",
     );
     res.status(200).json(result);
   } catch (error) {
