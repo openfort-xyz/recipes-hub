@@ -1,14 +1,26 @@
-import { OAuthProvider, useGuestAuth, useOAuth } from "@openfort/react-native";
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { useEmailAuthOtp, useGuestAuth } from "@openfort/react-native";
+import React, { useState } from "react";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 
 import { PillButton } from "./ui";
 import { COLORS, RADII } from "../constants/theme";
 
+type OtpStep = "email" | "code";
+
 export default function LoginScreen() {
   const { signUpGuest, isLoading: guestLoading, error: guestError } = useGuestAuth();
-  const { initOAuth, isLoading: oauthLoading, error: oauthError } = useOAuth();
-  const error = guestError ?? oauthError;
+  const {
+    requestEmailOtp,
+    signInEmailOtp,
+    isLoading: otpLoading,
+    error: otpError,
+  } = useEmailAuthOtp();
+
+  const [step, setStep] = useState<OtpStep>("email");
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+
+  const error = guestError ?? otpError;
 
   const handleGuestLogin = async () => {
     const result = await signUpGuest();
@@ -17,19 +29,21 @@ export default function LoginScreen() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      await initOAuth({ provider: OAuthProvider.GOOGLE });
-    } catch (err) {
-      console.error("Error logging in with Google:", err);
+  const handleSendCode = async () => {
+    if (!email.trim()) return;
+    const result = await requestEmailOtp({ email: email.trim() });
+    if (result?.error) {
+      console.error("Failed to send OTP:", result.error);
+      return;
     }
+    setStep("code");
   };
 
-  const handleAppleLogin = async () => {
-    try {
-      await initOAuth({ provider: OAuthProvider.APPLE });
-    } catch (err) {
-      console.error("Error logging in with Apple:", err);
+  const handleVerifyCode = async () => {
+    if (!code.trim()) return;
+    const result = await signInEmailOtp({ email: email.trim(), otp: code.trim() });
+    if (result?.error) {
+      console.error("OTP verification failed:", result.error);
     }
   };
 
@@ -42,19 +56,61 @@ export default function LoginScreen() {
 
       <View style={styles.content}>
         <PillButton title="Continue as Guest" onPress={handleGuestLogin} loading={guestLoading} />
+
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>or</Text>
           <View style={styles.dividerLine} />
         </View>
-        <PillButton
-          title="Continue with Google"
-          onPress={handleGoogleLogin}
-          variant="secondary"
-          loading={oauthLoading}
-          style={styles.spaced}
-        />
-        <PillButton title="Continue with Apple" onPress={handleAppleLogin} variant="secondary" loading={oauthLoading} />
+
+        {step === "email" ? (
+          <>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Email address"
+              placeholderTextColor={COLORS.textTertiary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <PillButton
+              title="Send code"
+              onPress={handleSendCode}
+              variant="secondary"
+              loading={otpLoading}
+              disabled={!email.trim()}
+            />
+          </>
+        ) : (
+          <>
+            <Text style={styles.otpHint}>Enter the code sent to {email}</Text>
+            <TextInput
+              style={styles.input}
+              value={code}
+              onChangeText={setCode}
+              placeholder="6-digit code"
+              placeholderTextColor={COLORS.textTertiary}
+              keyboardType="number-pad"
+            />
+            <PillButton
+              title="Verify"
+              onPress={handleVerifyCode}
+              loading={otpLoading}
+              disabled={!code.trim()}
+            />
+            <PillButton
+              title="Use a different email"
+              onPress={() => {
+                setStep("email");
+                setCode("");
+              }}
+              variant="secondary"
+              disabled={otpLoading}
+            />
+          </>
+        )}
 
         {error && (
           <View style={styles.errorBanner}>
@@ -91,9 +147,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 12,
   },
-  spaced: {
-    marginBottom: 12,
-  },
   divider: {
     flexDirection: "row",
     alignItems: "center",
@@ -108,6 +161,21 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     paddingHorizontal: 16,
     fontSize: 13,
+  },
+  input: {
+    height: 56,
+    borderRadius: RADII.input,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 16,
+    color: COLORS.textPrimary,
+    fontSize: 16,
+    backgroundColor: COLORS.surfaceRaised,
+  },
+  otpHint: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    textAlign: "center",
   },
   errorBanner: {
     marginTop: 16,
