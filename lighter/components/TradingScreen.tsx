@@ -11,16 +11,12 @@ const SLIPPAGE = 0.005; // 0.5%, marketable-limit IOC order
 const ORDER_TYPE_LIMIT = 0;
 const TIME_IN_FORCE_IMMEDIATE_OR_CANCEL = 0;
 const ORDER_EXPIRY_NIL = 0;
-// sendTx returns only a tx_hash — no fill status (verified live, see FRICTION_LOG.md) — so fill
-// detection compares position/balance before vs. after this delay.
-const FILL_CHECK_DELAY_MS = 2000;
 
 type FlowStep = "overview" | "amount" | "confirm" | "result";
 type Direction = "buy" | "sell";
 
 interface TradingScreenProps {
   market: Market;
-  account: LighterAccount | null;
   onBack: () => void;
   onRefreshAccount: () => Promise<LighterAccount | null>;
 }
@@ -28,34 +24,22 @@ interface TradingScreenProps {
 interface OrderResult {
   direction: Direction;
   txHash: string;
-  requestedSize: number;
-  requestedPrice: number;
-  filled: boolean | "unknown";
+  size: number;
+  price: number;
+  /**
+   * The server polls Lighter's own trade record before responding (see
+   * server/src/fillConfirmation.ts) — `false` means it never observed a matching trade within its
+   * wait budget, not a confirmed non-match. An IOC order that genuinely expires unmatched leaves
+   * no record either way, so this never claims "nothing was charged".
+   */
+  filled: boolean;
 }
 
 function toRawInt(value: number, decimals: number): number {
   return Math.round(value * 10 ** decimals);
 }
 
-/** Perp: signed position size for this market. Spot: base-asset wallet balance. */
-function getRelevantBalance(account: LighterAccount | null, market: Market): number {
-  if (!account) return 0;
-  if (market.marketType === "perp") {
-    const position = account.positions.find((p) => p.market_id === market.marketIndex);
-    if (!position) return 0;
-    const size = Number.parseFloat(position.position);
-    return position.sign >= 0 ? size : -size;
-  }
-  const baseSymbol = market.symbol.split("/")[0];
-  const asset = account.assets?.find((a) => a.symbol === baseSymbol);
-  return asset ? Number.parseFloat(asset.balance) : 0;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export function TradingScreen({ market, account, onBack, onRefreshAccount }: TradingScreenProps) {
+export function TradingScreen({ market, onBack, onRefreshAccount }: TradingScreenProps) {
   const { bestBid, bestAsk, midPrice, isLoading: marketLoading } = useLighterOrderBook(market.marketIndex);
   const { orders, isLoading: ordersLoading, createOrder, cancelOrder } = useLighterOrders();
   const marketOrders = useMemo(
@@ -108,8 +92,9 @@ export function TradingScreen({ market, account, onBack, onRefreshAccount }: Tra
     }
 
     setIsSubmitting(true);
-    const balanceBefore = getRelevantBalance(account, market);
     try {
+      // The server waits for and confirms the fill itself (polling Lighter's trade record)
+      // before responding — this call can take a few seconds, covered by the button's spinner.
       const response = await createOrder({
         marketIndex: market.marketIndex,
         clientOrderIndex: 0, // NilClientOrderIndex — let the server assign the order index
@@ -120,14 +105,13 @@ export function TradingScreen({ market, account, onBack, onRefreshAccount }: Tra
         timeInForce: TIME_IN_FORCE_IMMEDIATE_OR_CANCEL,
         orderExpiry: ORDER_EXPIRY_NIL,
       });
+      // Refresh the portfolio in the background so it's current once the user backs out — not
+      // needed for fill status, which the server already confirmed above.
+      void onRefreshAccount();
 
-      await sleep(FILL_CHECK_DELAY_MS);
-      const freshAccount = await onRefreshAccount();
-      const balanceAfter = freshAccount ? getRelevantBalance(freshAccount, market) : null;
-      const filled: boolean | "unknown" =
-        balanceAfter === null ? "unknown" : Math.abs(balanceAfter - balanceBefore) > 1e-9;
-
-      setResult({ direction, txHash: response.txHash, requestedSize: baseSize, requestedPrice: limitPrice, filled });
+      const size = response.trade ? Number.parseFloat(response.trade.size) : baseSize;
+      const price = response.trade ? Number.parseFloat(response.trade.price) : limitPrice;
+      setResult({ direction, txHash: response.txHash, size, price, filled: response.filled });
       setStep("result");
     } catch (err) {
       Alert.alert("Order failed", err instanceof Error ? err.message : "Unknown error");
@@ -242,7 +226,7 @@ export function TradingScreen({ market, account, onBack, onRefreshAccount }: Tra
 
   const renderResult = () => {
     if (!result) return null;
-    const statusText = result.filled === "unknown" ? "Submitted" : result.filled ? "Filled" : "Not filled";
+    const statusText = result.filled ? "Filled" : "Couldn't confirm";
     return (
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{statusText}</Text>
@@ -257,15 +241,17 @@ export function TradingScreen({ market, account, onBack, onRefreshAccount }: Tra
         <View style={styles.resultRow}>
           <Text style={styles.resultKey}>Size</Text>
           <Text style={styles.resultValue}>
-            {result.requestedSize.toFixed(market.sizeDecimals)} {market.symbol.split("/")[0]}
+            {result.size.toFixed(market.sizeDecimals)} {market.symbol.split("/")[0]}
           </Text>
         </View>
         <View style={styles.resultRow}>
           <Text style={styles.resultKey}>Price</Text>
-          <Text style={styles.resultValue}>${result.requestedPrice.toFixed(2)}</Text>
+          <Text style={styles.resultValue}>${result.price.toFixed(2)}</Text>
         </View>
-        {result.filled === false && (
-          <Text style={styles.cardBody}>No match within the slippage buffer — nothing was charged.</Text>
+        {!result.filled && (
+          <Text style={styles.cardBody}>
+            Didn&apos;t see it land within a few seconds — check your portfolio before retrying.
+          </Text>
         )}
         <Text style={styles.hashLabel}>Transaction</Text>
         <Text style={styles.hashText} selectable numberOfLines={2}>

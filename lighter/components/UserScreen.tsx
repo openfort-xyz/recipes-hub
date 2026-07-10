@@ -114,12 +114,7 @@ export function UserScreen() {
   }
 
   return (
-    <TradingScreen
-      market={selectedMarket}
-      account={account}
-      onBack={() => setSelectedMarket(null)}
-      onRefreshAccount={refreshAccount}
-    />
+    <TradingScreen market={selectedMarket} onBack={() => setSelectedMarket(null)} onRefreshAccount={refreshAccount} />
   );
 }
 

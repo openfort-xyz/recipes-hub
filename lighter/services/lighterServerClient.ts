@@ -116,6 +116,20 @@ export function fetchOpenOrders(): Promise<{ orders: ActiveOrder[] }> {
   return request("/api/lighter/orders");
 }
 
+export interface Trade {
+  txHash: string;
+  marketIndex: number;
+  size: string;
+  price: string;
+  timestamp: number;
+  isAsk: boolean;
+}
+
+/** The authoritative fill record — an order only appears here once it actually matches. */
+export function fetchTrades(limit = 20): Promise<{ trades: Trade[] }> {
+  return request(`/api/lighter/trades?limit=${limit}`);
+}
+
 export interface ChangePubKeyMessageResponse {
   apiKeyIndex: number;
   accountIndex: number;
@@ -163,7 +177,18 @@ export interface SubmitOrderResponse {
   signedHash: string;
 }
 
-export function createOrder(order: CreateOrderRequest): Promise<SubmitOrderResponse> {
+/**
+ * The server waits for and confirms the fill itself (polling Lighter's trade record) before
+ * responding — see server/src/fillConfirmation.ts. `filled: false` means the server never
+ * observed a matching trade within its wait budget, NOT a confirmed non-match; IOC orders that
+ * expire unmatched leave no record to confirm against either way.
+ */
+export interface CreateOrderResponse extends SubmitOrderResponse {
+  filled: boolean;
+  trade?: { size: string; price: string };
+}
+
+export function createOrder(order: CreateOrderRequest): Promise<CreateOrderResponse> {
   return request("/api/lighter/order", { method: "POST", body: JSON.stringify(order) });
 }
 
