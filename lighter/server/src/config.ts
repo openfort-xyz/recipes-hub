@@ -21,8 +21,6 @@ interface LighterConfig {
   apiBaseUrl: string;
   /** L2 signing domain id. Distinct from any L1/EVM chain id — see apiBaseUrl comment for values. */
   chainId: number;
-  marketIndex: number;
-  marketSymbol: string;
   /** Empty until the account has completed onboarding (first deposit/faucet call assigns one). */
   accountIndex: number | null;
   /** Empty until an API key has been generated and registered via ChangePubKey. */
@@ -81,8 +79,6 @@ export function loadConfig(): Config {
     lighter: {
       apiBaseUrl: process.env["LIGHTER_API_BASE_URL"]?.trim() || "https://testnet.zklighter.elliot.ai",
       chainId: toNumber(process.env["LIGHTER_CHAIN_ID"], 300),
-      marketIndex: toNumber(process.env["LIGHTER_MARKET_INDEX"], 0), // 0 = ETH perp on both testnet and mainnet
-      marketSymbol: process.env["LIGHTER_MARKET_SYMBOL"]?.trim() || "ETH",
       accountIndex: toNullableNumber(process.env["LIGHTER_ACCOUNT_INDEX"]),
       apiKeyPrivateKey: process.env["LIGHTER_API_KEY_PRIVATE_KEY"]?.trim() || null,
       apiKeyIndex: toNumber(process.env["LIGHTER_API_KEY_INDEX"], 2), // 0/1 are commonly used by the web UI

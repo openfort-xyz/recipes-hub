@@ -38,6 +38,13 @@ export interface LighterAccountPosition {
   unrealized_pnl: string;
 }
 
+export interface LighterAccountAsset {
+  symbol: string;
+  asset_id: number;
+  balance: string;
+  locked_balance: string;
+}
+
 export interface LighterAccount {
   index: number;
   l1_address: string;
@@ -45,6 +52,7 @@ export interface LighterAccount {
   collateral: string;
   available_balance: string;
   positions: LighterAccountPosition[];
+  assets: LighterAccountAsset[];
 }
 
 export async function getAccountByL1Address(config: Config, l1Address: string): Promise<LighterAccount | null> {
@@ -113,23 +121,34 @@ export async function getOrderBookOrders(
   return getJson(config.lighter.apiBaseUrl, "/api/v1/orderBookOrders", { market_id: marketId, limit });
 }
 
-export interface LighterOrderBookMeta {
+export interface LighterOrderBookDetail {
   symbol: string;
   market_id: number;
+  market_type: "perp" | "spot";
   status: string;
   min_base_amount: string;
   min_quote_amount: string;
   supported_size_decimals: number;
   supported_price_decimals: number;
   supported_quote_decimals: number;
+  mark_price?: string;
+  last_trade_price?: number;
 }
 
-export async function getOrderBooks(config: Config): Promise<LighterOrderBookMeta[]> {
-  const result = await getJson<{ order_books: LighterOrderBookMeta[] }>(
-    config.lighter.apiBaseUrl,
-    "/api/v1/orderBooks",
-  );
-  return result.order_books;
+/**
+ * GET /api/v1/orderBookDetails with no market_id returns every market (perp + spot) in one call,
+ * including live mark_price/last_trade_price alongside the size/price decimals each market needs
+ * for order encoding — a strict superset of the older /api/v1/orderBooks, so this recipe uses it
+ * for both market discovery and live pricing (one upstream call instead of N). Undocumented on
+ * apidocs.lighter.xyz like most of what this recipe relies on — found by trying the singular form
+ * of the documented plural /api/v1/orderBooks.
+ */
+export async function getOrderBookDetails(config: Config): Promise<LighterOrderBookDetail[]> {
+  const result = await getJson<{
+    order_book_details: LighterOrderBookDetail[];
+    spot_order_book_details: LighterOrderBookDetail[];
+  }>(config.lighter.apiBaseUrl, "/api/v1/orderBookDetails");
+  return [...result.order_book_details, ...result.spot_order_book_details];
 }
 
 export interface LighterActiveOrder {

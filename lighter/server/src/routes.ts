@@ -8,10 +8,10 @@ import {
   getAccountActiveOrders,
   getAccountByL1Address,
   getOrderBookOrders,
-  getOrderBooks,
   getRegisteredApiKeys,
   requestFaucet,
 } from "./lighterApi.js";
+import { getActiveMarkets, requireMarket } from "./markets.js";
 import { createEncryptionSession } from "./openfort.js";
 import { getAuthToken, submitCancelOrder, submitCreateOrder, submitWithdraw } from "./orders.js";
 
@@ -59,8 +59,6 @@ export function handleConfig(_req: Request, res: Response, config: Config): void
   res.status(200).json({
     apiBaseUrl: config.lighter.apiBaseUrl,
     chainId: config.lighter.chainId,
-    marketIndex: config.lighter.marketIndex,
-    marketSymbol: config.lighter.marketSymbol,
     network: isTestnet(config.lighter.apiBaseUrl) ? "testnet" : "mainnet",
     serverWalletConfigured: Boolean(config.lighter.apiKeyPrivateKey && config.lighter.accountIndex !== null),
   });
@@ -91,25 +89,33 @@ export async function handleAccount(req: Request, res: Response, config: Config)
   }
 }
 
-export async function handleMarket(req: Request, res: Response, config: Config): Promise<void> {
+export async function handleMarkets(req: Request, res: Response, config: Config): Promise<void> {
   try {
-    const books = await getOrderBooks(config);
-    const market = books.find((book) => book.market_id === config.lighter.marketIndex);
-    if (!market) {
-      res.status(404).json({ error: `Market index ${config.lighter.marketIndex} not found.` });
-      return;
-    }
-    res.status(200).json(market);
+    const markets = await getActiveMarkets(config);
+    res.status(200).json({ markets });
   } catch (error) {
     handleError(req, res, error);
   }
 }
 
+function requireMarketIndexParam(raw: unknown, res: Response): number | null {
+  const marketIndex = typeof raw === "string" ? Number.parseInt(raw, 10) : NaN;
+  if (!Number.isFinite(marketIndex)) {
+    res.status(400).json({ error: "Query/body param marketIndex is required and must be numeric." });
+    return null;
+  }
+  return marketIndex;
+}
+
 export async function handleOrderBook(req: Request, res: Response, config: Config): Promise<void> {
+  const marketIndex = requireMarketIndexParam(req.query["marketIndex"], res);
+  if (marketIndex === null) return;
   const limitRaw = req.query["limit"];
   const limit = typeof limitRaw === "string" ? Number.parseInt(limitRaw, 10) : 10;
   try {
-    const book = await getOrderBookOrders(config, config.lighter.marketIndex, Number.isFinite(limit) ? limit : 10);
+    const markets = await getActiveMarkets(config);
+    requireMarket(markets, marketIndex);
+    const book = await getOrderBookOrders(config, marketIndex, Number.isFinite(limit) ? limit : 10);
     res.status(200).json(book);
   } catch (error) {
     handleError(req, res, error);
@@ -123,12 +129,8 @@ export async function handleOpenOrders(req: Request, res: Response, config: Conf
       return;
     }
     const authToken = await getAuthToken(config);
-    const orders = await getAccountActiveOrders(
-      config,
-      config.lighter.accountIndex,
-      authToken,
-      config.lighter.marketIndex,
-    );
+    // No market_id filter — the portfolio/open-orders view wants everything across all 5 markets.
+    const orders = await getAccountActiveOrders(config, config.lighter.accountIndex, authToken);
     res.status(200).json({ orders });
   } catch (error) {
     handleError(req, res, error);
@@ -170,6 +172,7 @@ export async function handleChangePubKeySubmit(req: Request, res: Response, conf
 }
 
 interface CreateOrderBody {
+  marketIndex: number;
   clientOrderIndex: number;
   baseAmount: number;
   price: number;
@@ -184,6 +187,7 @@ interface CreateOrderBody {
 export async function handleCreateOrder(req: Request, res: Response, config: Config): Promise<void> {
   const body = req.body as Partial<CreateOrderBody>;
   if (
+    typeof body.marketIndex !== "number" ||
     typeof body.clientOrderIndex !== "number" ||
     typeof body.baseAmount !== "number" ||
     typeof body.price !== "number" ||
@@ -194,13 +198,15 @@ export async function handleCreateOrder(req: Request, res: Response, config: Con
   ) {
     res.status(400).json({
       error:
-        "Body must include clientOrderIndex, baseAmount, price, isAsk, orderType, timeInForce, orderExpiry (numbers/boolean).",
+        "Body must include marketIndex, clientOrderIndex, baseAmount, price, isAsk, orderType, timeInForce, orderExpiry (numbers/boolean).",
     });
     return;
   }
   try {
+    const markets = await getActiveMarkets(config);
+    requireMarket(markets, body.marketIndex);
     const result = await submitCreateOrder(config, {
-      marketIndex: config.lighter.marketIndex,
+      marketIndex: body.marketIndex,
       clientOrderIndex: body.clientOrderIndex,
       baseAmount: body.baseAmount,
       price: body.price,
@@ -218,13 +224,15 @@ export async function handleCreateOrder(req: Request, res: Response, config: Con
 }
 
 export async function handleCancelOrder(req: Request, res: Response, config: Config): Promise<void> {
-  const { orderIndex } = req.body as { orderIndex?: number };
-  if (typeof orderIndex !== "number") {
-    res.status(400).json({ error: "Body must include numeric orderIndex." });
+  const { marketIndex, orderIndex } = req.body as { marketIndex?: number; orderIndex?: number };
+  if (typeof marketIndex !== "number" || typeof orderIndex !== "number") {
+    res.status(400).json({ error: "Body must include numeric marketIndex and orderIndex." });
     return;
   }
   try {
-    const result = await submitCancelOrder(config, config.lighter.marketIndex, orderIndex);
+    const markets = await getActiveMarkets(config);
+    requireMarket(markets, marketIndex);
+    const result = await submitCancelOrder(config, marketIndex, orderIndex);
     res.status(200).json(result);
   } catch (error) {
     handleError(req, res, error);

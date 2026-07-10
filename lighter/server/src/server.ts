@@ -13,7 +13,7 @@ import {
   handleCreateOrder,
   handleFaucet,
   handleHealth,
-  handleMarket,
+  handleMarkets,
   handleOpenOrders,
   handleOrderBook,
   handleShieldSession,
@@ -58,7 +58,7 @@ app.post("/api/protected-create-encryption-session", (req, res) =>
 );
 app.get("/api/lighter/config", (req, res) => handleConfig(req, res, config));
 app.get("/api/lighter/account", (req, res) => handleAccount(req, res, config));
-app.get("/api/lighter/market", (req, res) => handleMarket(req, res, config));
+app.get("/api/lighter/markets", (req, res) => handleMarkets(req, res, config));
 app.get("/api/lighter/orderbook", (req, res) => handleOrderBook(req, res, config));
 app.get("/api/lighter/orders", (req, res) => handleOpenOrders(req, res, config));
 app.post("/api/lighter/changepubkey/message", rateLimitTrading, (req, res) =>

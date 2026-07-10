@@ -48,8 +48,6 @@ describe("requestFaucet (mocked flaky upstream)", () => {
     lighter: {
       apiBaseUrl: "https://testnet.zklighter.elliot.ai",
       chainId: 300,
-      marketIndex: 0,
-      marketSymbol: "ETH",
       accountIndex: null,
       apiKeyPrivateKey: null,
       apiKeyIndex: 2,
