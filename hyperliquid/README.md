@@ -53,8 +53,11 @@ OPENFORT_SHIELD_PUBLISHABLE_KEY=pk_test_your_shield_key
 OPENFORT_SHIELD_ENCRYPTION_KEY=your_shield_encryption_share
 OPENFORT_SHIELD_RECOVERY_BASE_URL=http://localhost:3000
 OPENFORT_ETHEREUM_PROVIDER_POLICY_ID=pol_your_policy_id
-HYPERLIQUID_WALLET_ADDRESS=0xYourWallet
 ```
+
+`HYPERLIQUID_WALLET_ADDRESS` is optional — by default your embedded wallet trades on its own
+Hyperliquid account. See [AGENTS.md](./AGENTS.md#environment) if you want to delegate trading to an
+existing Hyperliquid account instead.
 
 ## 6. Install & Run
 
@@ -68,7 +71,10 @@ pnpm run android    # Launch on Android emulator
 ## Features
 
 - Embedded wallet authentication via Openfort Shield
-- Hyperliquid testnet integration with live price feeds
+- Cash App-style dark UI: hero balance, custom keypad, full-screen step flows, haptics on success
+- Fund the wallet via Openfort's `useFunding` flow, then move USDC into Hyperliquid with a real
+  on-chain bridge deposit
+- Hyperliquid testnet integration with live price feeds and a sparkline chart
 - Trade flow for HYPE/USDC pairs
 - Real-time balance polling and order placement
 
