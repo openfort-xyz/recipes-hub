@@ -731,3 +731,36 @@ stale-self-test-verdict reset — all against the real vendored WASM signer with
 `envFile.ts`'s I/O mocked). Did not live-verify the full flow myself — ChangePubKey needs a real L1
 signature from the user's embedded wallet, which can't be forged from here; the mechanics were
 verified in isolation instead, and the user's next Re-authorize tap is the actual end-to-end test.
+
+## 2026-07-10 — [minor] Cold launch was silently trusting whatever session the SDK had restored from storage
+
+`app/index.tsx` gated purely on `useUser()`'s `user` — truthy meant straight to `UserScreen`,
+with no distinction between "the user just tapped a login button" and "the SDK found a token in
+SecureStore from a previous run and quietly restored it." `OpenfortProvider` does exactly that
+restore on every mount (`refreshUserState()` in its init effect, unconditionally), so a device
+that had ever logged in once would never see the login screen again — not a bug in the SDK, just
+not the login model this recipe wants: explicit login only, and two auth paths with
+deliberately different persistence (guest ephemeral, email persistent).
+
+**Fix:** `app/index.tsx` now waits for `isReady` from `useOpenfortContext()`, and if a `user` is
+already present at that point (proof of an auto-restored session, since nothing in the UI could
+have triggered a login yet), calls `logout()` before rendering anything — not after showing
+`UserScreen` first. The screen stays in a loading state (a plain spinner, not a flash of either
+screen) until that check resolves. A ref (`hasCheckedStaleSession`) makes sure this only fires
+once per mount, so a REAL login later in the same app run is never immediately signed back out.
+The decision logic (`hooks/authGate.ts`'s `deriveAuthScreen`) is pure and separated from the
+SDK/effect wiring for the same reason `onboardingGate.ts` is — vitest can't parse react-native's
+Flow syntax if a test file pulls in `@openfort/react-native` transitively.
+
+No change was needed for the two auth paths' actual persistence behavior: `signUpGuest()` already
+mints a brand-new anonymous user every call (guests are unrecoverable once signed out — nothing to
+restore), and email OTP's Shield `recoveryMethod: automatic` already recovers the same embedded
+wallet for the same authenticated identity. The existing `WALLET_SETTLE_MS` debounce in
+`UserScreen.tsx` (see the wallet-churn entry above) still matters for the email path — it's the
+same SDK-internal restore race regardless of which auth flow put the user there — even though
+guest can't hit it (a freshly minted guest has no wallet to restore in the first place).
+
+**Tests:** `hooks/authGate.test.ts` covers all four `(isReady, hasUser, staleSessionCleared)`
+corners, including the one that matters most — `isReady: true, hasUser: true,
+staleSessionCleared: false` must stay `"loading"`, never `"app"`, or the whole point of the check
+is defeated.

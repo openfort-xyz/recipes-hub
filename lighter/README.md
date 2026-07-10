@@ -65,6 +65,21 @@ pnpm run ios          # Launch on iOS simulator
 pnpm run android      # Launch on Android emulator
 ```
 
+## Login
+
+Every cold launch lands on the login screen — there's no silent auto-restore of a previous
+session, even if one exists. The two options behave differently on purpose:
+
+- **Guest** is ephemeral. Each tap of "Continue as Guest" creates a brand-new anonymous account
+  and a fresh embedded wallet — guests can't be recovered once signed out, so there's no
+  "continue where you left off" for this path. That also makes it the cheap, fully-automatic demo
+  path: a new guest run walks the whole onboarding flow (faucet → sign → trade) from zero every
+  time.
+- **Email** persists. Sign in with the same email again and Shield recovers your existing
+  embedded wallet — same address, same Lighter account, no re-onboarding — unless the server's
+  trading key genuinely rotated since your last session, in which case the same safety-net
+  recovery card from the Onboarding flow below handles it.
+
 ## Onboarding flow
 
 Two steps, walked through in-app on first login:

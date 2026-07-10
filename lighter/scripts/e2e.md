@@ -29,15 +29,22 @@ first.
 
 ### A1. Log in and create the embedded wallet
 
-1. Launch the app. Try both auth paths at least once: tap **Continue as Guest**, and separately
-   test email OTP (enter an email, tap **Send code**, enter the code from your inbox, tap
-   **Verify**).
-2. **Verify**: if you deliberately break something (e.g. use an invalid project key), the error
-   banner shows a real message for BOTH paths — this was a real bug (see `FRICTION_LOG.md`,
+1. Launch the app. **Verify**: it always lands on the login screen, even if you were logged in
+   the last time you quit — no silent auto-continue into a previous session.
+2. Tap **Continue as Guest**, note the wallet address shown, then fully quit and relaunch the app
+   and tap **Continue as Guest** again. **Verify**: the second guest run gets a DIFFERENT wallet
+   address and starts onboarding from zero (guests are ephemeral by design — see the Login
+   section of `README.md`).
+3. Separately test email OTP: enter an email, tap **Send code**, enter the code from your inbox,
+   tap **Verify**. Once your wallet is created, fully quit and relaunch, sign in with the SAME
+   email again. **Verify**: you land back on the SAME wallet address and, if you'd already
+   completed onboarding, go straight to the trading screen — no re-onboarding.
+4. **Verify**: if you deliberately break something (e.g. use an invalid project key), the error
+   banner shows a real message for BOTH auth paths — this was a real bug (see `FRICTION_LOG.md`,
    guest errors used to be silently swallowed).
-3. The app should auto-create an embedded wallet and land on "Get testnet funds".
-4. **Verify**: `GET /api/lighter/account?l1Address=<your address>` returns
-   `{"onboarded": false, "account": null, "apiKeys": []}` — a real response from Lighter testnet.
+5. **Verify**: `GET /api/lighter/account?l1Address=<your address>` returns
+   `{"onboarded": false, "account": null, "apiKeys": []}` for a fresh guest — a real response from
+   Lighter testnet.
 
 ### A2. Get testnet funds
 
@@ -129,6 +136,9 @@ error rather than a crash.
 ## What "done" looks like
 
 - [ ] Both auth paths (guest, email OTP) tested with a deliberate failure to confirm error banners work
+- [ ] Cold launch always shows the login screen, never auto-continues a previous session
+- [ ] Guest: two separate runs get two different wallets. Email: two separate logins with the
+      same address get the SAME wallet, no re-onboarding
 - [ ] Testnet: faucet call credits the account within seconds; full flow through withdrawal works
 - [ ] Mainnet: deposit tx confirmed on Etherscan, account appears via `GET /api/v1/account?by=index`
 - [ ] API key appears via `GET /api/v1/apikeys` (both networks tested independently)

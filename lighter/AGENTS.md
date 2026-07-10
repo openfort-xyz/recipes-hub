@@ -50,6 +50,13 @@ Openfort or any other keychain-dependent SDK. See `FRICTION_LOG.md` for the full
 - Testnet onboarding needs zero wallet signatures for funding — `POST /api/lighter/faucet`
   (server-gated to testnet only) creates AND credits the Lighter account in one call. Mainnet
   keeps the real `approve` + `deposit` flow in `services/depositFlow.ts` untouched.
+- Login is explicit-only, no cold-launch auto-restore: `app/index.tsx` signs out any session the
+  SDK silently restored from storage before ever rendering (see `hooks/authGate.ts`'s
+  `deriveAuthScreen`), so every launch lands on `LoginScreen`. Guest is ephemeral (a fresh
+  `signUpGuest` mints a brand-new, unrecoverable account + wallet every run — the automatic demo
+  path). Email is the persistent path — Shield recovers the SAME embedded wallet on re-login, no
+  re-onboarding needed unless the server's trading key genuinely rotated (the existing
+  `WALLET_SETTLE_MS` debounce in `UserScreen.tsx` still guards this path's wallet-restore race).
 
 ## Testing instructions
 
