@@ -13,6 +13,8 @@ import { L1_CHAIN_ID } from "../constants/network";
 
 type Screen = "onboarding" | "trading" | "withdraw";
 
+const ACCOUNT_POLL_MS = 5000;
+
 export function UserScreen() {
   const ethereum = useEmbeddedEthereumWallet({ chainId: L1_CHAIN_ID });
   const [view, setView] = useState<Screen>("onboarding");
@@ -52,9 +54,14 @@ export function UserScreen() {
   }, [ethereum]);
 
   useEffect(() => {
-    // See hooks/useLighterMarkets.ts for why this is exempted from set-state-in-effect.
+    // See hooks/useLighterMarkets.ts for why this is exempted from set-state-in-effect. Polls
+    // continuously (not just on mount) so cash/positions on the portfolio screen stay current on
+    // their own — TradingScreen also triggers an immediate refresh around each order, this
+    // interval is the fallback for everything else (funding, liquidations, another device).
     // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshAccount();
+    const interval = setInterval(refreshAccount, ACCOUNT_POLL_MS);
+    return () => clearInterval(interval);
   }, [refreshAccount]);
 
   if (ethereum.status === "error") {
@@ -114,7 +121,12 @@ export function UserScreen() {
   }
 
   return (
-    <TradingScreen market={selectedMarket} onBack={() => setSelectedMarket(null)} onRefreshAccount={refreshAccount} />
+    <TradingScreen
+      market={selectedMarket}
+      accountIndex={account.index}
+      onBack={() => setSelectedMarket(null)}
+      onRefreshAccount={refreshAccount}
+    />
   );
 }
 

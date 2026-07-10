@@ -43,8 +43,8 @@ export function useLighterOrders(pollMs = 5000) {
   );
 
   const cancelOrder = useCallback(
-    async (marketIndex: number, orderIndex: number) => {
-      const result = await cancelOrderRequest(marketIndex, orderIndex);
+    async (accountIndex: number, marketIndex: number, orderIndex: number) => {
+      const result = await cancelOrderRequest(accountIndex, marketIndex, orderIndex);
       await refresh();
       return result;
     },

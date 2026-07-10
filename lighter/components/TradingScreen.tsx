@@ -31,6 +31,7 @@ type Direction = "buy" | "sell";
 
 interface TradingScreenProps {
   market: Market;
+  accountIndex: number;
   onBack: () => void;
   onRefreshAccount: () => Promise<LighterAccount | null>;
 }
@@ -53,7 +54,7 @@ function toRawInt(value: number, decimals: number): number {
   return Math.round(value * 10 ** decimals);
 }
 
-export function TradingScreen({ market, onBack, onRefreshAccount }: TradingScreenProps) {
+export function TradingScreen({ market, accountIndex, onBack, onRefreshAccount }: TradingScreenProps) {
   const { bestBid, bestAsk, midPrice, isLoading: marketLoading } = useLighterOrderBook(market.marketIndex);
   const { orders, isLoading: ordersLoading, createOrder, cancelOrder } = useLighterOrders();
   const marketOrders = useMemo(
@@ -87,6 +88,10 @@ export function TradingScreen({ market, onBack, onRefreshAccount }: TradingScree
     setAmount("0");
     setResult(null);
     setStep("overview");
+    // Refresh again on the way back to the overview/portfolio — the fill was already confirmed
+    // server-side before this screen ever showed a result, but this is cheap insurance against
+    // the earlier refresh racing ahead of it for any reason.
+    void onRefreshAccount();
   };
 
   const handleSubmit = async () => {
@@ -119,6 +124,7 @@ export function TradingScreen({ market, onBack, onRefreshAccount }: TradingScree
       // The server waits for and confirms the fill itself (polling Lighter's trade record)
       // before responding — this call can take a few seconds, covered by the button's spinner.
       const response = await createOrder({
+        accountIndex,
         marketIndex: market.marketIndex,
         clientOrderIndex: 0, // NilClientOrderIndex — let the server assign the order index
         baseAmount: toRawInt(baseSize, market.sizeDecimals),
@@ -145,7 +151,7 @@ export function TradingScreen({ market, onBack, onRefreshAccount }: TradingScree
 
   const handleCancel = async (orderIndex: number) => {
     try {
-      await cancelOrder(market.marketIndex, orderIndex);
+      await cancelOrder(accountIndex, market.marketIndex, orderIndex);
     } catch (err) {
       Alert.alert("Cancel failed", err instanceof Error ? err.message : "Unknown error");
     }
@@ -203,7 +209,14 @@ export function TradingScreen({ market, onBack, onRefreshAccount }: TradingScree
           style={styles.actionButton}
         />
       </View>
-      <PillButton title="Back to assets" onPress={onBack} variant="secondary" />
+      <PillButton
+        title="Back to assets"
+        onPress={() => {
+          void onRefreshAccount();
+          onBack();
+        }}
+        variant="secondary"
+      />
     </>
   );
 
