@@ -446,3 +446,44 @@ Live-verified end to end through the user's own `:3008` instance post-fix: a rea
 unmatchable order (priced at half the market, guaranteed not to cross) correctly returned
 `{"filled":false}` with no fabricated trade, after exhausting the full ~10s wait — the honest
 "couldn't confirm" path, not a lie in either direction.
+
+## 2026-07-10 — [blocker] The "Activate server" gate checked that a key existed, not that it was the RIGHT key — split-brain trading
+
+After the wallet-session orphaning (see the [minor] entry above about `useEmbeddedEthereumWallet`
+creating a fresh wallet on a hard relaunch), the user re-onboarded: new wallet, new Lighter
+account (175), a fresh ChangePubKey registration, new env values printed. He copied them in and
+the app moved past "Activate server" — but the server was still running with the OLD account
+(171)'s env. The gate only checked `serverWalletConfigured` (some `LIGHTER_API_KEY_PRIVATE_KEY` +
+`LIGHTER_ACCOUNT_INDEX` are set), never WHICH account. Trading looked broken again from a totally
+different cause than the fill-detection race two entries up: orders were signing and filling on
+171 while the app displayed 175's (empty, from its perspective) portfolio — cash never appeared to
+move, no positions ever showed up, because the app was watching the wrong account's data.
+
+**Fix:**
+- `GET /api/lighter/config` now returns `accountIndex` (`server/src/routes.ts#handleConfig`) — an
+  integer, not a secret, safe to expose.
+- `useLighterOnboarding.ts#deriveStep` treats a mismatched `accountIndex` the same as "not
+  configured" (stays on the `activateServer` step) instead of advancing to `ready` the moment
+  *some* key exists. A new `accountMismatch` field distinguishes the two causes so
+  `OnboardingStatusScreen` can show the right recovery card: reprint this session's credentials
+  if still in memory, or a "Re-authorize" button (reuses the existing `handleRegister` — the
+  ChangePubKey flow doesn't special-case an already-registered index, so re-running it should
+  rotate to a fresh key; couldn't verify the live outcome of that specific rotation without a real
+  user's `personal_sign`, so the existing generic "Registration failed" error path is what
+  surfaces if the server ever rejects it).
+- Defense-in-depth for if this recurs mid-session (server restarted with a stale env while the app
+  keeps trading): every order/cancel request now carries the app's own `accountIndex`, and
+  `server/src/routes.ts#checkAccountMatch` 409s before signing anything if it doesn't match the
+  server's configured account. Live-verified: a request for account 171 against a server
+  configured for 175 gets `409 {"error":"Server is configured for account 175, but this request is
+  for account 171. ..."}`; the same request with `accountIndex: 175` fills normally.
+- Portfolio staleness compounded the confusion (positions genuinely weren't updating between
+  trades without a manual reload). `UserScreen.tsx`'s account fetch was mount-only with no
+  ongoing poll; added a 5s interval alongside the existing on-order refresh, plus explicit
+  refreshes on "Done" and "Back to assets" so returning to the portfolio never shows stale data
+  waiting on the next poll tick.
+
+Live-verified post-fix against the user's real account 175: fetched its ETH position
+(0.0277), placed a real order through `:3008` with the matching `accountIndex`, got back
+`{"filled":true,"trade":{"size":"0.0083","price":"1792.75"}}`, and the account endpoint
+immediately reflected the new position (0.0360 = 0.0277 + 0.0083) — no leftover resting orders.

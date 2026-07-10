@@ -78,7 +78,9 @@ Three steps, all walked through in-app on first login:
    never withdraw anywhere except back to your own wallet. Same on both networks.
 3. **Activate the server** — the server generates the API key in step 2 but doesn't load it
    automatically; copy the values it prints to its console into `server/.env.local` and restart
-   it. The app polls and unlocks trading once it detects the server is ready.
+   it. The app polls and unlocks trading once it detects the server is ready **for this specific
+   account** — not just that some key is configured, since a server left pointed at an old
+   account would otherwise sign and fill orders you can't see.
 
 See `scripts/e2e.md` for the full step-by-step with exact amounts and what to check at each stage
 (testnet path first, mainnet as the variant).
@@ -123,6 +125,10 @@ faucet to real deposit automatically — no app-side config needed.
   to land; pull to refresh on the onboarding screen.
 - **Order fails** — check `server/.env.local` has all three `LIGHTER_*` key values and the server
   was restarted after setting them.
+- **"Wrong account on the server"** — the server is signing for a different account than the one
+  the app is showing (usually from re-onboarding into a new wallet without restarting the
+  server). Copy the printed values shown on that screen into `server/.env.local` and restart; if
+  they're not shown, tap "Re-authorize" to mint a fresh set.
 
 ## Resources
 
