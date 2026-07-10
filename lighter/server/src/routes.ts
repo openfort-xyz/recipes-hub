@@ -61,7 +61,26 @@ export function handleConfig(_req: Request, res: Response, config: Config): void
     chainId: config.lighter.chainId,
     network: isTestnet(config.lighter.apiBaseUrl) ? "testnet" : "mainnet",
     serverWalletConfigured: Boolean(config.lighter.apiKeyPrivateKey && config.lighter.accountIndex !== null),
+    // Not a secret — just an integer identifying which account the server signs for, so the app
+    // can catch a split-brain (server env pointing at a different account than the one it's
+    // showing/trading) instead of silently treating "some key is configured" as "the right key
+    // is configured". See FRICTION_LOG.md.
+    accountIndex: config.lighter.accountIndex,
   });
+}
+
+/**
+ * Every order-signing route requires the caller to state which account it believes it's trading
+ * — cheap defense-in-depth against the server env pointing at a different account than the app
+ * (e.g. re-onboarded into a new wallet without restarting the server), which would otherwise
+ * sign and fill orders on an account the app isn't even displaying. Returns an error message if
+ * they don't match, or null if they do.
+ */
+export function checkAccountMatch(serverAccountIndex: number | null, requestAccountIndex: number): string | null {
+  if (serverAccountIndex === null || serverAccountIndex !== requestAccountIndex) {
+    return `Server is configured for account ${serverAccountIndex ?? "none"}, but this request is for account ${requestAccountIndex}. Update server/.env.local and restart the server.`;
+  }
+  return null;
 }
 
 function requireL1Address(req: Request, res: Response): string | null {
@@ -196,6 +215,7 @@ export async function handleChangePubKeySubmit(req: Request, res: Response, conf
 }
 
 interface CreateOrderBody {
+  accountIndex: number;
   marketIndex: number;
   clientOrderIndex: number;
   baseAmount: number;
@@ -211,6 +231,7 @@ interface CreateOrderBody {
 export async function handleCreateOrder(req: Request, res: Response, config: Config): Promise<void> {
   const body = req.body as Partial<CreateOrderBody>;
   if (
+    typeof body.accountIndex !== "number" ||
     typeof body.marketIndex !== "number" ||
     typeof body.clientOrderIndex !== "number" ||
     typeof body.baseAmount !== "number" ||
@@ -222,8 +243,13 @@ export async function handleCreateOrder(req: Request, res: Response, config: Con
   ) {
     res.status(400).json({
       error:
-        "Body must include marketIndex, clientOrderIndex, baseAmount, price, isAsk, orderType, timeInForce, orderExpiry (numbers/boolean).",
+        "Body must include accountIndex, marketIndex, clientOrderIndex, baseAmount, price, isAsk, orderType, timeInForce, orderExpiry (numbers/boolean).",
     });
+    return;
+  }
+  const mismatch = checkAccountMatch(config.lighter.accountIndex, body.accountIndex);
+  if (mismatch) {
+    res.status(409).json({ error: mismatch });
     return;
   }
   try {
@@ -248,9 +274,18 @@ export async function handleCreateOrder(req: Request, res: Response, config: Con
 }
 
 export async function handleCancelOrder(req: Request, res: Response, config: Config): Promise<void> {
-  const { marketIndex, orderIndex } = req.body as { marketIndex?: number; orderIndex?: number };
-  if (typeof marketIndex !== "number" || typeof orderIndex !== "number") {
-    res.status(400).json({ error: "Body must include numeric marketIndex and orderIndex." });
+  const { accountIndex, marketIndex, orderIndex } = req.body as {
+    accountIndex?: number;
+    marketIndex?: number;
+    orderIndex?: number;
+  };
+  if (typeof accountIndex !== "number" || typeof marketIndex !== "number" || typeof orderIndex !== "number") {
+    res.status(400).json({ error: "Body must include numeric accountIndex, marketIndex and orderIndex." });
+    return;
+  }
+  const mismatch = checkAccountMatch(config.lighter.accountIndex, accountIndex);
+  if (mismatch) {
+    res.status(409).json({ error: mismatch });
     return;
   }
   try {
