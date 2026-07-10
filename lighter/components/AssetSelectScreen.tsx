@@ -24,7 +24,7 @@ export function AssetSelectScreen({ account, onSelect, onWithdraw }: AssetSelect
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.heading}>Trade</Text>
-      <PortfolioCard account={account} />
+      <PortfolioCard account={account} markets={markets} />
 
       {isLoading && markets.length === 0 ? (
         <ActivityIndicator color={COLORS.accent} style={styles.spinner} />
