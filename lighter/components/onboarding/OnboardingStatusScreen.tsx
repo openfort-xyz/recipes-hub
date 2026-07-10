@@ -60,7 +60,17 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
       );
       await refresh();
     } catch (err) {
-      Alert.alert("Faucet request failed", err instanceof Error ? err.message : "Unknown error");
+      // The server already retried a few times before surfacing this — Lighter's testnet faucet
+      // is intermittently flaky (see FRICTION_LOG.md). Refresh immediately: an earlier retry may
+      // have actually succeeded upstream even though this final attempt reported failure, so the
+      // background poll (see useLighterOnboarding) would advance the step anyway within 8s — this
+      // just makes that visible right away instead of making the user wait.
+      await refresh();
+      const detail = err instanceof Error ? err.message : "Unknown error";
+      Alert.alert(
+        "Faucet request failed",
+        `Lighter's testnet faucet is intermittently unavailable — try again.\n\n${detail}`,
+      );
     } finally {
       setIsFauceting(false);
     }
