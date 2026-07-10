@@ -26,11 +26,22 @@ export function CreateWalletScreen({
     setLastAddress(walletAddress);
     setCopied(false);
   }
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const copyAddress = async () => {
     if (walletAddress) {
       await Clipboard.setStringAsync(walletAddress);
       setCopied(true);
+    }
+  };
+
+  const handleRetry = async () => {
+    if (!onRetry) return;
+    setIsRetrying(true);
+    try {
+      await onRetry();
+    } finally {
+      setIsRetrying(false);
     }
   };
 
@@ -51,7 +62,9 @@ export function CreateWalletScreen({
             <View style={styles.center}>
               <Text style={styles.errorTitle}>Couldn&apos;t create your wallet</Text>
               <Text style={styles.errorText}>{errorMessage}</Text>
-              {onRetry && <PillButton title="Try again" onPress={onRetry} style={styles.retryButton} />}
+              {onRetry && (
+                <PillButton title="Try again" onPress={handleRetry} loading={isRetrying} style={styles.retryButton} />
+              )}
             </View>
           ) : walletAddress ? (
             <View style={styles.addressRow}>

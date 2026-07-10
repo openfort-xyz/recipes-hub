@@ -45,6 +45,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
   const { step, account, serverConfig, isLoading, error, refresh } = onboarding;
   const isTestnet = serverConfig?.network === "testnet";
   const [isFauceting, setIsFauceting] = useState(false);
+  const [isCheckingAgain, setIsCheckingAgain] = useState(false);
 
   React.useEffect(() => {
     if (step === "ready") {
@@ -101,6 +102,15 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
       Alert.alert("Registration failed", err instanceof Error ? err.message : "Unknown error");
     } finally {
       setIsRegistering(false);
+    }
+  };
+
+  const handleCheckAgain = async () => {
+    setIsCheckingAgain(true);
+    try {
+      await refresh();
+    } finally {
+      setIsCheckingAgain(false);
     }
   };
 
@@ -182,7 +192,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
               </Text>
             </View>
           )}
-          <PillButton title="Check again" onPress={refresh} variant="secondary" />
+          <PillButton title="Check again" onPress={handleCheckAgain} variant="secondary" loading={isCheckingAgain} />
         </View>
       )}
     </ScrollView>
