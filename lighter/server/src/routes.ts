@@ -217,15 +217,11 @@ export async function handleChangePubKeySubmit(req: Request, res: Response, conf
     return;
   }
   try {
+    // submitChangePubKeyRegistration adopts the new key as the server's live trading key before
+    // returning — see orders.ts's adoptServerKey, which logs its own "adopted new trading key"
+    // line. The response never carries the private key (see changePubKey.ts) — there's no reason
+    // for it to reach the app now that the server holds and persists it itself.
     const result = await submitChangePubKeyRegistration(config, accountIndex, l1Sig);
-    // The private key itself goes back in the response body only (the app displays it on-screen
-    // for the operator to copy) — never to server logs, which are far more likely than the app's
-    // ephemeral UI to be captured, persisted, or shipped to a log aggregator.
-    console.warn(
-      `[lighter-server] New Lighter API key generated for account ${result.accountIndex} ` +
-        `(apiKeyIndex ${result.apiKeyIndex}) — copy the credentials from the app screen into your ` +
-        "server .env.local NOW, they will not be shown again.",
-    );
     res.status(200).json(result);
   } catch (error) {
     handleError(req, res, error);

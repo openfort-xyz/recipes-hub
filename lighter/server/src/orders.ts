@@ -1,4 +1,5 @@
 import type { Config } from "./config.js";
+import { updateEnvLocal } from "./envFile.js";
 import { computeInitialWaitMs, waitForFillConfirmation, type FillConfirmationTrade } from "./fillConfirmation.js";
 import {
   classifySelfTestOutcome,
@@ -152,6 +153,64 @@ export async function selfTestServerKey(config: Config): Promise<KeySelfTestResu
     lastSelfTestResult = classifySelfTestOutcome(error);
   }
   return lastSelfTestResult;
+}
+
+export interface AdoptedCredentials {
+  accountIndex: number;
+  apiKeyIndex: number;
+  apiKeyPrivateKey: string;
+}
+
+/**
+ * Adopts a freshly registered ChangePubKey credential as the server's live trading key — no more
+ * "copy the printed values into .env.local and restart" ceremony. `config` is the single instance
+ * created once at startup and passed by reference into every route handler (see server.ts), so
+ * mutating its `lighter` fields here makes every in-flight and future request see the new key
+ * immediately. Resetting `clientReadyForKey` forces the next signed call to build a fresh signing
+ * client instead of reusing one built for the old key (ensureSigningClient's cache key IS the
+ * private key, so this is the only thing that actually invalidates it). Resetting
+ * `lastSelfTestResult` clears out a verdict about the OLD key so handleConfig doesn't report the
+ * brand-new key as invalid during the moment before the fresh self-test below completes — same
+ * "null means not proven yet" handling as the startup self-test in server.ts.
+ *
+ * Persisting to .env.local (not just holding the key in memory) is what makes a restart survive
+ * without re-running onboarding. Writing key material to a plain file here is a deliberate,
+ * recipe-appropriate scope call, not an oversight: this is a single-operator dev tool, the file is
+ * already gitignored, and it sits in the exact same trust domain as the Openfort Shield secrets
+ * that already live in it — anyone who can read one can already read the other. A failed write
+ * only costs durability (the adopted key still works until the next restart) — it doesn't roll
+ * back the in-memory adoption, since that would strand a perfectly good key over a filesystem
+ * hiccup that has nothing to do with whether the key itself is valid.
+ */
+export async function adoptServerKey(config: Config, credentials: AdoptedCredentials): Promise<void> {
+  config.lighter.accountIndex = credentials.accountIndex;
+  config.lighter.apiKeyIndex = credentials.apiKeyIndex;
+  config.lighter.apiKeyPrivateKey = credentials.apiKeyPrivateKey;
+  clientReadyForKey = null;
+  lastSelfTestResult = null;
+  await ensureSigningClient(config);
+
+  try {
+    await updateEnvLocal({
+      LIGHTER_ACCOUNT_INDEX: String(credentials.accountIndex),
+      LIGHTER_API_KEY_INDEX: String(credentials.apiKeyIndex),
+      LIGHTER_API_KEY_PRIVATE_KEY: credentials.apiKeyPrivateKey,
+    });
+  } catch (err) {
+    console.error(
+      "[lighter-server] Adopted the new key in memory, but failed to persist it to .env.local — " +
+        "it will NOT survive a restart:",
+      err instanceof Error ? err.message : err,
+    );
+  }
+
+  console.warn(`[lighter-server] adopted new trading key for account ${credentials.accountIndex}`);
+
+  // Runs in the background rather than blocking the HTTP response the app is waiting on — same
+  // reasoning as the startup self-test in server.ts.
+  selfTestServerKey(config).catch((err) => {
+    console.error("[lighter-server] Post-adoption key self-test failed to run:", err instanceof Error ? err.message : err);
+  });
 }
 
 export async function getAuthToken(config: Config): Promise<string> {

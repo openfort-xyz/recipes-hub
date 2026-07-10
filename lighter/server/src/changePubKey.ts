@@ -1,41 +1,8 @@
-import { writeFile } from "node:fs/promises";
 import type { Config } from "./config.js";
 import { getNextNonce, sendTx } from "./lighterApi.js";
+import { adoptServerKey } from "./orders.js";
 import { savePendingRegistration, takePendingRegistration } from "./registrationStore.js";
 import { createSigningClient, generateApiKey, loadSigner, signChangePubKey } from "../signer/signer.js";
-
-const PENDING_ENV_FILE = ".env.pending";
-
-/**
- * A ChangePubKey submit is a one-time secret reveal — the printed value is the only copy of
- * this key that will ever exist. Console output alone isn't durable enough: a discarded
- * terminal, a lost SSH session, or simply scrolling past it loses the key permanently, and
- * ChangePubKey has no "show me the current key again" — the only recovery is signing a NEW one,
- * which rotates the on-chain key and invalidates whatever the server was already holding (see
- * FRICTION_LOG.md's key-rotation entry). Writing to a git-ignored local file survives all of
- * that; it's still local-only and never touches log aggregators the way stdout can.
- */
-async function persistPendingCredentials(result: {
-  accountIndex: number;
-  apiKeyIndex: number;
-  apiKeyPrivateKey: string;
-}): Promise<void> {
-  const contents =
-    `# Generated ${new Date().toISOString()} after a successful ChangePubKey registration for\n` +
-    `# account ${result.accountIndex} (apiKeyIndex ${result.apiKeyIndex}). Merge these three lines into\n` +
-    "# .env.local and restart the server. This file is overwritten by the next registration —\n" +
-    "# copy the values out before signing again.\n" +
-    `LIGHTER_ACCOUNT_INDEX=${result.accountIndex}\n` +
-    `LIGHTER_API_KEY_INDEX=${result.apiKeyIndex}\n` +
-    `LIGHTER_API_KEY_PRIVATE_KEY=${result.apiKeyPrivateKey}\n`;
-  try {
-    await writeFile(PENDING_ENV_FILE, contents, "utf8");
-  } catch (err) {
-    // Best-effort — the app still shows the values on screen even if this write fails, so don't
-    // fail the whole registration over a filesystem error.
-    console.error(`Failed to write ${PENDING_ENV_FILE}:`, err instanceof Error ? err.message : err);
-  }
-}
 
 /**
  * Builds the ChangePubKey registration message for the L1 (Openfort embedded) wallet to
@@ -87,9 +54,11 @@ export class NoPendingRegistrationError extends Error {
 }
 
 /**
- * Splices the L1 wallet's personal_sign signature into the pending txInfo and submits it.
- * Returns the freshly generated private key ONCE so the operator can persist it into
- * LIGHTER_API_KEY_PRIVATE_KEY — treat this response like a one-time secret reveal.
+ * Splices the L1 wallet's personal_sign signature into the pending txInfo, submits it, and — once
+ * Lighter confirms the registration — has the server adopt the fresh key as its own live trading
+ * key (see orders.ts's adoptServerKey): no operator step, no restart, no printed secret to copy.
+ * The private key itself never leaves this function; the response only carries information that's
+ * safe to show on screen (see routes.ts's handleChangePubKeySubmit).
  */
 export async function submitChangePubKeyRegistration(config: Config, accountIndex: number, l1Sig: string) {
   const pending = takePendingRegistration(accountIndex);
@@ -99,13 +68,15 @@ export async function submitChangePubKeyRegistration(config: Config, accountInde
   const txInfo = JSON.parse(pending.txInfo) as Record<string, unknown>;
   txInfo["L1Sig"] = l1Sig;
   const result = await sendTx(config, pending.txType, JSON.stringify(txInfo));
-  const registration = {
+  await adoptServerKey(config, {
+    accountIndex,
+    apiKeyIndex: pending.apiKeyIndex,
+    apiKeyPrivateKey: pending.privateKey,
+  });
+  return {
     txHash: result.tx_hash,
     apiKeyIndex: pending.apiKeyIndex,
     accountIndex,
-    apiKeyPrivateKey: pending.privateKey,
     apiKeyPublicKey: pending.publicKey,
   };
-  await persistPendingCredentials(registration);
-  return registration;
 }

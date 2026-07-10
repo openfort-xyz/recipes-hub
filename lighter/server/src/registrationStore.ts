@@ -1,8 +1,9 @@
 /**
  * Holds freshly generated API keypairs in-memory between the two legs of ChangePubKey
- * registration (build message -> app signs -> submit). The private key never leaves the
- * server process; it's only surfaced in the `/submit` HTTP response so the operator can copy it
- * into LIGHTER_API_KEY_PRIVATE_KEY. Treat that response like a one-time secret reveal.
+ * registration (build message -> app signs -> submit). The private key never leaves the server
+ * process at all — on a successful submit it's adopted directly as the server's live trading key
+ * and persisted to server/.env.local (see orders.ts's adoptServerKey), never sent back in the
+ * HTTP response.
  */
 
 interface PendingRegistration {
