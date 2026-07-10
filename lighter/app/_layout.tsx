@@ -5,19 +5,21 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { EnvValidationWrapper } from "../components/envValidation/EnvValidationWrapper";
 import { SUPPORTED_CHAINS } from "../constants/network";
 import { getEncryptionSessionFromEndpoint } from "../services/walletRecovery";
-import { getFeeSponsorshipId, getPublishableKey, getShieldPublishableKey } from "../utils/config";
+import { getEthereumProviderPolicyId, getPublishableKey, getShieldPublishableKey } from "../utils/config";
 
 function Providers() {
   const publishableKey = getPublishableKey();
   const shieldPublishableKey = getShieldPublishableKey();
-  const feeSponsorshipId = getFeeSponsorshipId();
+  const ethereumProviderPolicyId = getEthereumProviderPolicyId();
 
   return (
     <OpenfortProvider
       publishableKey={publishableKey}
       walletConfig={{
         shieldPublishableKey,
-        feeSponsorshipId,
+        // @openfort/react-native's walletConfig field is `feeSponsorshipId` (renamed from
+        // `ethereumProviderPolicyId`) — same OPENFORT_ETHEREUM_PROVIDER_POLICY_ID value, new field name.
+        feeSponsorshipId: ethereumProviderPolicyId,
         recoveryMethod: "automatic",
         getEncryptionSession: getEncryptionSessionFromEndpoint,
       }}

@@ -19,12 +19,16 @@
 ## Environment
 
 - App `.env.local`: `OPENFORT_PUBLISHABLE_KEY`, `OPENFORT_SHIELD_PUBLISHABLE_KEY`,
-  `OPENFORT_SHIELD_RECOVERY_BASE_URL` (point at the server), `LIGHTER_SERVER_BASE_URL`,
+  `OPENFORT_SHIELD_RECOVERY_BASE_URL` (point at the server), `OPENFORT_ETHEREUM_PROVIDER_POLICY_ID`
+  (optional gas sponsorship — mainnet gas is real ETH if unset), `LIGHTER_SERVER_BASE_URL`,
   `LIGHTER_DEPOSIT_CONTRACT_ADDRESS`, `USDC_CONTRACT_ADDRESS`.
 - Server `.env.local`: `OPENFORT_SECRET_KEY`, Shield keys, `LIGHTER_API_BASE_URL` (config-only
   Robinhood Chain support — swap to `https://api.rh.lighter.xyz`, no code changes), plus
   `LIGHTER_ACCOUNT_INDEX` / `LIGHTER_API_KEY_PRIVATE_KEY` / `LIGHTER_API_KEY_INDEX`, populated
   after onboarding (the server prints these to its console when registration succeeds).
+- `@openfort/react-native`'s `walletConfig` gas-sponsorship key is **`feeSponsorshipId`** (renamed
+  from `ethereumProviderPolicyId`, verified against the installed 1.1.7 types) — same
+  `OPENFORT_ETHEREUM_PROVIDER_POLICY_ID` value, new field name. See `app/_layout.tsx`.
 
 ## Testing instructions
 

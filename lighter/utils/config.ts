@@ -40,10 +40,12 @@ export function getShieldRecoveryBaseUrl(): string {
   );
 }
 
-export function getFeeSponsorshipId(): string | undefined {
-  const value = getExtraValue<string>("openfortFeeSponsorshipId");
+export function getEthereumProviderPolicyId(): string | undefined {
+  const value = getExtraValue<string>("openfortEthereumProviderPolicyId");
   if (!value || PLACEHOLDER_VALUES.has(value)) {
-    console.warn("[CONFIG] No gas sponsorship configured (OPENFORT_FEE_SPONSORSHIP_ID). Mainnet gas is real ETH.");
+    console.warn(
+      "[CONFIG] No gas sponsorship policy configured (OPENFORT_ETHEREUM_PROVIDER_POLICY_ID). Mainnet gas is real ETH.",
+    );
     return undefined;
   }
   return value;

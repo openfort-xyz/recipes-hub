@@ -187,12 +187,17 @@ of it outside this task's scope to resolve. Aborted the rebase and instead pulle
 names directly via `git show upstream/main:<path>` without merging, and renamed across
 `lighter/`'s env files, `config.ts`, `envValidation.ts`, `app.config.js`, and docs.
 
-Also worth noting for whoever owns the hyperliquid Cash App upgrade: upstream's current
-hyperliquid still uses `OPENFORT_ETHEREUM_PROVIDER_POLICY_ID`/`ethereumProviderPolicyId`, but
-`@openfort/react-native@1.1.7`'s actual `EmbeddedWalletConfiguration` type has no such field —
-it's `feeSponsorshipId` now (verified directly against the installed package's `.d.ts`). This
-recipe already uses the correct current name; hyperliquid's env var is stale on this point
-independent of the fork/upstream gap.
+**Correction (same day):** the entry above originally claimed the env var name itself was stale
+and switched this recipe to `OPENFORT_FEE_SPONSORSHIP_ID`. That was wrong — the env var contract
+is a monorepo-wide convention (`OPENFORT_ETHEREUM_PROVIDER_POLICY_ID`), not something a single
+new recipe should rename unilaterally just because the SDK renamed its internal field. Only the
+SDK's `walletConfig` property genuinely changed, from `ethereumProviderPolicyId` to
+`feeSponsorshipId` (verified against `@openfort/react-native@1.1.7`'s `.d.ts` — confirmed correct
+by the team lead, already handled the same way on the hyperliquid Cash App branch). Reverted to
+`OPENFORT_ETHEREUM_PROVIDER_POLICY_ID` as the env var, mapped to `walletConfig.feeSponsorshipId`
+in `app/_layout.tsx`, matching the `origin/recipe/hyperliquid-cashapp` branch exactly (fetched
+from the fork for reference — Expo 57 deps, `ui/` design system, funding wiring; more current
+than `upstream/main`'s hyperliquid where the two differ).
 
 ## 2026-07-10 — [minor] Go toolchain not preinstalled
 
