@@ -1,5 +1,17 @@
 import { getLighterServerBaseUrl } from "../utils/config";
 
+/** Carries the HTTP status so callers can react to specific failures (e.g. 409 account
+ * mismatch) instead of pattern-matching the error message. */
+export class LighterServerError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "LighterServerError";
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const base = getLighterServerBaseUrl().replace(/\/$/, "");
   const response = await fetch(`${base}${path}`, {
@@ -8,7 +20,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   const body = await response.json();
   if (!response.ok) {
-    throw new Error(body?.error ?? `Request to ${path} failed with status ${response.status}`);
+    throw new LighterServerError(body?.error ?? `Request to ${path} failed with status ${response.status}`, response.status);
   }
   return body as T;
 }

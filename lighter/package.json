@@ -10,6 +10,7 @@
     "android": "expo run:android",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "doctor": "pnpm dlx expo-doctor@latest --verbose --pnpm && pnpm expo install --fix --pnpm"
   },
   "dependencies": {
@@ -47,7 +48,8 @@
     "@types/react": "19.2.17",
     "eslint": "9.39.4",
     "eslint-config-expo": "57.0.0",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
   },
   "private": true
 }

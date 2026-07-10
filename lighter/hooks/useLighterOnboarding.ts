@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
+import { accountsMismatch, deriveStep, type OnboardingStep } from "./onboardingGate";
 import {
   fetchAccount,
   fetchServerConfig,
@@ -9,7 +10,7 @@ import {
   type LighterServerConfig,
 } from "../services/lighterServerClient";
 
-export type OnboardingStep = "deposit" | "registerApiKey" | "activateServer" | "ready";
+export type { OnboardingStep } from "./onboardingGate";
 
 export interface OnboardingState {
   step: OnboardingStep;
@@ -23,21 +24,6 @@ export interface OnboardingState {
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-}
-
-function accountsMismatch(account: AccountResponse["account"], serverConfig: LighterServerConfig | null): boolean {
-  return Boolean(account && serverConfig?.serverWalletConfigured && serverConfig.accountIndex !== account.index);
-}
-
-function deriveStep(account: AccountResponse["account"], apiKeys: AccountResponse["apiKeys"], serverConfig: LighterServerConfig | null): OnboardingStep {
-  if (!account) return "deposit";
-  if (apiKeys.length === 0) return "registerApiKey";
-  if (!serverConfig?.serverWalletConfigured) return "activateServer";
-  // Not enough that SOME key is configured — it has to be signing for THIS account, or trades
-  // silently execute on whatever account the server env is actually pinned to (see
-  // FRICTION_LOG.md's split-brain entry).
-  if (accountsMismatch(account, serverConfig)) return "activateServer";
-  return "ready";
 }
 
 export function useLighterOnboarding(l1Address: string | undefined, pollMs = 2000): OnboardingState {

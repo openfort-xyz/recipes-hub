@@ -4,14 +4,16 @@ import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, View
 import { PillButton } from "../ui";
 import { COLORS, RADII } from "../../constants/theme";
 import { approveUsdc, depositUsdc, getUsdcAllowance, validateDepositAmount, type Eip1193Provider } from "../../services/depositFlow";
-import { registerLighterApiKey, useLighterOnboarding, type OnboardingStep } from "../../hooks/useLighterOnboarding";
+import { registerLighterApiKey, type OnboardingState, type OnboardingStep } from "../../hooks/useLighterOnboarding";
 import { requestFaucet } from "../../services/lighterServerClient";
 import { parseUnits } from "viem";
 
 interface OnboardingStatusScreenProps {
   walletAddress: `0x${string}`;
   provider: Eip1193Provider;
-  onReady: () => void;
+  /** Owned by UserScreen — the single source of truth for account/apiKeys/serverConfig, so this
+   * screen and the render gate that decides when to leave it never see different data. */
+  onboarding: OnboardingState;
 }
 
 const STEP_LABELS: Record<OnboardingStep, string> = {
@@ -29,10 +31,11 @@ function StepBadge({ index, active, done }: { index: number; active: boolean; do
   );
 }
 
-export function OnboardingStatusScreen({ walletAddress, provider, onReady }: OnboardingStatusScreenProps) {
-  // Fast (2s) polling means the UI advances on its own the moment an action lands — no manual
-  // "pull to refresh" needed anywhere in this screen.
-  const onboarding = useLighterOnboarding(walletAddress);
+export function OnboardingStatusScreen({ walletAddress, provider, onboarding }: OnboardingStatusScreenProps) {
+  // Fast (2s) polling, owned by UserScreen, means the UI advances on its own the moment an
+  // action lands — no manual "pull to refresh" needed anywhere in this screen. UserScreen's
+  // render gate leaves this screen the moment step becomes "ready"; there's no separate
+  // callback to fire here.
   const [depositAmount, setDepositAmount] = useState("10");
   const [isDepositing, setIsDepositing] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -46,12 +49,6 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
   const isTestnet = serverConfig?.network === "testnet";
   const [isFauceting, setIsFauceting] = useState(false);
   const [isCheckingAgain, setIsCheckingAgain] = useState(false);
-
-  React.useEffect(() => {
-    if (step === "ready") {
-      onReady();
-    }
-  }, [step, onReady]);
 
   const handleFaucet = async () => {
     setIsFauceting(true);

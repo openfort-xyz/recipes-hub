@@ -5,8 +5,8 @@ import { Keypad, PillButton } from "./ui";
 import { COLORS, RADII } from "../constants/theme";
 import { useLighterOrderBook } from "../hooks/useLighterOrderBook";
 import { useLighterOrders } from "../hooks/useLighterOrders";
-import { fetchServerConfig } from "../services/lighterServerClient";
-import type { LighterAccount, LighterServerConfig, Market } from "../services/lighterServerClient";
+import { fetchServerConfig, LighterServerError } from "../services/lighterServerClient";
+import type { LighterServerConfig, Market } from "../services/lighterServerClient";
 
 const SLIPPAGE = 0.005; // 0.5%, marketable-limit IOC order
 const ORDER_TYPE_LIMIT = 0;
@@ -33,7 +33,7 @@ interface TradingScreenProps {
   market: Market;
   accountIndex: number;
   onBack: () => void;
-  onRefreshAccount: () => Promise<LighterAccount | null>;
+  onRefreshAccount: () => Promise<void>;
 }
 
 interface OrderResult {
@@ -52,6 +52,22 @@ interface OrderResult {
 
 function toRawInt(value: number, decimals: number): number {
   return Math.round(value * 10 ** decimals);
+}
+
+/**
+ * A 409 here means the server is signing for a different account than this screen — normally
+ * caught before the user ever reaches trading (UserScreen's onboarding gate re-evaluates
+ * continuously), but a server restart mid-session could still land in this narrow window.
+ * "Fix setup" just forces an immediate refresh instead of waiting for the ambient poll —
+ * UserScreen's gate does the actual navigating once it sees the mismatch.
+ */
+function showOrderError(title: string, err: unknown, onFixSetup: () => void): void {
+  const message = err instanceof Error ? err.message : "Unknown error";
+  if (err instanceof LighterServerError && err.status === 409) {
+    Alert.alert(title, message, [{ text: "Fix setup", onPress: onFixSetup }, { text: "OK" }]);
+    return;
+  }
+  Alert.alert(title, message);
 }
 
 export function TradingScreen({ market, accountIndex, onBack, onRefreshAccount }: TradingScreenProps) {
@@ -143,7 +159,7 @@ export function TradingScreen({ market, accountIndex, onBack, onRefreshAccount }
       setResult({ direction, txHash: response.txHash, size, price, filled: response.filled });
       setStep("result");
     } catch (err) {
-      Alert.alert("Order failed", err instanceof Error ? err.message : "Unknown error");
+      showOrderError("Order failed", err, () => void onRefreshAccount());
     } finally {
       setIsSubmitting(false);
     }
@@ -153,7 +169,7 @@ export function TradingScreen({ market, accountIndex, onBack, onRefreshAccount }
     try {
       await cancelOrder(accountIndex, market.marketIndex, orderIndex);
     } catch (err) {
-      Alert.alert("Cancel failed", err instanceof Error ? err.message : "Unknown error");
+      showOrderError("Cancel failed", err, () => void onRefreshAccount());
     }
   };
 
