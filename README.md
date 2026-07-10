@@ -15,6 +15,7 @@ This repository contains comprehensive samples demonstrating how to integrate Op
 | **[Backend permissions](./agent-permissions/)**                               | Setup a wallet permissions that automatically DCA on Morpho completely non-custodial.                                   | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/morpho openfort-morpho && cd openfort-morpho`                |
 | **[7702 delegation](./7702/)** | Openfort EIP-7702 authorization recipe with gas sponsorship.                                                          | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/7702 openfort-7702 && cd openfort-7702`                      |
 | **[x402 Agent](./x402/)**                                    | Embedded wallet and Bakcned wallet x402 payment integration. Demonstrates content paywalls with USDC payments using gas sposnsorship and facilitator.  | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/x402 openfort-x402 && cd openfort-x402`                      |
+| **[Trade on Lighter](./lighter/)**                            | Mainnet perps trading on the Lighter zk L2 DEX. Embedded wallet authorizes account registration and deposits; a backend holds the Lighter API key and signs orders via a vendored WASM build of lighter-go. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/lighter openfort-lighter && cd openfort-lighter`             |
 
 ## Getting Started
 
@@ -32,4 +33,5 @@ Each sample is completely self-contained with its own setup instructions, enviro
 | **USDC**                | React Native | -          | Ethereum Sepolia  | `@openfort/react-native`, `expo`                     |
 | **7702** | Next.js 15   | -          | Ethereum Sepolia  | `@openfort/react`, `viem`, `wagmi` |
 | **x402**                | React + Vite | Node.js    | Base/Base-Sepolia | `@openfort/react`, `wagmi`, `viem`                   |
+| **Lighter**             | React Native | Node.js    | Ethereum mainnet  | `@openfort/react-native`, vendored `lighter-go` WASM |
 
