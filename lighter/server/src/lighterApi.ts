@@ -194,7 +194,10 @@ export interface LighterTrade {
 /**
  * GET /api/v1/trades — the authoritative fill record. Requires sort_by + limit (undocumented on
  * apidocs.lighter.xyz's parameter list as "required" until you omit them and get code 20001; see
- * FRICTION_LOG.md) and, per the docs, an auth token for any non-market-wide query. An IOC order
+ * FRICTION_LOG.md). Live-verified the auth token is required unconditionally — every param
+ * combination tried without one, including a pure market-wide query, returned code 20001 "auth
+ * query param and Authorization header are empty" (apidocs.lighter.xyz's own wording, "auth is
+ * required for master accounts and sub accounts", is ambiguous but matches this). An IOC order
  * that fills appears here with the tx_hash from sendTx's response; one that expires unmatched
  * never appears here at all — there is no "confirmed no match" record, only "absent so far."
  */
