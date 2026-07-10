@@ -12,7 +12,7 @@ import {
   getRegisteredApiKeys,
 } from "./lighterApi.js";
 import { createEncryptionSession } from "./openfort.js";
-import { getAuthToken, submitCancelOrder, submitCreateOrder } from "./orders.js";
+import { getAuthToken, submitCancelOrder, submitCreateOrder, submitWithdraw } from "./orders.js";
 
 function handleError(res: Response, error: unknown): void {
   if (error instanceof LighterApiError) {
@@ -219,6 +219,20 @@ export async function handleCancelOrder(req: Request, res: Response, config: Con
   }
   try {
     const result = await submitCancelOrder(config, config.lighter.marketIndex, orderIndex);
+    res.status(200).json(result);
+  } catch (error) {
+    handleError(res, error);
+  }
+}
+
+export async function handleWithdraw(req: Request, res: Response, config: Config): Promise<void> {
+  const { amountUsdcRaw } = req.body as { amountUsdcRaw?: number };
+  if (typeof amountUsdcRaw !== "number" || amountUsdcRaw <= 0) {
+    res.status(400).json({ error: "Body must include a positive numeric amountUsdcRaw (USDC, 6 decimals)." });
+    return;
+  }
+  try {
+    const result = await submitWithdraw(config, amountUsdcRaw);
     res.status(200).json(result);
   } catch (error) {
     handleError(res, error);

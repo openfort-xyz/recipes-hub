@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import {
+  ASSET_ROUTE_TYPE_PERPS,
   ORDER_EXPIRY_NIL,
   ORDER_TYPE_LIMIT,
   TIME_IN_FORCE_GOOD_TILL_TIME,
@@ -12,6 +13,7 @@ import {
   signCancelOrder,
   signChangePubKey,
   signCreateOrder,
+  signWithdraw,
 } from "./signer.js";
 
 const MAINNET_CHAIN_ID = 304;
@@ -263,6 +265,60 @@ describe("signChangePubKey", () => {
         accountIndex: TEST_ACCOUNT_INDEX,
       }),
     ).toThrow(/invalid pub key length/);
+  });
+});
+
+describe("signWithdraw", () => {
+  it("builds a well-formed withdraw tx carrying no destination address (server-safe)", () => {
+    const { privateKey } = generateApiKey();
+    createSigningClient(
+      "http://localhost:1234",
+      privateKey,
+      MAINNET_CHAIN_ID,
+      TEST_API_KEY_INDEX,
+      TEST_ACCOUNT_INDEX,
+    );
+    const result = signWithdraw({
+      assetIndex: 3, // USDC, verified on-chain via USDC_ASSET_INDEX() — see FRICTION_LOG.md
+      routeType: ASSET_ROUTE_TYPE_PERPS,
+      amount: 5_000_000, // 5 USDC at 6 decimals
+      nonce: 1,
+      apiKeyIndex: TEST_API_KEY_INDEX,
+      accountIndex: TEST_ACCOUNT_INDEX,
+    });
+    expect(result.txType).toBe(13); // TxTypeL2Withdraw
+    const txInfo = JSON.parse(result.txInfo);
+    expect(txInfo).toMatchObject({
+      FromAccountIndex: TEST_ACCOUNT_INDEX,
+      ApiKeyIndex: TEST_API_KEY_INDEX,
+      AssetIndex: 3,
+      RouteType: ASSET_ROUTE_TYPE_PERPS,
+      Amount: 5_000_000,
+      Nonce: 1,
+    });
+    expect(txInfo).not.toHaveProperty("ToAddress");
+    expect(txInfo).not.toHaveProperty("L1Sig");
+  });
+
+  it("rejects a zero amount", () => {
+    const { privateKey } = generateApiKey();
+    createSigningClient(
+      "http://localhost:1234",
+      privateKey,
+      MAINNET_CHAIN_ID,
+      TEST_API_KEY_INDEX,
+      TEST_ACCOUNT_INDEX,
+    );
+    expect(() =>
+      signWithdraw({
+        assetIndex: 3,
+        routeType: ASSET_ROUTE_TYPE_PERPS,
+        amount: 0,
+        nonce: 1,
+        apiKeyIndex: TEST_API_KEY_INDEX,
+        accountIndex: TEST_ACCOUNT_INDEX,
+      }),
+    ).toThrow(/withdraw/i);
   });
 });
 

@@ -1,11 +1,13 @@
 import type { Config } from "./config.js";
 import { getNextNonce, sendTx } from "./lighterApi.js";
 import {
+  ASSET_ROUTE_TYPE_PERPS,
   createAuthToken,
   createSigningClient,
   loadSigner,
   signCancelOrder,
   signCreateOrder,
+  signWithdraw,
 } from "../signer/signer.js";
 
 export class ServerWalletNotConfiguredError extends Error {
@@ -93,4 +95,27 @@ export async function getAuthToken(config: Config): Promise<string> {
   const wallet = await ensureSigningClient(config);
   const deadline = Math.floor(Date.now() / 1000) + 60 * 60; // 1 hour
   return createAuthToken(deadline, wallet.apiKeyIndex, wallet.accountIndex);
+}
+
+// Verified on-chain via eth_call to USDC_ASSET_INDEX() / tokenToAssetIndex() — see FRICTION_LOG.md.
+const USDC_ASSET_INDEX = 3;
+
+/**
+ * Withdraws USDC to the account's OWN registered L1 address — Lighter's L2WithdrawTxInfo carries
+ * no destination address (see docs/lighter-signing-notes.md), so the server's API key alone is
+ * sufficient authorization; there is no way to redirect funds elsewhere with this transaction.
+ */
+export async function submitWithdraw(config: Config, amountUsdcRaw: number) {
+  const wallet = await ensureSigningClient(config);
+  const nonce = await getNextNonce(config, wallet.accountIndex, wallet.apiKeyIndex);
+  const signed = signWithdraw({
+    assetIndex: USDC_ASSET_INDEX,
+    routeType: ASSET_ROUTE_TYPE_PERPS,
+    amount: amountUsdcRaw,
+    nonce,
+    apiKeyIndex: wallet.apiKeyIndex,
+    accountIndex: wallet.accountIndex,
+  });
+  const result = await sendTx(config, signed.txType, signed.txInfo);
+  return { txHash: result.tx_hash, signedHash: signed.txHash };
 }

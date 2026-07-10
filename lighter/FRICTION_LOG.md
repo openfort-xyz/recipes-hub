@@ -95,6 +95,83 @@ Openfort backend SDK's own dependency-update backlog.
 
 **Workaround:** none applied; documented as an inherited, out-of-scope finding.
 
+## 2026-07-10 — [minor] "Latest stable" isn't always the right pin for Expo-adjacent tooling
+
+`npm view typescript version` resolves to `7.0.2` (the new native/Go-ported compiler) and
+`@babel/core` resolves to `8.0.1` — both real major-version jumps published as `latest` on npm.
+Both are also core to how Metro/Expo transform and typecheck code, and every sibling recipe in
+this repo still pins TypeScript 5.x and Babel 7.x. Rather than blindly take `latest` per the
+"always look up current stable version" rule, pinned to the newest *5.x* TypeScript (`5.9.3`) and
+*7.x* Babel (`7.29.7`) — the versions Expo 57's toolchain is actually proven against — and left a
+note here instead of discovering a broken Metro bundle later. Not a bug, a documented judgment
+call: "latest" should mean "latest within the major line the rest of the toolchain supports."
+
+## 2026-07-10 — [minor] hyperliquid's app.json template references a nonexistent asset
+
+Reused hyperliquid's `expo-build-properties` plugin config as a starting point, which points
+`image` at `./assets/images/splash-icon.png` — a file that doesn't exist in that recipe's
+`assets/images/` (only `splash.png`, `icon.png`, `adaptive-icon.png`, `favicon.png` are present).
+Not something to fix in hyperliquid (out of scope for this task), but worth flagging since a
+templated build config silently pointing at a missing file is the kind of thing that only
+surfaces at `expo prebuild`/build time, not at typecheck or lint. Fixed in this recipe's own
+`app.json` by pointing at `splash.png`.
+
+## 2026-07-10 — [major] Deposit contract ABI isn't documented anywhere — had to reconstruct it from the verified bytecode
+
+`apidocs.lighter.xyz`'s deposits page gives the function selector (`0x8a857083`) and a prose
+description of the four parameters, but never the actual Solidity signature or an ABI. Getting
+this wrong on mainnet means a reverted (or worse, silently wrong) real transaction. Reconstructed
+it from the verified contract source on Blockscout (the deposit proxy at
+`0x3B4D794a66304F130a4Db8F2551B0070dfCf5ca7` delegates to implementation
+`0x831EF69BaB8AF8B1037a4961B8d0674b124E7008`) and independently confirmed by computing
+`keccak256("deposit(address,uint16,uint8,uint256)")` locally and matching it byte-for-byte
+against the documented `0x8a857083` selector — tried 6 plausible type variants and only this
+exact combination matches:
+
+```solidity
+function deposit(address _to, uint16 _assetIndex, uint8 _routeType, uint256 _amount) external payable
+```
+
+Then verified the actual asset index values on-chain (not documented anywhere either) via
+`eth_call` against `USDC_ASSET_INDEX()` (`0x7de213eb`) and cross-checked with
+`tokenToAssetIndex(USDC_ADDRESS)` (`0x899cfa29`) — both return `3`. `NATIVE_ASSET_INDEX()`
+(`0xbfda3066`) returns `1`. Route type `0` = perps margin (USDC-only, per docs).
+
+**Workaround:** hardcoded the verified `deposit` ABI + `USDC_ASSET_INDEX = 3` in
+`services/depositFlow.ts` with the exact `eth_call` commands used to verify them, so the next
+person can re-verify rather than trust a comment.
+
+## 2026-07-10 — [major] `OrderExpiry` validity depends on the `Type`/`TimeInForce` combination — no universal default
+
+First cut of `signCreateOrder` hardcoded `orderExpiry = -1` (the wasm binding's "auto-fill to
+now + 28 days" sentinel) for every order, following the vendored `test_wasm.mjs` example too
+loosely. Immediately failed live: `OrderExpiry is invalid` for an Immediate-or-Cancel LimitOrder.
+Reading `types/txtypes/create_order.go`'s `Validate()` line by line: `MarketOrder` and
+`LimitOrder`+`ImmediateOrCancel` require `OrderExpiry == 0` (`NilOrderExpiry`);
+`LimitOrder`+`GoodTillTime`/`PostOnly` require a real future millisecond timestamp;
+`StopLoss*`/`TakeProfit*`/`TWAPOrder` have their own combinations again. There is no single value
+that's valid across order types.
+
+**Workaround:** made `orderExpiry` an explicit required parameter on `CreateOrderParams`
+(`server/signer/signer.ts`) instead of a hardcoded default, forcing every call site to state
+which regime it's in. This recipe's buy/sell flow only uses IOC LimitOrders (`orderExpiry: 0`),
+documented inline.
+
+## 2026-07-10 — [major] `SignChangePubKey` requires a signing client for the key being registered — easy to miss
+
+First attempt at `buildChangePubKeyRegistration` called `generateApiKey()` then went straight to
+`signChangePubKey()`, and got `client is not created for apiKeyIndex: 2 accountIndex: 1`. The fix
+isn't obvious from the wasm binding's argument list alone: `SignChangePubKey` internally resolves
+a `TxClient` via `getClient()`, which requires a prior `CreateClient()` call for that exact
+`(apiKeyIndex, accountIndex)` pair — and per `client/tx_client.go`, `GetChangePubKeyTransaction`
+Poseidon-signs using *that same client's own key*, i.e. registration is self-signed by the key
+being installed (see `docs/lighter-signing-notes.md`). This resolves what looks like a
+chicken-and-egg problem (how do you authorize installing the first API key with an API key?) but
+isn't stated anywhere in the docs — you have to read `client.go` and `tx_client.go` together.
+
+**Workaround:** `changePubKey.ts` now calls `createSigningClient(...)` with the freshly generated
+private key immediately before `signChangePubKey(...)`.
+
 ## 2026-07-10 — [minor] Go toolchain not preinstalled
 
 `go` wasn't on the machine at all (`brew install go` needed, ~90s). Not really a Lighter-specific

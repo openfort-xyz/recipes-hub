@@ -43,6 +43,15 @@ interface LighterWasmGlobals {
     apiKeyIndex: number,
     accountIndex: number,
   ) => WasmResult<SignedTxResult>;
+  SignWithdraw: (
+    assetIndex: number,
+    routeType: number,
+    amount: number,
+    skipNonce: number,
+    nonce: number,
+    apiKeyIndex: number,
+    accountIndex: number,
+  ) => WasmResult<SignedTxResult>;
 }
 
 type WasmResult<T> = (T & { error?: undefined }) | { error: string };
@@ -245,5 +254,37 @@ export function signCancelAllOrders(params: {
       params.accountIndex,
     ),
     "SignCancelAllOrders",
+  );
+}
+
+// types/txtypes/constants.go: AssetRouteType_Perps = 0, AssetRouteType_Spot = 1
+export const ASSET_ROUTE_TYPE_PERPS = 0;
+export const ASSET_ROUTE_TYPE_SPOT = 1;
+
+/**
+ * L2WithdrawTxInfo carries no destination address and no L1Sig (see
+ * types/txtypes/withdraw.go — grepped for GetL1SignatureBody, absent on this type) — Lighter's
+ * server routes withdrawals exclusively to the account's registered L1 owner address, so this
+ * is safe to sign with the server-held API key alone (see docs/lighter-signing-notes.md).
+ */
+export function signWithdraw(params: {
+  assetIndex: number;
+  routeType: number;
+  amount: number;
+  nonce: number;
+  apiKeyIndex: number;
+  accountIndex: number;
+}): SignedTxResult {
+  return unwrap(
+    wasmGlobals().SignWithdraw(
+      params.assetIndex,
+      params.routeType,
+      params.amount,
+      0,
+      params.nonce,
+      params.apiKeyIndex,
+      params.accountIndex,
+    ),
+    "SignWithdraw",
   );
 }
