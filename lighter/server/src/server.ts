@@ -2,6 +2,7 @@ import { config as loadEnv } from "dotenv";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { loadConfig } from "./config.js";
+import { selfTestServerKey } from "./orders.js";
 import { createOpenfortClient } from "./openfort.js";
 import {
   errorHandler,
@@ -80,3 +81,24 @@ app.use(errorHandler);
 app.listen(config.port, () => {
   console.log(`Lighter recipe server listening on :${config.port}`);
 });
+
+// Runs in the background rather than blocking startup — a network hiccup here shouldn't hang the
+// whole server. Until it resolves, /api/lighter/config optimistically reports whatever key
+// material is present as configured; see handleConfig for why "some key present" isn't the same
+// claim as "proven valid".
+if (config.lighter.apiKeyPrivateKey && config.lighter.accountIndex !== null) {
+  selfTestServerKey(config)
+    .then((result) => {
+      if (result === "invalid") {
+        console.warn(
+          "[lighter-server] Configured API key was rejected as an invalid signature on a real " +
+            "self-test transaction — it's likely stale (ChangePubKey rotates the on-chain key on " +
+            "every submit; re-authorize twice and the earlier key silently stops working). " +
+            "Re-authorize from the app and update server/.env.local with the fresh values.",
+        );
+      }
+    })
+    .catch((err) => {
+      console.error("[lighter-server] Startup key self-test failed to run:", err instanceof Error ? err.message : err);
+    });
+}

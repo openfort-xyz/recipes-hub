@@ -1,5 +1,11 @@
 import type { Config } from "./config.js";
 import { computeInitialWaitMs, waitForFillConfirmation, type FillConfirmationTrade } from "./fillConfirmation.js";
+import {
+  classifySelfTestOutcome,
+  SELF_TEST_MARKET_INDEX,
+  SELF_TEST_ORDER_INDEX,
+  type KeySelfTestResult,
+} from "./keySelfTest.js";
 import { getAccountTrades, getNextNonce, sendTx, type LighterTrade } from "./lighterApi.js";
 import {
   ASSET_ROUTE_TYPE_PERPS,
@@ -113,6 +119,39 @@ export async function submitCancelOrder(config: Config, marketIndex: number, ord
   });
   const result = await sendTx(config, signed.txType, signed.txInfo);
   return { txHash: result.tx_hash, signedHash: signed.txHash };
+}
+
+let lastSelfTestResult: KeySelfTestResult | null = null;
+
+/** Null until selfTestServerKey has run at least once — see server.ts's startup sequence. */
+export function getServerKeyValidity(): KeySelfTestResult | null {
+  return lastSelfTestResult;
+}
+
+/**
+ * Proves the server's configured key is actually recognized on-chain before trusting it for real
+ * trades. ChangePubKey rotates the on-chain key at (account, apiKeyIndex) on every submit — sign
+ * twice and the server's configured key silently goes stale with no other signal until an order
+ * fails (see FRICTION_LOG.md's key-rotation entry). Only meaningful once, at startup: this
+ * submits a real (harmless) transaction, so it isn't something to run on every request.
+ */
+export async function selfTestServerKey(config: Config): Promise<KeySelfTestResult> {
+  const wallet = await ensureSigningClient(config);
+  try {
+    const nonce = await getNextNonce(config, wallet.accountIndex, wallet.apiKeyIndex);
+    const signed = signCancelOrder({
+      marketIndex: SELF_TEST_MARKET_INDEX,
+      orderIndex: SELF_TEST_ORDER_INDEX,
+      nonce,
+      apiKeyIndex: wallet.apiKeyIndex,
+      accountIndex: wallet.accountIndex,
+    });
+    await sendTx(config, signed.txType, signed.txInfo);
+    lastSelfTestResult = "valid";
+  } catch (error) {
+    lastSelfTestResult = classifySelfTestOutcome(error);
+  }
+  return lastSelfTestResult;
 }
 
 export async function getAuthToken(config: Config): Promise<string> {

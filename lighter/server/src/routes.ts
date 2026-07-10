@@ -13,7 +13,14 @@ import {
 } from "./lighterApi.js";
 import { getActiveMarkets, requireMarket } from "./markets.js";
 import { createEncryptionSession } from "./openfort.js";
-import { getAuthToken, getRecentTrades, submitCancelOrder, submitCreateOrder, submitWithdraw } from "./orders.js";
+import {
+  getAuthToken,
+  getRecentTrades,
+  getServerKeyValidity,
+  submitCancelOrder,
+  submitCreateOrder,
+  submitWithdraw,
+} from "./orders.js";
 
 function handleError(req: Request, res: Response, error: unknown): void {
   const route = `${req.method} ${req.path}`;
@@ -56,11 +63,20 @@ export async function handleShieldSession(
 }
 
 export function handleConfig(_req: Request, res: Response, config: Config): void {
+  const hasKeyMaterial = Boolean(config.lighter.apiKeyPrivateKey && config.lighter.accountIndex !== null);
+  // Having SOME key configured isn't enough — ChangePubKey rotates the on-chain key at
+  // (account, apiKeyIndex) on every submit, so a key that was valid a registration ago can be
+  // silently stale now (see FRICTION_LOG.md's key-rotation entry). selfTestServerKey (run once
+  // at startup — see server.ts) is the only thing that actually proves the configured key still
+  // matches what's on-chain; a null result just means the check hasn't completed yet.
+  const keyValidity = getServerKeyValidity();
+  const serverKeyInvalid = keyValidity === "invalid";
   res.status(200).json({
     apiBaseUrl: config.lighter.apiBaseUrl,
     chainId: config.lighter.chainId,
     network: isTestnet(config.lighter.apiBaseUrl) ? "testnet" : "mainnet",
-    serverWalletConfigured: Boolean(config.lighter.apiKeyPrivateKey && config.lighter.accountIndex !== null),
+    serverWalletConfigured: hasKeyMaterial && !serverKeyInvalid,
+    serverKeyInvalid,
     // Not a secret — just an integer identifying which account the server signs for, so the app
     // can catch a split-brain (server env pointing at a different account than the one it's
     // showing/trading) instead of silently treating "some key is configured" as "the right key
