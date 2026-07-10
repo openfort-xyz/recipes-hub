@@ -31,7 +31,7 @@ const ENV_RULES: EnvRule[] = [
   },
   {
     extraKey: "openfortShieldPublishableKey",
-    envName: "SHIELD_PUBLISHABLE_KEY",
+    envName: "OPENFORT_SHIELD_PUBLISHABLE_KEY",
     description: "Shield publishable key used for wallet encryption",
     required: true,
   },

@@ -45,7 +45,7 @@ cp .env.example .env.local
 
 ```env
 OPENFORT_PUBLISHABLE_KEY=pk_test_your_publishable_key
-SHIELD_PUBLISHABLE_KEY=pk_test_your_shield_key
+OPENFORT_SHIELD_PUBLISHABLE_KEY=pk_test_your_shield_key
 OPENFORT_SHIELD_RECOVERY_BASE_URL=http://localhost:3008
 LIGHTER_SERVER_BASE_URL=http://localhost:3008
 ```

@@ -12,11 +12,11 @@ production trading terminal.
 
 ## 0. Prerequisites
 
-- [ ] `server/.env.local` has `OPENFORT_SECRET_KEY`, `SHIELD_PUBLISHABLE_KEY`,
-      `SHIELD_SECRET_KEY`, `SHIELD_ENCRYPTION_SHARE` filled in (Openfort dashboard → Shield).
+- [ ] `server/.env.local` has `OPENFORT_SECRET_KEY`, `OPENFORT_SHIELD_PUBLISHABLE_KEY`,
+      `OPENFORT_SHIELD_SECRET_KEY`, `OPENFORT_SHIELD_ENCRYPTION_KEY` filled in (Openfort dashboard → Shield).
 - [ ] `server` running: `cd server && npm run dev` — confirm `curl localhost:3008/api/health`
       returns `{"status":"ok",...}`.
-- [ ] App `.env.local` has `OPENFORT_PUBLISHABLE_KEY`, `SHIELD_PUBLISHABLE_KEY`, and both URL vars
+- [ ] App `.env.local` has `OPENFORT_PUBLISHABLE_KEY`, `OPENFORT_SHIELD_PUBLISHABLE_KEY`, and both URL vars
       pointing at the running server.
 - [ ] App running on a simulator/device with the server reachable (use `--tunnel` or your
       machine's LAN IP if testing on a physical device, not `localhost`).

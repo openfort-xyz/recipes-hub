@@ -57,9 +57,9 @@ export function loadConfig(): Config {
     openfort: {
       secretKey: process.env["OPENFORT_SECRET_KEY"] ?? "",
       shield: {
-        publishableKey: process.env["SHIELD_PUBLISHABLE_KEY"] ?? "",
-        secretKey: process.env["SHIELD_SECRET_KEY"] ?? "",
-        encryptionShare: process.env["SHIELD_ENCRYPTION_SHARE"] ?? "",
+        publishableKey: process.env["OPENFORT_SHIELD_PUBLISHABLE_KEY"] ?? "",
+        secretKey: process.env["OPENFORT_SHIELD_SECRET_KEY"] ?? "",
+        encryptionShare: process.env["OPENFORT_SHIELD_ENCRYPTION_KEY"] ?? "",
       },
     },
     lighter: {

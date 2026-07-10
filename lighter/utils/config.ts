@@ -29,7 +29,7 @@ export function getPublishableKey(): string {
 export function getShieldPublishableKey(): string {
   return ensureValue(
     getExtraValue<string>("openfortShieldPublishableKey"),
-    "[CONFIG] Missing Openfort Shield publishable key. Set SHIELD_PUBLISHABLE_KEY in .env.",
+    "[CONFIG] Missing Openfort Shield publishable key. Set OPENFORT_SHIELD_PUBLISHABLE_KEY in .env.",
   );
 }
 

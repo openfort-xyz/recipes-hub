@@ -172,6 +172,28 @@ isn't stated anywhere in the docs — you have to read `client.go` and `tx_clien
 **Workaround:** `changePubKey.ts` now calls `createSigningClient(...)` with the freshly generated
 private key immediately before `signChangePubKey(...)`.
 
+## 2026-07-10 — [minor] Built against a fork base 34 commits behind upstream — env var naming drifted
+
+This worktree's base (`origin/main`, the `joalavedra/recipes-hub` fork) was 34 commits behind
+`upstream/main` (`openfort-xyz/recipes-hub`), including a repo-wide
+`OPENFORT_SHIELD_PUBLISHABLE_KEY`/`OPENFORT_SHIELD_SECRET_KEY`/`OPENFORT_SHIELD_ENCRYPTION_KEY`
+naming standardization that hadn't propagated to the hyperliquid recipe I was templating from at
+worktree-creation time — my first pass used unprefixed
+`SHIELD_PUBLISHABLE_KEY`/`SHIELD_SECRET_KEY`/`SHIELD_ENCRYPTION_SHARE`, matching the older
+convention. Attempted `git rebase upstream/main` to pick up the real history, but the fork's own
+tip commit (`2a093ff`, its own independent Shield-env-var rename) conflicts with upstream's
+`d9841df` across 7702/aave/hyperliquid/morpho/usdc/vaults-fyi/x402 — none of it in `lighter/`, all
+of it outside this task's scope to resolve. Aborted the rebase and instead pulled the canonical
+names directly via `git show upstream/main:<path>` without merging, and renamed across
+`lighter/`'s env files, `config.ts`, `envValidation.ts`, `app.config.js`, and docs.
+
+Also worth noting for whoever owns the hyperliquid Cash App upgrade: upstream's current
+hyperliquid still uses `OPENFORT_ETHEREUM_PROVIDER_POLICY_ID`/`ethereumProviderPolicyId`, but
+`@openfort/react-native@1.1.7`'s actual `EmbeddedWalletConfiguration` type has no such field —
+it's `feeSponsorshipId` now (verified directly against the installed package's `.d.ts`). This
+recipe already uses the correct current name; hyperliquid's env var is stale on this point
+independent of the fork/upstream gap.
+
 ## 2026-07-10 — [minor] Go toolchain not preinstalled
 
 `go` wasn't on the machine at all (`brew install go` needed, ~90s). Not really a Lighter-specific
