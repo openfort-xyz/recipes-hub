@@ -72,3 +72,26 @@ export function getLighterDepositContractAddress(): `0x${string}` {
 export function getUsdcContractAddress(): `0x${string}` {
   return ensureValue(getExtraValue<string>("usdcContractAddress"), "[CONFIG] Missing USDC contract address.") as `0x${string}`;
 }
+
+export function getL1ChainId(): number {
+  const value = getExtraValue<string>("lighterL1ChainId");
+  const parsed = value ? Number.parseInt(value, 10) : NaN;
+  return Number.isFinite(parsed) ? parsed : 1; // 1 = Ethereum mainnet
+}
+
+export function getL1ChainName(): string {
+  return getExtraValue<string>("lighterL1ChainName") || "Ethereum";
+}
+
+export function getL1NativeSymbol(): string {
+  return getExtraValue<string>("lighterL1NativeSymbol") || "ETH";
+}
+
+export function getL1RpcUrls(): string[] {
+  const value = getExtraValue<string>("lighterL1RpcUrls");
+  const urls = value
+    ?.split(",")
+    .map((url) => url.trim())
+    .filter(Boolean);
+  return urls && urls.length > 0 ? urls : ["https://ethereum-rpc.publicnode.com", "https://eth.merkle.io"];
+}

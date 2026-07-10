@@ -5,6 +5,7 @@ import { PillButton } from "../ui";
 import { COLORS, RADII } from "../../constants/theme";
 import { approveUsdc, depositUsdc, getUsdcAllowance, validateDepositAmount, type Eip1193Provider } from "../../services/depositFlow";
 import { registerLighterApiKey, useLighterOnboarding, type OnboardingStep } from "../../hooks/useLighterOnboarding";
+import { requestFaucet } from "../../services/lighterServerClient";
 import { parseUnits } from "viem";
 
 interface OnboardingStatusScreenProps {
@@ -39,13 +40,31 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
     accountIndex: number;
   } | null>(null);
 
-  const { step, account, isLoading, error, refresh } = onboarding;
+  const { step, account, serverConfig, isLoading, error, refresh } = onboarding;
+  const isTestnet = serverConfig?.network === "testnet";
+  const [isFauceting, setIsFauceting] = useState(false);
 
   React.useEffect(() => {
     if (step === "ready") {
       onReady();
     }
   }, [step, onReady]);
+
+  const handleFaucet = async () => {
+    setIsFauceting(true);
+    try {
+      await requestFaucet(walletAddress);
+      Alert.alert(
+        "Testnet funds requested",
+        "Lighter takes a few seconds to create and credit your account. Pull to refresh below once it lands.",
+      );
+      await refresh();
+    } catch (err) {
+      Alert.alert("Faucet request failed", err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setIsFauceting(false);
+    }
+  };
 
   const handleDeposit = async () => {
     const validationError = validateDepositAmount(depositAmount);
@@ -115,7 +134,18 @@ export function OnboardingStatusScreen({ walletAddress, provider, onReady }: Onb
         <ActivityIndicator color={COLORS.accent} style={styles.spinner} />
       ) : null}
 
-      {step === "deposit" && (
+      {step === "deposit" && isTestnet && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Get testnet funds</Text>
+          <Text style={styles.cardBody}>
+            Lighter testnet creates and credits your account in one step — no signature, no real money. Tap below
+            to request funds; this takes a few seconds to land.
+          </Text>
+          <PillButton title="Get testnet funds" onPress={handleFaucet} loading={isFauceting} />
+        </View>
+      )}
+
+      {step === "deposit" && !isTestnet && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Deposit USDC</Text>
           <Text style={styles.cardBody}>

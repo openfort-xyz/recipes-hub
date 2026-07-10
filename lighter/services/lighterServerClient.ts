@@ -18,6 +18,7 @@ export interface LighterServerConfig {
   chainId: number;
   marketIndex: number;
   marketSymbol: string;
+  network: "testnet" | "mainnet";
   serverWalletConfigured: boolean;
 }
 
@@ -170,4 +171,9 @@ export interface WithdrawResponse {
 /** amountUsdcRaw is USDC scaled by 10^6 (e.g. 5 USDC = 5_000_000). Always lands on your own L1 address. */
 export function withdrawUsdc(amountUsdcRaw: number): Promise<WithdrawResponse> {
   return request("/api/lighter/withdraw", { method: "POST", body: JSON.stringify({ amountUsdcRaw }) });
+}
+
+/** Testnet only — creates and funds the Lighter account in one call, no wallet signature needed. */
+export function requestFaucet(l1Address: string): Promise<{ ok: true }> {
+  return request("/api/lighter/faucet", { method: "POST", body: JSON.stringify({ l1Address }) });
 }

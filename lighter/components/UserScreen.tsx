@@ -8,12 +8,12 @@ import { TradingScreen } from "./TradingScreen";
 import { WithdrawScreen } from "./WithdrawScreen";
 import { COLORS } from "../constants/theme";
 import { fetchAccount, type LighterAccount } from "../services/lighterServerClient";
-import { MAINNET_CHAIN_ID } from "../constants/network";
+import { L1_CHAIN_ID } from "../constants/network";
 
 type Screen = "onboarding" | "trading" | "withdraw";
 
 export function UserScreen() {
-  const ethereum = useEmbeddedEthereumWallet({ chainId: MAINNET_CHAIN_ID });
+  const ethereum = useEmbeddedEthereumWallet({ chainId: L1_CHAIN_ID });
   const [view, setView] = useState<Screen>("onboarding");
   const [account, setAccount] = useState<LighterAccount | null>(null);
 
@@ -21,14 +21,14 @@ export function UserScreen() {
   useEffect(() => {
     if (ethereum.status === "disconnected" && ethereum.wallets.length === 0 && !hasTriggeredCreate.current) {
       hasTriggeredCreate.current = true;
-      ethereum.create({ chainId: MAINNET_CHAIN_ID }).catch((err) => {
+      ethereum.create({ chainId: L1_CHAIN_ID }).catch((err) => {
         console.error("Wallet creation failed:", err);
       });
     }
     if (ethereum.status === "disconnected" && ethereum.wallets.length > 0) {
       const [firstWallet] = ethereum.wallets;
       if (firstWallet) {
-        ethereum.setActive({ address: firstWallet.address as `0x${string}`, chainId: MAINNET_CHAIN_ID }).catch((err) => {
+        ethereum.setActive({ address: firstWallet.address as `0x${string}`, chainId: L1_CHAIN_ID }).catch((err) => {
           console.error("Wallet activation failed:", err);
         });
       }
@@ -56,7 +56,7 @@ export function UserScreen() {
       <CreateWalletScreen
         isCreating={false}
         errorMessage={ethereum.error}
-        onRetry={() => ethereum.create({ chainId: MAINNET_CHAIN_ID })}
+        onRetry={() => ethereum.create({ chainId: L1_CHAIN_ID })}
       />
     );
   }
