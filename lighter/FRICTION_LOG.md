@@ -646,24 +646,25 @@ test. The 21120 classification and the self-test's real on-chain call were both 
 an isolated throwaway key instead (see above) — the same signal, reproduced independently rather
 than on the account that mattered.
 
-**Addendum — traced the actual live incident, not just the general trap.** The team lead reported
-the rotation happened with "no visible prompt": app reloaded (any in-memory `registrationResult`
-gone), server mis-pinned, user on the "Wrong account on the server" card, tapped what they
-believed was "Check again" — and a brand-new key appeared with no separate confirmation step.
-Audited the exact build that was live at the time (`de0334a`, the gate-unification commit,
-before the four fixes above) and every commit in this file's history back to the original
-scaffold: `handleCheckAgain` has only ever called `refresh()` — a pure read, no signing, in every
-version. There is no code path, at any point in this recipe's history, where anything other than
-an explicit tap on a "Sign & authorize"/"Re-authorize" button calls `registerLighterApiKey`.
+**Addendum — traced the actual live incident, not just the general trap.** The team lead initially
+reported the rotation as an "auto-fire" — a new key appearing with "no visible prompt". Audited
+the exact build that was live at the time (`de0334a`, the gate-unification commit, before the
+four fixes above) and every commit in this file's history back to the original scaffold:
+`handleCheckAgain` has only ever called `refresh()` — a pure read, no signing, in every version.
+There is no code path, at any point in this recipe's history, where anything other than an
+explicit tap on a "Sign & authorize"/"Re-authorize" button calls `registerLighterApiKey`.
 
-So "no visible prompt" wasn't a code-triggered auto-fire — it's the embedded wallet SDK itself:
-`personal_sign` on an embedded (non-custodial-but-managed) wallet has no separate native
-confirmation dialog the way a browser-extension wallet would. The app's own button tap *is* the
-entire confirmation. On the account-mismatch card specifically, "Re-authorize" (destructive —
-rotates the key) sits directly above "Check again" (safe — just re-reads state), both plain pill
-buttons with no visual distinction in consequence. A tap intended for one and landing on the
-other completes instantly and silently, with nothing to interrupt it — this is almost certainly
-what actually happened, not a code bug in the traditional sense.
+Final reading, from the user's own account of what happened: app reloaded (any in-memory
+`registrationResult` gone), server mis-pinned, user on the "Wrong account on the server" card
+looking for a "Sign and authorize" option — none was available (that label only exists on the
+*first-time* `registerApiKey` step; this account already had a key, just the wrong one from the
+server's point of view), so he tapped the one button that *was* there: "Re-authorize". That's a
+completely legitimate `onPress` → `handleRegister` call, not a bug. What made it feel like "no
+visible prompt": embedded-wallet `personal_sign` has no separate native confirmation dialog the
+way a browser-extension wallet would — it signs programmatically, no modal — so from his
+perspective nothing asked him to sign while a real rotation happened underneath. Promptless-by-
+design embedded signing means a key-rotating button has to carry its own, unmistakable warning;
+nothing upstream will provide one.
 
 **Fix:** "Re-authorize" (recovery cards only — never the first-time "Sign & authorize", which has
 no existing key to destroy) now goes through an `Alert.alert` confirmation ("Generate a new
