@@ -21,6 +21,13 @@ export function UserScreen() {
   const { embeddedState } = useOpenfortContext();
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
+  // Set when an order fails with Lighter's invalid-signature code — deriveStep can't detect a
+  // stale server key on its own (apiKeys.length and accountIndex both still look fine; only the
+  // actual on-chain key changed under it via a second ChangePubKey submit). Forces the onboarding
+  // screen open with a dedicated recovery card regardless of what step currently computes to.
+  // Auto-clears once the underlying data genuinely reaches "ready" again (i.e. the operator
+  // restarted the server with a working key).
+  const [keyStale, setKeyStale] = useState(false);
 
   const hasTriggeredCreate = React.useRef(false);
   useEffect(() => {
@@ -63,6 +70,17 @@ export function UserScreen() {
   // data on every render — including regressing back to onboarding if it ever stops being ready.
   const onboarding = useLighterOnboarding(walletAddress);
 
+  // Adjusting state during render (React's recommended pattern for "reset when an input
+  // changes") rather than in an effect — this only fires on the render where step actually
+  // transitions to "ready", not on every render where it happens to already be "ready".
+  const [prevOnboardingStep, setPrevOnboardingStep] = useState(onboarding.step);
+  if (onboarding.step !== prevOnboardingStep) {
+    setPrevOnboardingStep(onboarding.step);
+    if (onboarding.step === "ready" && keyStale) {
+      setKeyStale(false);
+    }
+  }
+
   if (ethereum.status === "error") {
     return (
       <CreateWalletScreen
@@ -94,12 +112,13 @@ export function UserScreen() {
     );
   }
 
-  if (onboarding.step !== "ready") {
+  if (onboarding.step !== "ready" || keyStale) {
     return (
       <OnboardingStatusScreen
         walletAddress={ethereum.activeWallet.address as `0x${string}`}
         provider={ethereum.provider}
         onboarding={onboarding}
+        keyStale={keyStale}
       />
     );
   }
@@ -129,6 +148,7 @@ export function UserScreen() {
       accountIndex={account.index}
       onBack={() => setSelectedMarket(null)}
       onRefreshAccount={onboarding.refresh}
+      onKeyStale={() => setKeyStale(true)}
     />
   );
 }

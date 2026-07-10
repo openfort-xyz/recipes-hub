@@ -25,6 +25,7 @@ function makeServerConfig(accountIndex: number | null): LighterServerConfig {
     network: "testnet",
     serverWalletConfigured: accountIndex !== null,
     accountIndex,
+    serverKeyInvalid: false,
   };
 }
 

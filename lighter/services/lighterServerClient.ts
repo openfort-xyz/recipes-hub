@@ -1,11 +1,13 @@
 import { getLighterServerBaseUrl } from "../utils/config";
 
-/** Carries the HTTP status so callers can react to specific failures (e.g. 409 account
- * mismatch) instead of pattern-matching the error message. */
+/** Carries the HTTP status and, when present, Lighter's own error code — so callers can react to
+ * specific failures (a 409 account mismatch, a 21120 invalid-signature/stale-key rejection)
+ * instead of pattern-matching the error message. */
 export class LighterServerError extends Error {
   constructor(
     message: string,
     public readonly status: number,
+    public readonly lighterCode?: number,
   ) {
     super(message);
     this.name = "LighterServerError";
@@ -20,7 +22,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   const body = await response.json();
   if (!response.ok) {
-    throw new LighterServerError(body?.error ?? `Request to ${path} failed with status ${response.status}`, response.status);
+    throw new LighterServerError(
+      body?.error ?? `Request to ${path} failed with status ${response.status}`,
+      response.status,
+      typeof body?.lighterCode === "number" ? body.lighterCode : undefined,
+    );
   }
   return body as T;
 }
@@ -33,6 +39,12 @@ export interface LighterServerConfig {
   /** Which account the server actually signs for — not a secret, just an integer, used to catch
    * the server env pointing at a different account than the one the app is showing/trading. */
   accountIndex: number | null;
+  /** True once the server's one-time startup self-test proves its configured key was rejected
+   * on-chain — e.g. re-authorized twice, which rotates the key each time and silently strands
+   * the server on the earlier (now-invalid) one. `serverWalletConfigured` is already false
+   * whenever this is true; this flag exists only to show the operator the right recovery
+   * message instead of a generic "not configured yet". */
+  serverKeyInvalid: boolean;
 }
 
 export function fetchServerConfig(): Promise<LighterServerConfig> {

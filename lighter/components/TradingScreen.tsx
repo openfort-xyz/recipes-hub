@@ -13,6 +13,12 @@ const ORDER_TYPE_LIMIT = 0;
 const TIME_IN_FORCE_IMMEDIATE_OR_CANCEL = 0;
 const ORDER_EXPIRY_NIL = 0;
 
+// Lighter's signature-verification-layer rejection — must match server/src/keySelfTest.ts's
+// INVALID_SIGNATURE_CODE. ChangePubKey rotates the on-chain key on every submit, so signing twice
+// silently strands the server on the earlier (now-invalid) key with no other warning until an
+// order hits exactly this (see FRICTION_LOG.md's key-rotation entry).
+const INVALID_SIGNATURE_CODE = 21120;
+
 // Explorer lives inside the trading app itself, not a standalone domain (see FRICTION_LOG.md
 // correction). Verified live: both hosts resolve real /explorer/logs/<tx_hash> lookups (a
 // bogus hash on either host renders "Log not found" rather than a generic app shell).
@@ -34,6 +40,9 @@ interface TradingScreenProps {
   accountIndex: number;
   onBack: () => void;
   onRefreshAccount: () => Promise<void>;
+  /** Forces UserScreen's onboarding gate open with the stale-key recovery card — deriveStep
+   * can't detect a mid-session key rotation from account/apiKeys/serverConfig alone. */
+  onKeyStale: () => void;
 }
 
 interface OrderResult {
@@ -58,19 +67,29 @@ function toRawInt(value: number, decimals: number): number {
  * A 409 here means the server is signing for a different account than this screen — normally
  * caught before the user ever reaches trading (UserScreen's onboarding gate re-evaluates
  * continuously), but a server restart mid-session could still land in this narrow window.
- * "Fix setup" just forces an immediate refresh instead of waiting for the ambient poll —
- * UserScreen's gate does the actual navigating once it sees the mismatch.
+ * A 21120 means the server's key itself was rejected — most likely stale from a second
+ * ChangePubKey submit rotating it out from under the server (see FRICTION_LOG.md's key-rotation
+ * entry). Neither is a dead end: both offer a specific recovery action instead of just "OK".
  */
-function showOrderError(title: string, err: unknown, onFixSetup: () => void): void {
+function showOrderError(title: string, err: unknown, onFixSetup: () => void, onKeyStale: () => void): void {
   const message = err instanceof Error ? err.message : "Unknown error";
   if (err instanceof LighterServerError && err.status === 409) {
     Alert.alert(title, message, [{ text: "Fix setup", onPress: onFixSetup }, { text: "OK" }]);
     return;
   }
+  if (err instanceof LighterServerError && err.lighterCode === INVALID_SIGNATURE_CODE) {
+    Alert.alert(
+      title,
+      "The server's trading key looks stale — most likely it was authorized twice and the " +
+        "earlier key stopped working. Re-authorize to fix it.",
+      [{ text: "Re-authorize", onPress: onKeyStale }, { text: "OK" }],
+    );
+    return;
+  }
   Alert.alert(title, message);
 }
 
-export function TradingScreen({ market, accountIndex, onBack, onRefreshAccount }: TradingScreenProps) {
+export function TradingScreen({ market, accountIndex, onBack, onRefreshAccount, onKeyStale }: TradingScreenProps) {
   const { bestBid, bestAsk, midPrice, isLoading: marketLoading } = useLighterOrderBook(market.marketIndex);
   const { orders, isLoading: ordersLoading, createOrder, cancelOrder } = useLighterOrders();
   const marketOrders = useMemo(
@@ -159,7 +178,7 @@ export function TradingScreen({ market, accountIndex, onBack, onRefreshAccount }
       setResult({ direction, txHash: response.txHash, size, price, filled: response.filled });
       setStep("result");
     } catch (err) {
-      showOrderError("Order failed", err, () => void onRefreshAccount());
+      showOrderError("Order failed", err, () => void onRefreshAccount(), onKeyStale);
     } finally {
       setIsSubmitting(false);
     }
@@ -169,7 +188,7 @@ export function TradingScreen({ market, accountIndex, onBack, onRefreshAccount }
     try {
       await cancelOrder(accountIndex, market.marketIndex, orderIndex);
     } catch (err) {
-      showOrderError("Cancel failed", err, () => void onRefreshAccount());
+      showOrderError("Cancel failed", err, () => void onRefreshAccount(), onKeyStale);
     }
   };
 

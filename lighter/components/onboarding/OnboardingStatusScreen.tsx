@@ -14,6 +14,11 @@ interface OnboardingStatusScreenProps {
   /** Owned by UserScreen — the single source of truth for account/apiKeys/serverConfig, so this
    * screen and the render gate that decides when to leave it never see different data. */
   onboarding: OnboardingState;
+  /** Set by UserScreen when a live order failed with Lighter's invalid-signature code — forces
+   * the stale-key recovery card open regardless of what step currently computes to, since
+   * deriveStep can't detect a mid-session key rotation on its own (see FRICTION_LOG.md's
+   * key-rotation entry). */
+  keyStale?: boolean;
 }
 
 const STEP_LABELS: Record<OnboardingStep, string> = {
@@ -31,7 +36,7 @@ function StepBadge({ index, active, done }: { index: number; active: boolean; do
   );
 }
 
-export function OnboardingStatusScreen({ walletAddress, provider, onboarding }: OnboardingStatusScreenProps) {
+export function OnboardingStatusScreen({ walletAddress, provider, onboarding, keyStale = false }: OnboardingStatusScreenProps) {
   // Fast (2s) polling, owned by UserScreen, means the UI advances on its own the moment an
   // action lands — no manual "pull to refresh" needed anywhere in this screen. UserScreen's
   // render gate leaves this screen the moment step becomes "ready"; there's no separate
@@ -44,11 +49,33 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding }: 
     apiKeyIndex: number;
     accountIndex: number;
   } | null>(null);
+  // Once a sign+submit succeeds, the button that triggered it must not allow an immediate
+  // re-tap — ChangePubKey rotates the on-chain key on every submit, so a second tap before the
+  // server has picked up the first key silently invalidates it (see FRICTION_LOG.md's
+  // key-rotation entry: this is exactly how the user burned a working key). Resets whenever step
+  // changes, since that proves the poll caught up to something new and any "pending" state here
+  // is stale.
+  const [hasSignedThisSession, setHasSignedThisSession] = useState(false);
 
   const { step, account, serverConfig, accountMismatch, isLoading, error, refresh } = onboarding;
   const isTestnet = serverConfig?.network === "testnet";
   const [isFauceting, setIsFauceting] = useState(false);
   const [isCheckingAgain, setIsCheckingAgain] = useState(false);
+
+  // Adjusting state during render (React's recommended pattern for "reset when an input
+  // changes") rather than in an effect — any step transition proves the poll caught up to
+  // something new, so a "pending" guard from before is stale and safe to clear.
+  const [prevStep, setPrevStep] = useState(step);
+  if (step !== prevStep) {
+    setPrevStep(step);
+    setHasSignedThisSession(false);
+  }
+
+  // The server's own startup self-test (see server.ts) can also catch a stale key — but only at
+  // the moment the server was last started, so it won't see a rotation that happened mid-session.
+  // keyStale (from a live order failure) is the mid-session complement; either signal shows the
+  // same recovery card.
+  const showStaleKeyCard = keyStale || (step === "activateServer" && Boolean(serverConfig?.serverKeyInvalid));
 
   const handleFaucet = async () => {
     setIsFauceting(true);
@@ -89,11 +116,12 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding }: 
   };
 
   const handleRegister = async () => {
-    if (!account) return;
+    if (!account || hasSignedThisSession) return;
     setIsRegistering(true);
     try {
       const result = await registerLighterApiKey(provider, walletAddress, account.index);
       setRegistrationResult(result);
+      setHasSignedThisSession(true);
       await refresh();
     } catch (err) {
       Alert.alert("Registration failed", err instanceof Error ? err.message : "Unknown error");
@@ -166,7 +194,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding }: 
         </View>
       )}
 
-      {step === "registerApiKey" && account && (
+      {step === "registerApiKey" && account && !hasSignedThisSession && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Authorize trading</Text>
           <Text style={styles.cardBody}>Sign to let the server trade for you — it can never withdraw elsewhere.</Text>
@@ -174,7 +202,44 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding }: 
         </View>
       )}
 
-      {step === "activateServer" && !accountMismatch && (
+      {step === "registerApiKey" && account && hasSignedThisSession && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Authorize trading</Text>
+          <Text style={styles.cardBody}>
+            Signed — waiting for the server to catch up. Signing again before it does would
+            immediately invalidate this key.
+          </Text>
+          <ActivityIndicator color={COLORS.accent} />
+        </View>
+      )}
+
+      {showStaleKeyCard && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Trading key looks out of date</Text>
+          <Text style={styles.cardBody}>
+            The server&apos;s key was rejected as an invalid signature — signing again after the
+            server already had a key rotates it and strands whatever the server was holding.
+            Re-authorize once, then copy the fresh values into{" "}
+            <Text style={styles.code}>server/.env.local</Text> and restart.
+          </Text>
+          {registrationResult ? (
+            <View style={styles.credentialBox}>
+              <Text style={styles.credentialLine}>LIGHTER_ACCOUNT_INDEX={registrationResult.accountIndex}</Text>
+              <Text style={styles.credentialLine}>LIGHTER_API_KEY_INDEX={registrationResult.apiKeyIndex}</Text>
+              <Text style={styles.credentialLine} numberOfLines={2}>
+                LIGHTER_API_KEY_PRIVATE_KEY={registrationResult.apiKeyPrivateKey}
+              </Text>
+            </View>
+          ) : hasSignedThisSession ? (
+            <ActivityIndicator color={COLORS.accent} />
+          ) : (
+            <PillButton title="Re-authorize" onPress={handleRegister} loading={isRegistering} />
+          )}
+          <PillButton title="Check again" onPress={handleCheckAgain} variant="secondary" loading={isCheckingAgain} />
+        </View>
+      )}
+
+      {step === "activateServer" && !accountMismatch && !showStaleKeyCard && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Activate the server</Text>
           <Text style={styles.cardBody}>
@@ -193,7 +258,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding }: 
         </View>
       )}
 
-      {step === "activateServer" && accountMismatch && (
+      {step === "activateServer" && accountMismatch && !showStaleKeyCard && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Wrong account on the server</Text>
           <Text style={styles.cardBody}>
@@ -208,6 +273,8 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding }: 
                 LIGHTER_API_KEY_PRIVATE_KEY={registrationResult.apiKeyPrivateKey}
               </Text>
             </View>
+          ) : hasSignedThisSession ? (
+            <ActivityIndicator color={COLORS.accent} />
           ) : (
             <>
               <Text style={styles.cardBody}>
