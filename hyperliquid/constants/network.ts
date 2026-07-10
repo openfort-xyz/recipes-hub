@@ -8,6 +8,11 @@ export const CHAIN_IDS_HEX = {
   ARBITRUM_SEPOLIA: `0x${CHAIN_IDS.ARBITRUM_SEPOLIA.toString(16)}` as const,
 } as const;
 
+// CAIP-2 chain identifiers, used by Openfort's funding session API.
+export const CAIP2_CHAINS = {
+  ARBITRUM_SEPOLIA: `eip155:${CHAIN_IDS.ARBITRUM_SEPOLIA}` as const,
+} as const;
+
 export const ARBITRUM_SEPOLIA_CHAIN = {
   id: CHAIN_IDS.ARBITRUM_SEPOLIA,
   name: "Arbitrum Sepolia",
