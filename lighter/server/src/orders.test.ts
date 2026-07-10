@@ -16,6 +16,7 @@ function makeConfig(): Config {
   return {
     port: 3008,
     allowedOrigins: [],
+  authToken: "",
     openfort: { secretKey: "", shield: { publishableKey: "", secretKey: "", encryptionShare: "" } },
     lighter: {
       apiBaseUrl: "https://testnet.zklighter.elliot.ai",

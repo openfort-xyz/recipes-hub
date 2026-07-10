@@ -1,4 +1,4 @@
-import { getShieldRecoveryBaseUrl } from "../utils/config";
+import { getLighterServerAuthToken, getShieldRecoveryBaseUrl } from "../utils/config";
 
 // If you want to use AUTOMATIC embedded wallet recovery, an encryption session is required.
 // https://www.openfort.io/docs/products/embedded-wallet/react-native/quickstart/automatic.
@@ -13,7 +13,11 @@ export async function getEncryptionSessionFromEndpoint(): Promise<string> {
   const cleanBaseUrl = baseUrl.replace(/\/$/, "");
   const endpoint = `${cleanBaseUrl}/api/protected-create-encryption-session`;
 
-  const response = await fetch(endpoint, { method: "POST" });
+  const authToken = getLighterServerAuthToken();
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+  });
   if (!response.ok) {
     throw new Error("[WALLET RECOVERY] Failed to fetch wallet recovery session");
   }

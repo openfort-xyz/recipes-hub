@@ -1,4 +1,4 @@
-import { getLighterServerBaseUrl } from "../utils/config";
+import { getLighterServerAuthToken, getLighterServerBaseUrl } from "../utils/config";
 
 /** Carries the HTTP status and, when present, Lighter's own error code — so callers can react to
  * specific failures (a 409 account mismatch, a 21120 invalid-signature/stale-key rejection)
@@ -16,9 +16,14 @@ export class LighterServerError extends Error {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const base = getLighterServerBaseUrl().replace(/\/$/, "");
+  const authToken = getLighterServerAuthToken();
   const response = await fetch(`${base}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    headers: {
+      "Content-Type": "application/json",
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...init?.headers,
+    },
   });
   const body = await response.json();
   if (!response.ok) {

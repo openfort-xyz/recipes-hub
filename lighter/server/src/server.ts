@@ -1,6 +1,7 @@
 import { config as loadEnv } from "dotenv";
 import express from "express";
 import rateLimit from "express-rate-limit";
+import { isAuthorized } from "./auth.js";
 import { loadConfig } from "./config.js";
 import { selfTestServerKey } from "./orders.js";
 import { createOpenfortClient } from "./openfort.js";
@@ -39,9 +40,23 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
   }
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   if (req.method === "OPTIONS") {
     res.sendStatus(204);
+    return;
+  }
+  next();
+});
+
+// Optional shared-secret auth (see auth.ts). /api/health stays open so smoke checks and load
+// balancers never need the secret.
+app.use((req, res, next) => {
+  if (req.path === "/api/health") {
+    next();
+    return;
+  }
+  if (!isAuthorized(config.authToken, req.get("Authorization"))) {
+    res.status(401).json({ error: "Missing or invalid Authorization header (LIGHTER_SERVER_AUTH_TOKEN is set)." });
     return;
   }
   next();
@@ -80,6 +95,12 @@ app.use(errorHandler);
 
 app.listen(config.port, () => {
   console.log(`Lighter recipe server listening on :${config.port}`);
+  if (!config.authToken) {
+    console.warn(
+      "[lighter-server] Running without route auth (LIGHTER_SERVER_AUTH_TOKEN unset). Fine on " +
+        "localhost; set the same token in both .env files before exposing this server to a network.",
+    );
+  }
 });
 
 // Runs in the background rather than blocking startup — a network hiccup here shouldn't hang the

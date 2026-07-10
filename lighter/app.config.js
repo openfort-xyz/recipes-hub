@@ -13,6 +13,7 @@ export default ({ config }) => ({
       process.env.OPENFORT_SHIELD_RECOVERY_BASE_URL || "https://your-recovery-endpoint.example.com",
     openfortEthereumProviderPolicyId: process.env.OPENFORT_ETHEREUM_PROVIDER_POLICY_ID || "YOUR_GAS_SPONSORSHIP_POLICY_ID",
     lighterServerBaseUrl: process.env.LIGHTER_SERVER_BASE_URL || "http://localhost:3008",
+    lighterServerAuthToken: process.env.LIGHTER_SERVER_AUTH_TOKEN || "",
     lighterMarketSymbol: process.env.LIGHTER_MARKET_SYMBOL || "ETH",
     lighterDepositContractAddress:
       process.env.LIGHTER_DEPOSIT_CONTRACT_ADDRESS || "0x3B4D794a66304F130a4Db8F2551B0070dfCf5ca7",

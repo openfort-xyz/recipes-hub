@@ -62,6 +62,12 @@ export function getLighterMarketSymbol(): string {
   return getExtraValue<string>("lighterMarketSymbol") ?? "ETH";
 }
 
+/** Optional shared secret matching the server's LIGHTER_SERVER_AUTH_TOKEN. Empty = server is open. */
+export function getLighterServerAuthToken(): string {
+  const value = getExtraValue<string>("lighterServerAuthToken");
+  return value && !PLACEHOLDER_VALUES.has(value) ? value : "";
+}
+
 export function getLighterDepositContractAddress(): `0x${string}` {
   return ensureValue(
     getExtraValue<string>("lighterDepositContractAddress"),

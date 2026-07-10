@@ -3,6 +3,37 @@
 Dated entries for everything that slowed this build down: missing/wrong docs, SDK gaps, confusing
 APIs, workarounds, multi-attempt problems. Severity: blocker / major / minor.
 
+## Triage (2026-07-10, end-of-build review)
+
+Every entry below was reviewed and dispositioned. Nothing is silently open.
+
+**Resolved in this recipe** — silent guest errors; unsigned-build keychain trap (documented
+workaround + AGENTS.md note); explorer (found + linked, network-aware); fill-status inference
+(server-side confirmation against the trade record); faucet flakiness (3× retry with backoff);
+OrderExpiry regimes (explicit required param); ChangePubKey self-signed client; mainnet-card
+flash; fill-detection race; activate-gate identity check; wallet minted on reload (embeddedState
+gate + settle debounce); split onboarding hooks (single source of truth); ChangePubKey rotation
+trap (auto-adopt + confirm dialog + double-sign guard); manual credential ceremony (server
+auto-adopts); cold-launch session trust (explicit login gate). The unauthenticated-routes gap
+from the security audit is also closed: optional shared bearer token (`LIGHTER_SERVER_AUTH_TOKEN`
+on both sides, enforced when set, /api/health exempt — see server/src/auth.ts).
+
+**External (Lighter) — documented here, worked around in code, nothing further to fix in this
+repo**: testnet + faucet undocumented; `orderBookDetails` undocumented; signing mechanism absent
+from apidocs; deposit ABI undocumented; `sendTx` error-code inconsistency; positional WASM args
+(typed wrapper mitigates); nil sentinels (named constants); no official TS SDK (revisit when
+elliottech/lighter-python#49 ships — the vendored WASM layer is designed to be replaceable).
+
+**Upstream flags for Openfort teams (not fixable in this repo)**: `@openfort/shield-js` (via
+`@openfort/openfort-node`) pins a vulnerable `axios` range — backend SDK backlog;
+`@openfort/react-native`'s wallet-restore window is indistinguishable from "no wallet exists"
+(see the reload-minting entry) — RN SDK backlog. Both worth filing as issues.
+
+**Process notes, no action**: fork-base drift (one-time; fork main needs a reset to upstream);
+Go toolchain requirement (only to re-vendor the WASM); hyperliquid's app.json splash/asset bugs
+(fix belongs on that recipe's PR); the TS pin entry below predates Expo SDK 57 expecting
+TypeScript ~6.0.3 — the recipe now pins 6.0.3, aligned with `expo install --check`.
+
 ---
 
 ## 2026-07-10 — [major] Guest sign-up errors were completely silent

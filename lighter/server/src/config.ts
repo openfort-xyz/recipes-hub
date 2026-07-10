@@ -31,6 +31,8 @@ interface LighterConfig {
 export interface Config {
   port: number;
   allowedOrigins: string[];
+  /** Optional shared secret (see auth.ts). Empty = open server, the zero-friction default. */
+  authToken: string;
   openfort: OpenfortConfig;
   lighter: LighterConfig;
 }
@@ -68,6 +70,7 @@ export function loadConfig(): Config {
   return {
     port: toNumber(process.env["PORT"], 3008),
     allowedOrigins: parseOrigins(process.env["CORS_ORIGINS"]),
+    authToken: process.env["LIGHTER_SERVER_AUTH_TOKEN"]?.trim() ?? "",
     openfort: {
       secretKey: process.env["OPENFORT_SECRET_KEY"] ?? "",
       shield: {
