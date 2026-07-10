@@ -2,7 +2,7 @@ import type { Openfort } from "@openfort/openfort-node";
 import type { NextFunction, Request, Response } from "express";
 import { isAddress } from "viem";
 import { buildChangePubKeyRegistration, submitChangePubKeyRegistration } from "./changePubKey.js";
-import type { Config } from "./config.js";
+import { isTestnet, type Config } from "./config.js";
 import {
   LighterApiError,
   getAccountActiveOrders,
@@ -10,6 +10,7 @@ import {
   getOrderBookOrders,
   getOrderBooks,
   getRegisteredApiKeys,
+  requestFaucet,
 } from "./lighterApi.js";
 import { createEncryptionSession } from "./openfort.js";
 import { getAuthToken, submitCancelOrder, submitCreateOrder, submitWithdraw } from "./orders.js";
@@ -56,6 +57,7 @@ export function handleConfig(_req: Request, res: Response, config: Config): void
     chainId: config.lighter.chainId,
     marketIndex: config.lighter.marketIndex,
     marketSymbol: config.lighter.marketSymbol,
+    network: isTestnet(config.lighter.apiBaseUrl) ? "testnet" : "mainnet",
     serverWalletConfigured: Boolean(config.lighter.apiKeyPrivateKey && config.lighter.accountIndex !== null),
   });
 }
@@ -220,6 +222,26 @@ export async function handleCancelOrder(req: Request, res: Response, config: Con
   try {
     const result = await submitCancelOrder(config, config.lighter.marketIndex, orderIndex);
     res.status(200).json(result);
+  } catch (error) {
+    handleError(res, error);
+  }
+}
+
+export async function handleFaucet(req: Request, res: Response, config: Config): Promise<void> {
+  if (!isTestnet(config.lighter.apiBaseUrl)) {
+    res.status(400).json({
+      error: "Faucet is only available on testnet. Deposit real USDC instead — see docs/lighter-signing-notes.md.",
+    });
+    return;
+  }
+  const { l1Address } = req.body as { l1Address?: string };
+  if (typeof l1Address !== "string" || !isAddress(l1Address, { strict: false })) {
+    res.status(400).json({ error: "Body must include a valid EVM address as l1Address." });
+    return;
+  }
+  try {
+    await requestFaucet(config, l1Address);
+    res.status(200).json({ ok: true });
   } catch (error) {
     handleError(res, error);
   }

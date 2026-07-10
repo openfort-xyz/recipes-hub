@@ -11,6 +11,7 @@ import {
   handleChangePubKeySubmit,
   handleConfig,
   handleCreateOrder,
+  handleFaucet,
   handleHealth,
   handleMarket,
   handleOpenOrders,
@@ -69,6 +70,7 @@ app.post("/api/lighter/changepubkey/submit", rateLimitTrading, (req, res) =>
 app.post("/api/lighter/order", rateLimitTrading, (req, res) => handleCreateOrder(req, res, config));
 app.post("/api/lighter/order/cancel", rateLimitTrading, (req, res) => handleCancelOrder(req, res, config));
 app.post("/api/lighter/withdraw", rateLimitTrading, (req, res) => handleWithdraw(req, res, config));
+app.post("/api/lighter/faucet", rateLimitTrading, (req, res) => handleFaucet(req, res, config));
 
 app.use(notFoundHandler);
 app.use(errorHandler);

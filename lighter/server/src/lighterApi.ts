@@ -162,6 +162,17 @@ export async function getAccountActiveOrders(
   return body.orders ?? [];
 }
 
+/**
+ * Testnet-only. GET /api/v1/faucet?l1_address=... both creates the Lighter account AND credits
+ * it (verified live: a fresh address got 10,000 USDC margin balance, 3 ETH, 1,000,000 LIT
+ * instantly) — no on-chain L1 transaction required. Undocumented on apidocs.lighter.xyz, found by
+ * probing (see FRICTION_LOG.md). Caller must gate this to testnet — the endpoint's mainnet
+ * behavior was not tested and is assumed nonexistent/disabled.
+ */
+export async function requestFaucet(config: Config, l1Address: string): Promise<void> {
+  await getJson(config.lighter.apiBaseUrl, "/api/v1/faucet", { l1_address: l1Address });
+}
+
 export async function sendTx(
   config: Config,
   txType: number,
