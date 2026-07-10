@@ -35,6 +35,52 @@ from its actual cause. Cost a full debugging round before the connection was mad
 **Fix:** none needed in code — just never build with `CODE_SIGNING_ALLOWED=NO` for any recipe
 using Openfort's embedded wallet (or any other keychain-dependent SDK). Documented in AGENTS.md.
 
+## 2026-07-10 — [minor] No working Lighter block explorer found — testnet or mainnet
+
+Asked to add a "View on explorer" link to the order confirmation screen. Web search initially
+surfaced `scan.lighter.xyz` with convincing-looking detail (transaction counts, beta-status
+copy) — but `getaddrinfo ENOTFOUND` on direct DNS resolution for both `scan.lighter.xyz` and a
+community-referenced `scan.testnet.lighter.xyz` (via `lightertest.net`, an unofficial site).
+Checked every plausible official source directly: `lighter.xyz`'s homepage has no explorer link
+anywhere in its footer/nav, `docs.lighter.xyz` has zero mentions of a block explorer or
+transaction lookup, and `testnet.app.lighter.xyz` (the actual trading app) exposes no explorer
+link either. The search engine's detailed-sounding summary was almost certainly stale/cached
+index content from a domain that no longer resolves, not a live fetch — a reminder that a
+search result's confident tone isn't evidence a URL is currently live.
+
+**Workaround:** no explorer link anywhere in the app. The order confirmation screen shows the
+raw `tx_hash` as selectable text instead — real data, not a fabricated link pattern.
+
+## 2026-07-10 — [minor] `orderBookDetails` (undocumented) replaces the documented `orderBooks` for both market discovery and live pricing
+
+`GET /api/v1/orderBookDetails` (no `market_id`) returns every active market — perp and spot — in
+one call, each with `mark_price`/`last_trade_price` alongside the size/price decimals needed for
+order encoding. That's a strict superset of the documented `/api/v1/orderBooks` (metadata only,
+no live price), found by trying the singular form of the documented plural endpoint on a hunch.
+One call now serves both the asset-selector's live price tiles and the per-market precision
+order/orderbook validation previously split across two endpoints.
+
+Also notable: testnet has exactly 5 active markets total (ETH/BTC/SOL perps, ETH/USDC and
+LIT/USDC spot) — "5 assets" isn't a curated subset of a larger catalog, it's the complete
+tradeable set today. And spot pricing is pure testnet play-money (ETH/USDC quoted at $0.01, not
+a real ETH price) — worth knowing so a screenshot of the app doesn't get mistaken for a pricing
+bug.
+
+## 2026-07-10 — [major] `sendTx` never reports fill status — "filled vs resting" has to be inferred from position deltas
+
+Assumed the order-submission response would say whether an IOC order actually filled. Inspected
+the raw upstream JSON directly (temporarily logged it server-side, placed a real tiny order,
+reverted the log): the full response is `{code, message: '{"ratelimit": "Ratelimit is off"}',
+tx_hash, predicted_execution_time_ms}` — genuinely nothing about fills, no order status field at
+all. Confirming a fill requires a follow-up read: capture the account's position (perp) or asset
+balance (spot) for that market before submitting, wait ~2s, refetch, and diff.
+
+**Workaround:** `TradingScreen.tsx#getRelevantBalance` does exactly that diff and labels the
+confirmation screen "Filled" / "Not filled" / "Submitted" (if the follow-up refetch itself
+failed) — never a fabricated "Filled" it can't actually back up. Since this recipe's buy/sell
+flow is IOC-only by design (see the earlier `OrderExpiry` friction entry), "resting" genuinely
+cannot happen here, so the confirmation UI doesn't offer that as a possible status.
+
 ## 2026-07-10 — [major] Lighter's testnet faucet is intermittently flaky (~1-in-3 success rate)
 
 First real user hit "Faucet request failed: internal server error" on the very first tap. Live
