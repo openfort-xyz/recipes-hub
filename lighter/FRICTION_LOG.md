@@ -674,3 +674,60 @@ explicit second tap on "Generate new key". This is a genuinely different fix fro
 double-sign debounce two entries up — that one stops a second tap of the *same already-completed*
 action; this one adds a deliberate pause before the *first* tap of a destructive one, precisely
 because the SDK provides no native equivalent.
+
+## 2026-07-10 — [major] The whole "copy printed credentials into server/.env.local and restart" step was over-engineering, not a feature
+
+Every fix in the four entries above (self-test, `.env.pending`, the 21120 recovery card, the
+double-sign debounce) treated the manual hand-off from `POST /changepubkey/submit`'s response to
+`server/.env.local` as a given and built machinery to make it survivable. It didn't need to be a
+given: nothing about ChangePubKey requires a human in the loop between "the app got a successful
+registration response" and "the server is signing with that key" — the server generated the key
+in the first place (`registrationStore.ts` already holds the private key in-memory) and is the
+only process that ever needs to use it.
+
+**Fix — the server adopts its own registrations:** `server/src/orders.ts`'s new `adoptServerKey`
+runs at the end of `submitChangePubKeyRegistration`, in the same request that confirms the
+on-chain registration, and does three things before responding: (1) mutates the single `Config`
+instance in place (`accountIndex`/`apiKeyIndex`/`apiKeyPrivateKey` — passed by reference into
+every route handler from one `loadConfig()` call in `server.ts`, so every in-flight and future
+request sees the change immediately), resetting the signing-client cache so the next signed call
+builds a fresh client instead of reusing one built for the old key; (2) writes the same three
+values into `server/.env.local` via a new pure `mergeEnvFile` (`server/src/envFile.ts`) that
+upserts exact `KEY=value` lines while leaving every other line — comments, blank lines, the
+Shield secrets sitting right next to them — byte-for-byte untouched, so a restart survives without
+re-running onboarding; (3) logs one line (`adopted new trading key for account N`) and kicks off a
+fresh self-test in the background to confirm the newly adopted key really is live on-chain,
+resetting the shared self-test verdict first so a stale "invalid" reading from an old key doesn't
+leak onto the new one. `changePubKey.ts`'s old `.env.pending` write (a durable-but-still-manual
+backstop) is now fully superseded and removed — there's no gap left for it to backstop.
+
+The private key itself now never leaves the server process at all: the `/changepubkey/submit`
+response dropped the `apiKeyPrivateKey` field entirely (it used to go back so the app could print
+it on screen), since the app has nothing to do with it anymore.
+
+**Security note, in case an auditor re-flags the `.env.local` write:** this is a deliberate,
+recipe-appropriate scope call, not an oversight. It's a single-operator dev tool, the file is
+already gitignored, and it sits in the exact same trust domain as the Openfort Shield secrets that
+already live in it — anyone who can read one can already read the other.
+
+**UI fallout:** happy-path onboarding is now two steps, not three — fund, then sign; the server
+adopts and the poll picks it up within ~2s, no "Activate the server" screen in between. In
+`OnboardingStatusScreen.tsx`, the three near-duplicate cards that used to display printed
+credentials (the plain "activate the server" card, the stale-key card, the account-mismatch card)
+collapsed into one `needsRecovery` card that never shows key material and always offers the same
+fix: tap Re-authorize, the server adopts automatically. The "Check again" button is gone
+everywhere — the 2s poll already does that job. `hooks/onboardingGate.ts`'s `deriveStep` logic is
+unchanged (still a pure function of account/apiKeys/serverConfig — see its test suite), only its
+live reachability changed: reaching `"activateServer"` through the running app is now a genuine
+anomaly (hand-edited env, a second server instance, a lost adoption after a restart) rather than
+the everyday path, so it's documented as a safety net rather than removed outright — a second
+server process or a corrupted env file are still real failure modes worth a recovery path.
+
+**Tests:** `server/src/envFile.test.ts` (pure merge logic, including an explicit byte-for-byte
+check that the Shield secrets survive an update untouched, plus the file I/O wrapper against a
+real temp file) and `server/src/orders.test.ts` (`adoptServerKey`'s config hot-swap, persistence
+call, graceful handling of a failed persistence write, signing-client re-creation, and the
+stale-self-test-verdict reset — all against the real vendored WASM signer with only `fetch` and
+`envFile.ts`'s I/O mocked). Did not live-verify the full flow myself — ChangePubKey needs a real L1
+signature from the user's embedded wallet, which can't be forged from here; the mechanics were
+verified in isolation instead, and the user's next Re-authorize tap is the actual end-to-end test.

@@ -40,8 +40,10 @@ Openfort or any other keychain-dependent SDK. See `FRICTION_LOG.md` for the full
   `docs/lighter-signing-notes.md` for the exact URLs/chain-ids of all four), `LIGHTER_CHAIN_ID`
   (the L2 signing domain — MUST match `LIGHTER_API_BASE_URL`, wrong value = every signature
   silently invalid), plus `LIGHTER_ACCOUNT_INDEX` / `LIGHTER_API_KEY_PRIVATE_KEY` /
-  `LIGHTER_API_KEY_INDEX`, populated after onboarding (the server prints these to its console
-  when registration succeeds).
+  `LIGHTER_API_KEY_INDEX` — no manual setup needed for these three: a successful ChangePubKey
+  submit makes the server adopt and persist them into this file itself (see
+  `server/src/orders.ts`'s `adoptServerKey`). Only relevant if bootstrapping from a completely
+  empty file or hand-recovering from a broken state.
 - `@openfort/react-native`'s `walletConfig` gas-sponsorship key is **`feeSponsorshipId`** (renamed
   from `ethereumProviderPolicyId`, verified against the installed 1.1.7 types) — same
   `OPENFORT_ETHEREUM_PROVIDER_POLICY_ID` value, new field name. See `app/_layout.tsx`.

@@ -67,20 +67,22 @@ pnpm run android      # Launch on Android emulator
 
 ## Onboarding flow
 
-Three steps, all walked through in-app on first login:
+Two steps, walked through in-app on first login:
 
 1. **Fund your account.** On testnet: tap "Get testnet funds" — one REST call to Lighter's
    faucet both creates AND credits your account, no signature needed. On mainnet: your embedded
    wallet approves and deposits real USDC to Lighter's mainnet contract instead. Either way,
    Lighter assigns an `account_index` — there's no separate registration transaction.
 2. **Authorize trading** — your embedded wallet signs a plain-text message (`personal_sign`, not
-   typed data) authorizing a fresh, server-held API key to place and cancel orders. That key can
-   never withdraw anywhere except back to your own wallet. Same on both networks.
-3. **Activate the server** — the server generates the API key in step 2 but doesn't load it
-   automatically; copy the values it prints to its console into `server/.env.local` and restart
-   it. The app polls and unlocks trading once it detects the server is ready **for this specific
-   account** — not just that some key is configured, since a server left pointed at an old
-   account would otherwise sign and fill orders you can't see.
+   typed data) authorizing a fresh API key to place and cancel orders. The server adopts that key
+   as its own live trading key the instant the signature lands — no manual step: it re-creates
+   its signing client and persists the credentials into `server/.env.local` itself, so a later
+   restart doesn't need onboarding to run again. That key can never withdraw anywhere except back
+   to your own wallet. Same on both networks.
+
+The app polls and unlocks trading the moment the server reports it's ready **for this specific
+account** — not just that some key is configured, since a server left pointed at an old account
+would otherwise sign and fill orders you can't see.
 
 See `scripts/e2e.md` for the full step-by-step with exact amounts and what to check at each stage
 (testnet path first, mainnet as the variant).
@@ -118,17 +120,14 @@ faucet to real deposit automatically — no app-side config needed.
   Openfort dashboard.
 - **`INVALID_CONFIGURATION` / "Storage is not accessible" on your first login attempt** — you
   built with `CODE_SIGNING_ALLOWED=NO`. Rebuild normally.
-- **Stuck on "Activate the server"** — you haven't copied the generated key into
-  `server/.env.local` and restarted yet, or you restarted before copying (the key is only shown
-  once — redo step 2 if lost).
+- **Stuck on "Trading key needs attention"** — this is a safety-net card, not the normal path; it
+  only shows up if the server's key genuinely doesn't match what's on-chain (a hand-edited
+  `server/.env.local`, a second server instance, or an adoption lost to a restart before it could
+  persist). Tap **Re-authorize** — the server adopts the fresh key automatically, no manual step.
 - **Funds don't show up** — both the faucet (seconds) and a real deposit (minutes) take a moment
   to land; pull to refresh on the onboarding screen.
-- **Order fails** — check `server/.env.local` has all three `LIGHTER_*` key values and the server
-  was restarted after setting them.
-- **"Wrong account on the server"** — the server is signing for a different account than the one
-  the app is showing (usually from re-onboarding into a new wallet without restarting the
-  server). Copy the printed values shown on that screen into `server/.env.local` and restart; if
-  they're not shown, tap "Re-authorize" to mint a fresh set.
+- **Order fails with a stale-key error** — tap **Re-authorize** from the alert; the server adopts
+  the fresh key immediately, no restart needed.
 
 ## Resources
 

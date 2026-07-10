@@ -54,23 +54,21 @@ first.
 1. Tap **Sign & authorize**. Openfort prompts a `personal_sign` — the message should read
    `Register Lighter Account\n\npubkey: 0x...\n...` (see `docs/lighter-signing-notes.md` for the
    exact template). **Verify it's plain text**, not a hex blob or typed-data JSON.
-2. On success, the app moves to "Activate the server" and shows three lines
-   (`LIGHTER_ACCOUNT_INDEX=`, `LIGHTER_API_KEY_INDEX=`, `LIGHTER_API_KEY_PRIVATE_KEY=`) — the
-   same values the server printed to its own console.
-3. **Verify**: `GET /api/v1/apikeys?account_index=<n>` against
+2. On success, the server adopts the new key as its own live trading key immediately — no manual
+   step. Within one poll interval (~2s) the app should advance straight to the trading screen.
+3. **Verify**: `GET /api/lighter/config` reports `"serverWalletConfigured": true` with
+   `"accountIndex"` matching your account, and `GET /api/v1/apikeys?account_index=<n>` against
    `https://testnet.zklighter.elliot.ai` lists the new key's public key at the expected
    `api_key_index`.
+4. **Verify persistence**: `server/.env.local` now has `LIGHTER_ACCOUNT_INDEX`,
+   `LIGHTER_API_KEY_INDEX`, and `LIGHTER_API_KEY_PRIVATE_KEY` filled in with the fresh values.
+   Restart the server (`Ctrl-C`, `pnpm dev` again) and confirm it comes back up still configured
+   for the same account — no re-authorization needed, and `GET /api/lighter/config` still reports
+   `"serverWalletConfigured": true`.
 
-### A4. Activate the server
+### A4. Place orders, cancel, withdraw
 
-1. Copy the three lines into `server/.env.local`, replacing the empty placeholders.
-2. Restart the server (`Ctrl-C`, `pnpm dev` again).
-3. Back in the app, tap **Check again**. `GET /api/lighter/config` should now report
-   `"serverWalletConfigured": true`, and the app should advance to the trading screen.
-
-### A5. Place orders, cancel, withdraw
-
-Same as mainnet steps A6-A8 below, just with testnet play-money — go do them now, then come back
+Same as mainnet steps B4-B6 below, just with testnet play-money — go do them now, then come back
 here. Everything after onboarding is network-agnostic (same signer, same server routes).
 
 ---
@@ -98,11 +96,11 @@ Same as A1.
 5. Lighter typically credits deposits within a few minutes. Pull-to-refresh until the step
    advances to "Authorize trading".
 
-### B3. Authorize trading, B4. Activate the server
+### B3. Authorize trading
 
-Same as A3/A4, against mainnet's `https://mainnet.zklighter.elliot.ai`.
+Same as A3, against mainnet's `https://mainnet.zklighter.elliot.ai`.
 
-### B5. Place a small order
+### B4. Place a small order
 
 1. On the trading screen, note the live ETH mid price and order book.
 2. Tap **Buy**, enter a small amount (e.g. `$15`, comfortably above the ~$9 minimum at current
@@ -112,14 +110,14 @@ Same as A3/A4, against mainnet's `https://mainnet.zklighter.elliot.ai`.
    Lighter position/balance) or shows a clear failure reason in the app (not a crash).
 4. Repeat with **Sell** for a small amount to confirm both directions work.
 
-### B6. Cancel an order (GTC path, optional)
+### B5. Cancel an order (GTC path, optional)
 
 The default buy/sell flow uses IOC orders, which don't rest on the book. To exercise the cancel
 path, you'd need to place a GTC order (not exposed in the current UI — a good follow-up). At
 minimum, confirm `POST /api/lighter/order/cancel` with a nonexistent `orderIndex` returns a clean
 error rather than a crash.
 
-### B7. Withdraw
+### B6. Withdraw
 
 1. From the trading screen, tap **Withdraw**, enter an amount (≥ 1 USDC), confirm.
 2. **Verify**: funds arrive back at the SAME wallet address you started with — Lighter's withdraw
@@ -134,6 +132,8 @@ error rather than a crash.
 - [ ] Testnet: faucet call credits the account within seconds; full flow through withdrawal works
 - [ ] Mainnet: deposit tx confirmed on Etherscan, account appears via `GET /api/v1/account?by=index`
 - [ ] API key appears via `GET /api/v1/apikeys` (both networks tested independently)
+- [ ] Server survives a restart after authorization without re-running onboarding — the adopted
+      credentials were written to `server/.env.local` automatically, not by hand
 - [ ] At least one buy and one sell order both return a `txHash` and are reflected in account
       balance/positions (both networks)
 - [ ] Withdrawal confirmed back at the original wallet address (both networks)
