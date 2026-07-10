@@ -487,3 +487,91 @@ Live-verified post-fix against the user's real account 175: fetched its ETH posi
 (0.0277), placed a real order through `:3008` with the matching `accountIndex`, got back
 `{"filled":true,"trade":{"size":"0.0083","price":"1792.75"}}`, and the account endpoint
 immediately reflected the new position (0.0360 = 0.0277 + 0.0083) — no leftover resting orders.
+
+## 2026-07-10 — [blocker] `useEmbeddedEthereumWallet` mints a brand-new wallet on reload — the account-mismatch bug's real root cause
+
+The account-identity gate fix above stopped the *symptom* (a mismatched account silently
+reaching the trading screen) but not the *cause*: the app kept generating brand-new embedded
+wallets. The user burned four Lighter accounts in one session (171→175→177→178) — each one a
+fresh wallet the app had minted for itself, not a wallet the user asked for.
+
+**Root cause, read from `@openfort/react-native@1.1.7`'s actual JS source (not just the
+`.d.ts` files), traced in two layers:**
+
+1. `UserScreen.tsx`'s create-vs-reconnect effect treated `ethereum.status === "disconnected" &&
+   wallets.length === 0` as "definitively no wallet, safe to create". But
+   `useEmbeddedEthereumWallet.js#fetchEmbeddedAccounts` early-returns `setEmbeddedAccounts([])`
+   for `embeddedState === EmbeddedState.NONE` (the SDK's own pre-restore placeholder) *without*
+   ever setting `status: 'fetching-wallets'` — so during that placeholder window the hook reports
+   exactly the same shape as "authenticated, checked, genuinely has no wallet". First fix: gate
+   the effect on `embeddedState !== EmbeddedState.NONE` (via `useOpenfortContext()`, exported but
+   never used anywhere in this app before now).
+2. That fix alone wasn't enough — live-verified. `embeddedState` and the `embeddedAccounts` list
+   are two *independently timed* async operations inside the SDK (separate `useEffect`s with
+   separate dependencies), and `embeddedState` can reach `READY` before the accounts fetch has
+   resolved. Instrumented the effect directly and caught it on the very first render of a fresh
+   launch: `{"embeddedState":4,"status":"disconnected","walletsLen":0,"hasTriggeredCreate":false}`
+   — `embeddedState` already `READY` (4), `wallets` still empty. Chasing the SDK's exact internal
+   ordering to find a state combination that's *always* trustworthy turned out to be a moving
+   target; settled on a debounce instead — wait `WALLET_SETTLE_MS` (1500ms) for the
+   "disconnected + no wallets" snapshot to hold steady (any state change in that window cancels
+   the timer via the effect's cleanup) before trusting it enough to call `create()`.
+
+**Verification:** captured the wallet address via a temporary `console.error` + `xcrun simctl
+spawn booted log stream` (no UI ever shows it), ran three consecutive `simctl terminate` +
+`launch` cycles, 12+ seconds of observation each. Pre-fix: the address changed *within* a single
+session a few seconds after launch, not just across relaunches. Post-fix: the exact same address
+(`0x808f26dde96d3b7f4720ab4a9b110d4b0148aded`) held across all three relaunches with zero
+deviation. Debug instrumentation removed before committing.
+
+**Residual risk, documented rather than hidden:** 1500ms is an empirically-justified margin (the
+observed race window was tens of milliseconds), not a provable bound — a sufficiently slow
+device/network could theoretically still exceed it. This is a workaround for SDK-internal timing
+this recipe doesn't control, not a fix to the SDK itself; flagging upstream is out of scope here.
+
+## 2026-07-10 — [blocker] Onboarding readiness was two separate hooks that could disagree — the actual account-mismatch delivery mechanism
+
+Even with the wallet-churn root cause fixed, the *specific* symptom the team lead caught (account
+178, zero registered API keys, still reached the trading screen) had its own separate cause:
+`UserScreen.tsx` and `OnboardingStatusScreen.tsx` each ran their own independent
+`useLighterOnboarding(walletAddress)` call — two separate `fetch` cycles, two separate copies of
+`account`/`apiKeys`/`serverConfig` state, updating on their own schedules. When the wallet address
+changed, there was a window where one hook's state had caught up to the new address and the other
+hadn't. `UserScreen`'s `view` state was also a one-shot flag set once via an `onReady` callback and
+never re-validated — once flipped to `"trading"`, nothing checked whether the account backing it
+was still actually ready.
+
+**Fix:** lifted `useLighterOnboarding` up into `UserScreen` as the single source of truth;
+`OnboardingStatusScreen` now receives the onboarding state as a prop instead of calling the hook
+itself, and the `onReady` callback is gone entirely — `UserScreen`'s render gate is
+`if (onboarding.step !== "ready") return <OnboardingStatusScreen .../>`, re-evaluated fresh every
+render from the hook's own continuous 2s poll. This also means the gate self-heals: if the server
+env ever changes mid-session (a restart with a different account), the very next poll tick kicks
+the user back to onboarding automatically, without anyone having to notice and navigate manually.
+
+Extracted the gate conditions (`deriveStep`, `accountsMismatch`) into a new dependency-free module
+(`hooks/onboardingGate.ts`) so they carry a regression test independent of the hook's React/fetch
+machinery. Importing `useLighterOnboarding.ts` directly into vitest fails — `react-native`'s Flow
+syntax isn't parseable by Vite/Rolldown (`RolldownError: Parse failure: ... Flow is not
+supported`) — so the pure logic needed to live somewhere with zero runtime `react`/`react-native`
+imports to be testable at all. Added a minimal `vitest.config.ts` scoped to `hooks/**/*.test.ts`
+only (not a full RN component-testing setup) plus `vitest` as an app-level dev dependency, pinned
+to the same `4.1.10` already used server-side; confirmed zero new supply-chain risk (`npm audit`
+shows no vitest/vite/esbuild-related advisories — the 25 pre-existing ones are all from the
+Expo/RN dependency tree, unrelated).
+
+Also added a `LighterServerError` class (carries the HTTP status) so the client can react to a
+409 specifically instead of pattern-matching an error string, and a "Fix setup" button on the
+trading screen's order-failure alert for the (now much narrower) case where a mismatch appears
+mid-session — it just forces an immediate refresh; the render gate above does the actual
+navigating once it sees the mismatch.
+
+**Verification:** `hooks/onboardingGate.test.ts` (9 cases) covers the exact regression —
+`deriveStep` must return `"activateServer"` (never `"ready"`) when an account has a registered
+key but the server is configured for a different account, and `"registerApiKey"` (never
+`"ready"`) when the account has zero registered keys, individually and combined. Live-verified
+the unified flow end-to-end: called the testnet faucet via curl for the now-stable wallet address,
+watched the app auto-advance from "Fund your account" to "Authorize trading" within 3 seconds
+with no manual refresh — confirming the single-source-of-truth poll drives the UI correctly.
+`personal_sign` (step 2) and copying env values (step 3) need the real device/wallet and are left
+for the user to complete.
