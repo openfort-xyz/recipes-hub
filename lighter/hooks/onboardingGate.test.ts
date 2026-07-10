@@ -29,6 +29,12 @@ function makeServerConfig(accountIndex: number | null): LighterServerConfig {
   };
 }
 
+// deriveStep's logic is unchanged by the server's move to auto-adopting ChangePubKey submits —
+// only its LIVE reachability changed. "activateServer" used to be a step users walked through by
+// hand; now the server adopts a fresh key within the same request that confirms registration, so
+// these cases exercise what is now a safety-net path (a hand-edited env, a second server
+// instance, a lost adoption after a restart) rather than the everyday happy path. See
+// server/src/orders.ts's adoptServerKey and hooks/onboardingGate.ts's inline comment.
 describe("deriveStep", () => {
   it("requires a Lighter account before anything else", () => {
     expect(deriveStep(null, [], null)).toBe("deposit");

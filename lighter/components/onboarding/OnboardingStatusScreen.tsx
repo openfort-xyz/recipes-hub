@@ -44,11 +44,6 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
   const [depositAmount, setDepositAmount] = useState("10");
   const [isDepositing, setIsDepositing] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [registrationResult, setRegistrationResult] = useState<{
-    apiKeyPrivateKey: string;
-    apiKeyIndex: number;
-    accountIndex: number;
-  } | null>(null);
   // Once a sign+submit succeeds, the button that triggered it must not allow an immediate
   // re-tap — ChangePubKey rotates the on-chain key on every submit, so a second tap before the
   // server has picked up the first key silently invalidates it (see FRICTION_LOG.md's
@@ -60,7 +55,6 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
   const { step, account, serverConfig, accountMismatch, isLoading, error, refresh } = onboarding;
   const isTestnet = serverConfig?.network === "testnet";
   const [isFauceting, setIsFauceting] = useState(false);
-  const [isCheckingAgain, setIsCheckingAgain] = useState(false);
 
   // Adjusting state during render (React's recommended pattern for "reset when an input
   // changes") rather than in an effect — any step transition proves the poll caught up to
@@ -71,11 +65,15 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
     setHasSignedThisSession(false);
   }
 
-  // The server's own startup self-test (see server.ts) can also catch a stale key — but only at
-  // the moment the server was last started, so it won't see a rotation that happened mid-session.
-  // keyStale (from a live order failure) is the mid-session complement; either signal shows the
-  // same recovery card.
-  const showStaleKeyCard = keyStale || (step === "activateServer" && Boolean(serverConfig?.serverKeyInvalid));
+  // ChangePubKey submit makes the server adopt the fresh key immediately (see
+  // server/src/orders.ts's adoptServerKey) and the poll below picks that up within one interval —
+  // so in the happy path, "activateServer" is never actually seen on screen. Reaching it here is
+  // now a genuine anomaly: someone hand-edited server/.env.local to a stale key, a second server
+  // process is running, or the .env.local write failed and a later restart lost the adoption. The
+  // fix is the same either way — sign again so whichever server answers the next request adopts a
+  // fresh key. keyStale (set from a live order failure) covers the mid-session case deriveStep's
+  // inputs can't see on their own; both land on this same recovery card.
+  const needsRecovery = keyStale || step === "activateServer";
 
   const handleFaucet = async () => {
     setIsFauceting(true);
@@ -119,8 +117,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
     if (!account || hasSignedThisSession) return;
     setIsRegistering(true);
     try {
-      const result = await registerLighterApiKey(provider, walletAddress, account.index);
-      setRegistrationResult(result);
+      await registerLighterApiKey(provider, walletAddress, account.index);
       setHasSignedThisSession(true);
       await refresh();
     } catch (err) {
@@ -130,31 +127,21 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
     }
   };
 
-  const handleCheckAgain = async () => {
-    setIsCheckingAgain(true);
-    try {
-      await refresh();
-    } finally {
-      setIsCheckingAgain(false);
-    }
-  };
-
   /**
-   * "Re-authorize" (recovery cards only, never the first-time "Sign & authorize") always rotates
-   * the on-chain key — there's no "just re-display the existing credentials" mode, since
-   * ChangePubKey has no way to read a key back, only replace it. A user reading these two
-   * similar-looking buttons quickly ("Re-authorize" vs. plain, non-destructive "Check again") can
-   * tap the wrong one without registering that it just invalidated whatever key the server was
-   * holding — this is what actually happened live (see FRICTION_LOG.md's key-rotation entry).
-   * Embedded-wallet personal_sign has no separate native confirmation UI to catch that mistake,
-   * so the app has to be the one that asks.
+   * "Re-authorize" (recovery card only, never the first-time "Sign & authorize") always rotates
+   * the on-chain key — there's no "just re-display the existing key" mode, since ChangePubKey has
+   * no way to read a key back, only replace it. The server adopts whatever this produces
+   * automatically, so the only real risk left is that any OTHER client already holding the
+   * current key (another server instance, an earlier session) stops working the instant this
+   * fires. Embedded-wallet personal_sign has no native confirmation UI of its own, so the app has
+   * to be the one that asks before a destructive action like this fires silently.
    */
   const confirmReauthorize = () => {
     Alert.alert(
       "Generate a new trading key?",
-      "This replaces whatever key the chain currently has for this account right now — any key " +
-        "the server (or a previous screen) was holding stops working immediately, with no way to " +
-        "get it back.",
+      "The server adopts the new key automatically — no manual step. The only risk is to anyone " +
+        "else still using the current key: another server instance or an earlier session stops " +
+        "working the moment this replaces it, with no way to get it back.",
       [
         { text: "Cancel", style: "cancel" },
         { text: "Generate new key", style: "destructive", onPress: handleRegister },
@@ -236,77 +223,22 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
         </View>
       )}
 
-      {showStaleKeyCard && (
+      {needsRecovery && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Trading key looks out of date</Text>
+          <Text style={styles.cardTitle}>Trading key needs attention</Text>
           <Text style={styles.cardBody}>
-            The server&apos;s key was rejected as an invalid signature — signing again after the
-            server already had a key rotates it and strands whatever the server was holding.
-            Re-authorize once, then copy the fresh values into{" "}
-            <Text style={styles.code}>server/.env.local</Text> and restart.
+            {keyStale
+              ? "The server's key was rejected as an invalid signature — most likely stale from an earlier authorization."
+              : accountMismatch
+                ? `The server is signing for account ${serverConfig?.accountIndex}, not yours (${account?.index}).`
+                : "The server hasn't adopted a trading key for this account yet."}{" "}
+            Re-authorize to register a fresh one — the server adopts it automatically, no manual step needed.
           </Text>
-          {registrationResult ? (
-            <View style={styles.credentialBox}>
-              <Text style={styles.credentialLine}>LIGHTER_ACCOUNT_INDEX={registrationResult.accountIndex}</Text>
-              <Text style={styles.credentialLine}>LIGHTER_API_KEY_INDEX={registrationResult.apiKeyIndex}</Text>
-              <Text style={styles.credentialLine} numberOfLines={2}>
-                LIGHTER_API_KEY_PRIVATE_KEY={registrationResult.apiKeyPrivateKey}
-              </Text>
-            </View>
-          ) : hasSignedThisSession ? (
+          {hasSignedThisSession ? (
             <ActivityIndicator color={COLORS.accent} />
           ) : (
             <PillButton title="Re-authorize" onPress={confirmReauthorize} loading={isRegistering} />
           )}
-          <PillButton title="Check again" onPress={handleCheckAgain} variant="secondary" loading={isCheckingAgain} />
-        </View>
-      )}
-
-      {step === "activateServer" && !accountMismatch && !showStaleKeyCard && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Activate the server</Text>
-          <Text style={styles.cardBody}>
-            Copy these into <Text style={styles.code}>server/.env.local</Text> and restart it.
-          </Text>
-          {registrationResult && (
-            <View style={styles.credentialBox}>
-              <Text style={styles.credentialLine}>LIGHTER_ACCOUNT_INDEX={registrationResult.accountIndex}</Text>
-              <Text style={styles.credentialLine}>LIGHTER_API_KEY_INDEX={registrationResult.apiKeyIndex}</Text>
-              <Text style={styles.credentialLine} numberOfLines={2}>
-                LIGHTER_API_KEY_PRIVATE_KEY={registrationResult.apiKeyPrivateKey}
-              </Text>
-            </View>
-          )}
-          <PillButton title="Check again" onPress={handleCheckAgain} variant="secondary" loading={isCheckingAgain} />
-        </View>
-      )}
-
-      {step === "activateServer" && accountMismatch && !showStaleKeyCard && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Wrong account on the server</Text>
-          <Text style={styles.cardBody}>
-            Server is signing for account {serverConfig?.accountIndex}, yours is {account?.index} — copy the
-            printed values into <Text style={styles.code}>server/.env.local</Text> and restart it.
-          </Text>
-          {registrationResult ? (
-            <View style={styles.credentialBox}>
-              <Text style={styles.credentialLine}>LIGHTER_ACCOUNT_INDEX={registrationResult.accountIndex}</Text>
-              <Text style={styles.credentialLine}>LIGHTER_API_KEY_INDEX={registrationResult.apiKeyIndex}</Text>
-              <Text style={styles.credentialLine} numberOfLines={2}>
-                LIGHTER_API_KEY_PRIVATE_KEY={registrationResult.apiKeyPrivateKey}
-              </Text>
-            </View>
-          ) : hasSignedThisSession ? (
-            <ActivityIndicator color={COLORS.accent} />
-          ) : (
-            <>
-              <Text style={styles.cardBody}>
-                This session doesn&apos;t have those values anymore — re-authorize to get a fresh set.
-              </Text>
-              <PillButton title="Re-authorize" onPress={confirmReauthorize} loading={isRegistering} />
-            </>
-          )}
-          <PillButton title="Check again" onPress={handleCheckAgain} variant="secondary" loading={isCheckingAgain} />
         </View>
       )}
     </ScrollView>
@@ -390,10 +322,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  code: {
-    fontFamily: "Courier",
-    color: COLORS.textPrimary,
-  },
   amountRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -416,19 +344,6 @@ const styles = StyleSheet.create({
   amountSuffix: {
     color: COLORS.textSecondary,
     fontSize: 14,
-  },
-  credentialBox: {
-    backgroundColor: COLORS.background,
-    borderRadius: RADII.input,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 12,
-    gap: 6,
-  },
-  credentialLine: {
-    color: COLORS.accent,
-    fontFamily: "Courier",
-    fontSize: 11,
   },
   errorBanner: {
     backgroundColor: COLORS.dangerMuted,

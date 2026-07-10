@@ -76,9 +76,10 @@ export interface Eip1193LikeProvider {
 }
 
 /**
- * Runs the full ChangePubKey registration: fetch the personal_sign message from the server,
- * sign it with the embedded wallet, submit it. Returns the freshly generated key material the
- * operator must copy into server/.env.local — see components/onboarding/OnboardingStatusScreen.
+ * Runs the full ChangePubKey registration: fetch the personal_sign message from the server, sign
+ * it with the embedded wallet, submit it. The server adopts the resulting key as its own live
+ * trading key before responding — see server/src/orders.ts's adoptServerKey — so there's no
+ * follow-up step here; the poll in useLighterOnboarding picks up the change within one interval.
  */
 export async function registerLighterApiKey(
   provider: Eip1193LikeProvider,

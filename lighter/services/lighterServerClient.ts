@@ -171,11 +171,15 @@ export function requestChangePubKeyMessage(accountIndex: number): Promise<Change
   });
 }
 
+/**
+ * The server adopts the fresh key as its own live trading key before responding (see
+ * server/src/orders.ts's adoptServerKey) — the private key itself never leaves the server, so
+ * there's nothing here for the app to display or persist.
+ */
 export interface ChangePubKeySubmitResponse {
   txHash: string;
   apiKeyIndex: number;
   accountIndex: number;
-  apiKeyPrivateKey: string;
   apiKeyPublicKey: string;
 }
 
