@@ -51,6 +51,20 @@ search result's confident tone isn't evidence a URL is currently live.
 **Workaround:** no explorer link anywhere in the app. The order confirmation screen shows the
 raw `tx_hash` as selectable text instead — real data, not a fabricated link pattern.
 
+**Correction (2026-07-10, same day):** the search-driven investigation above missed a real
+explorer hosted *inside* the trading app rather than on a standalone subdomain — checked
+`testnet.app.lighter.xyz`'s footer/nav for an explorer link, but never tried a direct
+`/explorer/logs/<tx_hash>` path. Verified live in a real browser (not just curl, since the app
+is a client-rendered SPA that returns the same 200 shell for any path — a curl 200 alone doesn't
+prove the route works): `https://testnet.app.lighter.xyz/explorer/logs/<tx_hash>` renders real
+trade/log detail (batch, block, market, size, price, maker/taker) for a hash that exists, and
+correctly renders "Log not found" for one that doesn't — so it's a genuine lookup, not an SPA
+catch-all. Mainnet has the same route at `https://app.lighter.xyz/explorer/logs/<tx_hash>` (same
+"Log not found" behavior for a hash from the other network, confirming it's a real per-network
+lookup too). No transformation needed on the hash — it's used exactly as returned by `sendTx`'s
+`tx_hash` field, no `0x` prefix, no case change. Now wired into `TradingScreen.tsx`'s order
+confirmation screen, base URL picked from the server-reported `network` field.
+
 ## 2026-07-10 — [minor] `orderBookDetails` (undocumented) replaces the documented `orderBooks` for both market discovery and live pricing
 
 `GET /api/v1/orderBookDetails` (no `market_id`) returns every active market — perp and spot — in

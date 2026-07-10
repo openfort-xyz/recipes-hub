@@ -1,16 +1,30 @@
-import React, { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { Keypad, PillButton } from "./ui";
 import { COLORS, RADII } from "../constants/theme";
 import { useLighterOrderBook } from "../hooks/useLighterOrderBook";
 import { useLighterOrders } from "../hooks/useLighterOrders";
-import type { LighterAccount, Market } from "../services/lighterServerClient";
+import { fetchServerConfig } from "../services/lighterServerClient";
+import type { LighterAccount, LighterServerConfig, Market } from "../services/lighterServerClient";
 
 const SLIPPAGE = 0.005; // 0.5%, marketable-limit IOC order
 const ORDER_TYPE_LIMIT = 0;
 const TIME_IN_FORCE_IMMEDIATE_OR_CANCEL = 0;
 const ORDER_EXPIRY_NIL = 0;
+
+// Explorer lives inside the trading app itself, not a standalone domain (see FRICTION_LOG.md
+// correction). Verified live: both hosts resolve real /explorer/logs/<tx_hash> lookups (a
+// bogus hash on either host renders "Log not found" rather than a generic app shell).
+const EXPLORER_HOST: Record<LighterServerConfig["network"], string> = {
+  testnet: "https://testnet.app.lighter.xyz",
+  mainnet: "https://app.lighter.xyz",
+};
+
+function explorerUrl(network: LighterServerConfig["network"] | null, txHash: string): string | null {
+  if (!network) return null;
+  return `${EXPLORER_HOST[network]}/explorer/logs/${txHash}`;
+}
 
 type FlowStep = "overview" | "amount" | "confirm" | "result";
 type Direction = "buy" | "sell";
@@ -52,6 +66,15 @@ export function TradingScreen({ market, onBack, onRefreshAccount }: TradingScree
   const [amount, setAmount] = useState("0");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<OrderResult | null>(null);
+  const [network, setNetwork] = useState<LighterServerConfig["network"] | null>(null);
+
+  useEffect(() => {
+    // Best-effort: an explorer link is a nice-to-have, so a failed fetch just means no link
+    // renders rather than surfacing an error on the trading screen.
+    fetchServerConfig()
+      .then((config) => setNetwork(config.network))
+      .catch(() => {});
+  }, []);
 
   const estimatedSize = useMemo(() => {
     const usd = Number.parseFloat(amount) || 0;
@@ -227,6 +250,7 @@ export function TradingScreen({ market, onBack, onRefreshAccount }: TradingScree
   const renderResult = () => {
     if (!result) return null;
     const statusText = result.filled ? "Filled" : "Couldn't confirm";
+    const txExplorerUrl = explorerUrl(network, result.txHash);
     return (
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{statusText}</Text>
@@ -257,6 +281,11 @@ export function TradingScreen({ market, onBack, onRefreshAccount }: TradingScree
         <Text style={styles.hashText} selectable numberOfLines={2}>
           {result.txHash}
         </Text>
+        {txExplorerUrl && (
+          <TouchableOpacity onPress={() => Linking.openURL(txExplorerUrl)}>
+            <Text style={styles.explorerLink}>View on explorer</Text>
+          </TouchableOpacity>
+        )}
         <PillButton title="Done" onPress={resetFlow} />
       </View>
     );
@@ -407,5 +436,10 @@ const styles = StyleSheet.create({
     color: COLORS.textTertiary,
     fontFamily: "Courier",
     fontSize: 11,
+  },
+  explorerLink: {
+    color: COLORS.accent,
+    fontSize: 13,
+    fontWeight: "600",
   },
 });
