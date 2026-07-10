@@ -35,6 +35,25 @@ from its actual cause. Cost a full debugging round before the connection was mad
 **Fix:** none needed in code — just never build with `CODE_SIGNING_ALLOWED=NO` for any recipe
 using Openfort's embedded wallet (or any other keychain-dependent SDK). Documented in AGENTS.md.
 
+## 2026-07-10 — [major] Lighter's testnet faucet is intermittently flaky (~1-in-3 success rate)
+
+First real user hit "Faucet request failed: internal server error" on the very first tap. Live
+probes with fresh addresses confirmed it's not a one-off: five consecutive `GET /api/v1/faucet`
+calls returned `29500`, `200 ok`, `29500`, `29500`, `29500` in sequence, while `/api/v1/orderBooks`
+(hit interleaved with the same requests) stayed consistently healthy — so this is specific to the
+faucet path, not general API degradation. No `Retry-After` or rate-limit headers on the failures;
+it looks like plain backend flakiness surfacing as a generic 500 through CloudFront, not
+throttling. Roughly one in three faucet calls succeeds at any given moment (small sample, but
+consistent with what the user hit).
+
+**Workaround:** `requestFaucet` now retries up to 3 times with a 2s delay between attempts before
+surfacing an error (`server/src/lighterApi.ts#withRetry`), and the final error message states the
+attempt count so it's clear this isn't a client-side bug. The app's error banner suggests retrying
+rather than implying something is broken. Server-side errors (previously silent — the client saw
+a failure but the server logged nothing) now log one structured line per failed request
+(`route`, `lighterCode`, `message`) so a flaky-faucet report is diagnosable from server logs alone
+next time, without needing to reproduce it live.
+
 ## 2026-07-10 — [major] Testnet is completely undocumented on apidocs.lighter.xyz — and its faucet endpoint doesn't exist in any doc at all
 
 Every page checked on `apidocs.lighter.xyz` (get-started, deposits, api-keys, account-types,

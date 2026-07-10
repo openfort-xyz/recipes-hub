@@ -15,8 +15,12 @@ import {
 import { createEncryptionSession } from "./openfort.js";
 import { getAuthToken, submitCancelOrder, submitCreateOrder, submitWithdraw } from "./orders.js";
 
-function handleError(res: Response, error: unknown): void {
+function handleError(req: Request, res: Response, error: unknown): void {
+  const route = `${req.method} ${req.path}`;
   if (error instanceof LighterApiError) {
+    console.error(
+      JSON.stringify({ context: "lighter-api-error", route, lighterCode: error.code, message: error.message }),
+    );
     res.status(error.httpStatus && error.httpStatus >= 400 ? error.httpStatus : 502).json({
       error: error.message,
       lighterCode: error.code,
@@ -24,7 +28,7 @@ function handleError(res: Response, error: unknown): void {
     return;
   }
   const message = error instanceof Error ? error.message : "Unknown error";
-  console.error(JSON.stringify({ context: "lighter-server", message }));
+  console.error(JSON.stringify({ context: "lighter-server", route, message }));
   res.status(500).json({ error: message });
 }
 
@@ -33,7 +37,7 @@ export function handleHealth(_req: Request, res: Response): void {
 }
 
 export async function handleShieldSession(
-  _req: Request,
+  req: Request,
   res: Response,
   openfortClient: Openfort | null,
   shieldConfig: Config["openfort"]["shield"],
@@ -47,7 +51,7 @@ export async function handleShieldSession(
     const sessionId = await createEncryptionSession(openfortClient, shieldConfig);
     res.status(200).json({ session: sessionId });
   } catch (error) {
-    handleError(res, error);
+    handleError(req, res, error);
   }
 }
 
@@ -83,11 +87,11 @@ export async function handleAccount(req: Request, res: Response, config: Config)
     const apiKeys = await getRegisteredApiKeys(config, account.index);
     res.status(200).json({ onboarded: true, account, apiKeys });
   } catch (error) {
-    handleError(res, error);
+    handleError(req, res, error);
   }
 }
 
-export async function handleMarket(_req: Request, res: Response, config: Config): Promise<void> {
+export async function handleMarket(req: Request, res: Response, config: Config): Promise<void> {
   try {
     const books = await getOrderBooks(config);
     const market = books.find((book) => book.market_id === config.lighter.marketIndex);
@@ -97,7 +101,7 @@ export async function handleMarket(_req: Request, res: Response, config: Config)
     }
     res.status(200).json(market);
   } catch (error) {
-    handleError(res, error);
+    handleError(req, res, error);
   }
 }
 
@@ -108,11 +112,11 @@ export async function handleOrderBook(req: Request, res: Response, config: Confi
     const book = await getOrderBookOrders(config, config.lighter.marketIndex, Number.isFinite(limit) ? limit : 10);
     res.status(200).json(book);
   } catch (error) {
-    handleError(res, error);
+    handleError(req, res, error);
   }
 }
 
-export async function handleOpenOrders(_req: Request, res: Response, config: Config): Promise<void> {
+export async function handleOpenOrders(req: Request, res: Response, config: Config): Promise<void> {
   try {
     if (config.lighter.accountIndex === null) {
       res.status(200).json({ orders: [] });
@@ -127,7 +131,7 @@ export async function handleOpenOrders(_req: Request, res: Response, config: Con
     );
     res.status(200).json({ orders });
   } catch (error) {
-    handleError(res, error);
+    handleError(req, res, error);
   }
 }
 
@@ -141,7 +145,7 @@ export async function handleChangePubKeyMessage(req: Request, res: Response, con
     const registration = await buildChangePubKeyRegistration(config, accountIndex);
     res.status(200).json(registration);
   } catch (error) {
-    handleError(res, error);
+    handleError(req, res, error);
   }
 }
 
@@ -161,7 +165,7 @@ export async function handleChangePubKeySubmit(req: Request, res: Response, conf
     );
     res.status(200).json(result);
   } catch (error) {
-    handleError(res, error);
+    handleError(req, res, error);
   }
 }
 
@@ -209,7 +213,7 @@ export async function handleCreateOrder(req: Request, res: Response, config: Con
     });
     res.status(200).json(result);
   } catch (error) {
-    handleError(res, error);
+    handleError(req, res, error);
   }
 }
 
@@ -223,7 +227,7 @@ export async function handleCancelOrder(req: Request, res: Response, config: Con
     const result = await submitCancelOrder(config, config.lighter.marketIndex, orderIndex);
     res.status(200).json(result);
   } catch (error) {
-    handleError(res, error);
+    handleError(req, res, error);
   }
 }
 
@@ -243,7 +247,7 @@ export async function handleFaucet(req: Request, res: Response, config: Config):
     await requestFaucet(config, l1Address);
     res.status(200).json({ ok: true });
   } catch (error) {
-    handleError(res, error);
+    handleError(req, res, error);
   }
 }
 
@@ -257,7 +261,7 @@ export async function handleWithdraw(req: Request, res: Response, config: Config
     const result = await submitWithdraw(config, amountUsdcRaw);
     res.status(200).json(result);
   } catch (error) {
-    handleError(res, error);
+    handleError(req, res, error);
   }
 }
 

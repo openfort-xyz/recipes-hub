@@ -162,15 +162,60 @@ export async function getAccountActiveOrders(
   return body.orders ?? [];
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Retries `fn` up to `attempts` times, waiting `delayMs` between attempts (not after the last
+ * one). Rethrows the last error if every attempt fails.
+ */
+export async function withRetry<T>(fn: () => Promise<T>, attempts: number, delayMs: number): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) {
+        await sleep(delayMs);
+      }
+    }
+  }
+  throw lastError;
+}
+
+const FAUCET_RETRY_ATTEMPTS = 3;
+const FAUCET_RETRY_DELAY_MS = 2000;
+
 /**
  * Testnet-only. GET /api/v1/faucet?l1_address=... both creates the Lighter account AND credits
  * it (verified live: a fresh address got 10,000 USDC margin balance, 3 ETH, 1,000,000 LIT
  * instantly) — no on-chain L1 transaction required. Undocumented on apidocs.lighter.xyz, found by
- * probing (see FRICTION_LOG.md). Caller must gate this to testnet — the endpoint's mainnet
- * behavior was not tested and is assumed nonexistent/disabled.
+ * probing (see FRICTION_LOG.md).
+ *
+ * Also intermittently flaky (~1-in-3 success rate observed live, plain 500s through CloudFront,
+ * no rate-limit headers — see FRICTION_LOG.md) while unrelated endpoints stay healthy, so this
+ * retries a few times before giving up. Caller must gate this to testnet — the endpoint's
+ * mainnet behavior was not tested and is assumed nonexistent/disabled.
  */
 export async function requestFaucet(config: Config, l1Address: string): Promise<void> {
-  await getJson(config.lighter.apiBaseUrl, "/api/v1/faucet", { l1_address: l1Address });
+  try {
+    await withRetry(
+      () => getJson(config.lighter.apiBaseUrl, "/api/v1/faucet", { l1_address: l1Address }),
+      FAUCET_RETRY_ATTEMPTS,
+      FAUCET_RETRY_DELAY_MS,
+    );
+  } catch (error) {
+    if (error instanceof LighterApiError) {
+      throw new LighterApiError(
+        `${error.message} (after ${FAUCET_RETRY_ATTEMPTS} attempts — Lighter's testnet faucet is intermittently flaky, try again)`,
+        error.code,
+        error.httpStatus,
+      );
+    }
+    throw error;
+  }
 }
 
 export async function sendTx(
