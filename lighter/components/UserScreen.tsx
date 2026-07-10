@@ -1,4 +1,4 @@
-import { useEmbeddedEthereumWallet } from "@openfort/react-native";
+import { EmbeddedState, useEmbeddedEthereumWallet, useOpenfortContext } from "@openfort/react-native";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
@@ -8,61 +8,60 @@ import { OnboardingStatusScreen } from "./onboarding/OnboardingStatusScreen";
 import { TradingScreen } from "./TradingScreen";
 import { WithdrawScreen } from "./WithdrawScreen";
 import { COLORS } from "../constants/theme";
-import { fetchAccount, type LighterAccount, type Market } from "../services/lighterServerClient";
+import { useLighterOnboarding } from "../hooks/useLighterOnboarding";
+import type { Market } from "../services/lighterServerClient";
 import { L1_CHAIN_ID } from "../constants/network";
 
-type Screen = "onboarding" | "trading" | "withdraw";
-
-const ACCOUNT_POLL_MS = 5000;
+// How long "disconnected + no wallets" must hold steady before it's trusted as final rather than
+// a snapshot mid-restore — see the effect below for why a single render isn't enough.
+const WALLET_SETTLE_MS = 1500;
 
 export function UserScreen() {
   const ethereum = useEmbeddedEthereumWallet({ chainId: L1_CHAIN_ID });
-  const [view, setView] = useState<Screen>("onboarding");
-  const [account, setAccount] = useState<LighterAccount | null>(null);
+  const { embeddedState } = useOpenfortContext();
+  const [showWithdraw, setShowWithdraw] = useState(false);
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
 
   const hasTriggeredCreate = React.useRef(false);
   useEffect(() => {
+    // embeddedState starts at NONE (the SDK's own pre-restore placeholder) and settling past it
+    // is necessary but NOT sufficient: embeddedState can reach READY while the separate
+    // embeddedAccounts fetch (which produces `wallets`) is still in flight, briefly reporting
+    // "disconnected" + empty wallets — indistinguishable from genuinely having no wallet. Verified
+    // live (see FRICTION_LOG.md): embeddedState was already 4 (READY) on the very first render
+    // with walletsLen still 0. Rather than chase the SDK's exact internal ordering, wait for this
+    // snapshot to hold steady for a settle window before trusting it — any subsequent state change
+    // (the fetch resolving, embeddedState moving again) cancels this timer via the effect cleanup.
+    if (embeddedState === EmbeddedState.NONE) {
+      return;
+    }
     if (ethereum.status === "disconnected" && ethereum.wallets.length === 0 && !hasTriggeredCreate.current) {
-      hasTriggeredCreate.current = true;
-      ethereum.create({ chainId: L1_CHAIN_ID }).catch((err) => {
-        console.error("Wallet creation failed:", err);
-      });
+      const timer = setTimeout(() => {
+        hasTriggeredCreate.current = true;
+        ethereum.create({ chainId: L1_CHAIN_ID }).catch((err) => {
+          console.error("Wallet creation failed:", err);
+        });
+      }, WALLET_SETTLE_MS);
+      return () => clearTimeout(timer);
     }
     if (ethereum.status === "disconnected" && ethereum.wallets.length > 0) {
       const [firstWallet] = ethereum.wallets;
       if (firstWallet) {
         ethereum.setActive({ address: firstWallet.address as `0x${string}`, chainId: L1_CHAIN_ID }).catch((err) => {
-          console.error("Wallet activation failed:", err);
+          console.error("Wallet activation failed:", err instanceof Error ? err.message : String(err));
         });
       }
     }
-  }, [ethereum]);
+  }, [ethereum, embeddedState]);
 
-  /** Returns the freshly fetched account so callers (e.g. post-order fill detection) can use it
-   * directly instead of waiting for the next render. */
-  const refreshAccount = React.useCallback(async (): Promise<LighterAccount | null> => {
-    if (ethereum.status !== "connected") return null;
-    try {
-      const result = await fetchAccount(ethereum.activeWallet.address);
-      setAccount(result.account);
-      return result.account;
-    } catch (err) {
-      console.error("Failed to refresh account:", err);
-      return null;
-    }
-  }, [ethereum]);
-
-  useEffect(() => {
-    // See hooks/useLighterMarkets.ts for why this is exempted from set-state-in-effect. Polls
-    // continuously (not just on mount) so cash/positions on the portfolio screen stay current on
-    // their own — TradingScreen also triggers an immediate refresh around each order, this
-    // interval is the fallback for everything else (funding, liquidations, another device).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    refreshAccount();
-    const interval = setInterval(refreshAccount, ACCOUNT_POLL_MS);
-    return () => clearInterval(interval);
-  }, [refreshAccount]);
+  const walletAddress = ethereum.status === "connected" ? (ethereum.activeWallet.address as `0x${string}`) : undefined;
+  // Single source of truth for account/apiKeys/serverConfig/readiness — previously UserScreen and
+  // OnboardingStatusScreen each ran their own separate fetch of the same data, which could drift
+  // out of sync during a wallet-address change (one still showing a stale, already-registered
+  // account's data while the other had moved on) and let an unregistered/mismatched account slip
+  // through to trading. Polls continuously, not just on mount, so the gate re-evaluates from live
+  // data on every render — including regressing back to onboarding if it ever stops being ready.
+  const onboarding = useLighterOnboarding(walletAddress);
 
   if (ethereum.status === "error") {
     return (
@@ -95,29 +94,33 @@ export function UserScreen() {
     );
   }
 
-  const walletAddress = ethereum.activeWallet.address as `0x${string}`;
-
-  if (view === "onboarding" || !account) {
+  if (onboarding.step !== "ready") {
     return (
       <OnboardingStatusScreen
-        walletAddress={walletAddress}
+        walletAddress={ethereum.activeWallet.address as `0x${string}`}
         provider={ethereum.provider}
-        onReady={async () => {
-          await refreshAccount();
-          setView("trading");
-        }}
+        onboarding={onboarding}
       />
     );
   }
 
-  if (view === "withdraw") {
-    return <WithdrawScreen account={account} onBack={() => setView("trading")} onRefreshAccount={refreshAccount} />;
+  const { account } = onboarding;
+  if (!account) {
+    // Should be unreachable — deriveStep requires a non-null account to reach "ready" — but
+    // never trust that invariant across a function boundary without a runtime check.
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator color={COLORS.accent} />
+      </View>
+    );
+  }
+
+  if (showWithdraw) {
+    return <WithdrawScreen account={account} onBack={() => setShowWithdraw(false)} onRefreshAccount={onboarding.refresh} />;
   }
 
   if (!selectedMarket) {
-    return (
-      <AssetSelectScreen account={account} onSelect={setSelectedMarket} onWithdraw={() => setView("withdraw")} />
-    );
+    return <AssetSelectScreen account={account} onSelect={setSelectedMarket} onWithdraw={() => setShowWithdraw(true)} />;
   }
 
   return (
@@ -125,7 +128,7 @@ export function UserScreen() {
       market={selectedMarket}
       accountIndex={account.index}
       onBack={() => setSelectedMarket(null)}
-      onRefreshAccount={refreshAccount}
+      onRefreshAccount={onboarding.refresh}
     />
   );
 }
