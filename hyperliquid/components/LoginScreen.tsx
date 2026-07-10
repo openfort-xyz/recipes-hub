@@ -1,31 +1,13 @@
 import { OAuthProvider, useGuestAuth, useOAuth } from "@openfort/react-native";
 import { Text, View, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
-import { LinearGradient } from 'expo-linear-gradient';
 
-const { height } = Dimensions.get('window');
+import { PillButton, colors, spacing } from "./ui";
+
+const { height } = Dimensions.get("window");
 
 export default function LoginScreen() {
-  const { signUpGuest } = useGuestAuth()
+  const { signUpGuest } = useGuestAuth();
   const { initOAuth, error } = useOAuth();
-
-  const CustomButton = ({ title, onPress, style, textStyle }: any) => (
-    <TouchableOpacity style={[styles.button, style]} onPress={onPress}>
-      <Text style={[styles.buttonText, textStyle]}>{title}</Text>
-    </TouchableOpacity>
-  );
-
-  const GradientButton = ({ title, onPress }: any) => (
-    <TouchableOpacity onPress={onPress}>
-      <LinearGradient
-        colors={['#00D4AA', '#00B894']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.gradientButton}
-      >
-        <Text style={styles.gradientButtonText}>{title}</Text>
-      </LinearGradient>
-    </TouchableOpacity>
-  );
 
   const handleGuestLogin = () => {
     signUpGuest();
@@ -33,58 +15,50 @@ export default function LoginScreen() {
 
   const handleGoogleLogin = async () => {
     try {
-      await initOAuth({ provider: "google" as OAuthProvider })
-    } catch (error) {
-      console.error("Error logging in with Google:", error);
+      await initOAuth({ provider: "google" as OAuthProvider });
+    } catch (err) {
+      console.error("Error logging in with Google:", err);
     }
   };
 
   const handleAppleLogin = async () => {
     try {
-      await initOAuth({ provider: "apple" as OAuthProvider })
-    } catch (error) {
-      console.error("Error logging in with Apple:", error);
+      await initOAuth({ provider: "apple" as OAuthProvider });
+    } catch (err) {
+      console.error("Error logging in with Apple:", err);
     }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Openfort </Text>
-        <Text style={styles.title}>+</Text>
-        <Text style={styles.title}>Hyperliquid</Text>
+        <View style={styles.logoDot} />
+        <Text style={styles.title}>HYPE</Text>
+        <Text style={styles.subtitle}>Trade HYPE on Hyperliquid with an Openfort embedded wallet.</Text>
       </View>
+
       <View style={styles.content}>
-        <View style={styles.card}>
-          <View style={styles.buttonContainer}>
-            <GradientButton
-              title="Continue as Guest"
-              onPress={handleGuestLogin}
-            />
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-            <CustomButton
-              title="Continue with Google"
-              onPress={handleGoogleLogin}
-              style={styles.googleButton}
-              textStyle={styles.googleButtonText}
-            />
-            <CustomButton
-              title="Continue with Apple"
-              onPress={handleAppleLogin}
-              style={styles.appleButton}
-              textStyle={styles.appleButtonText}
-            />
-          </View>
-          {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>⚠️ {error.message}</Text>
-            </View>
-          )}
+        <PillButton title="Continue as Guest" onPress={handleGuestLogin} />
+
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
         </View>
+
+        <TouchableOpacity style={styles.secondaryButton} onPress={handleGoogleLogin} activeOpacity={0.8}>
+          <Text style={styles.secondaryButtonText}>Continue with Google</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.secondaryButton} onPress={handleAppleLogin} activeOpacity={0.8}>
+          <Text style={styles.secondaryButtonText}>Continue with Apple</Text>
+        </TouchableOpacity>
+
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error.message}</Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -93,109 +67,79 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F1419',
-  },
-  backgroundGradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
+    backgroundColor: colors.background,
   },
   header: {
-    alignItems: 'center',
-    paddingTop: height * 0.2,
+    alignItems: "center",
+    paddingTop: height * 0.16,
+    paddingHorizontal: spacing.xl,
+    gap: spacing.sm,
+  },
+  logoDot: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.accent,
+    marginBottom: spacing.md,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontSize: 40,
+    fontWeight: "800",
+    color: colors.textPrimary,
+    letterSpacing: -1,
+  },
+  subtitle: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 21,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    justifyContent: 'center',
-  },
-  card: {
-    backgroundColor: 'rgba(26, 31, 46, 0.8)',
-    borderRadius: 24,
-    padding: 32,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  buttonContainer: {
-    gap: 16,
-  },
-  button: {
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  gradientButton: {
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#00D4AA',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  gradientButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  googleButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  googleButtonText: {
-    color: '#FFFFFF',
-  },
-  appleButton: {
-    backgroundColor: '#000000',
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  appleButtonText: {
-    color: '#FFFFFF',
+    justifyContent: "flex-end",
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xl,
+    gap: spacing.md,
   },
   divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: spacing.xs,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(139, 148, 158, 0.3)',
+    backgroundColor: colors.border,
   },
   dividerText: {
-    color: '#8B949E',
-    paddingHorizontal: 16,
-    fontSize: 14,
+    color: colors.textSecondary,
+    paddingHorizontal: spacing.md,
+    fontSize: 13,
+  },
+  secondaryButton: {
+    height: 56,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  secondaryButtonText: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: colors.textPrimary,
   },
   errorContainer: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: colors.negativeMuted,
     borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
+    padding: spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
+    borderColor: "rgba(255, 59, 48, 0.3)",
   },
   errorText: {
-    color: '#EF4444',
+    color: colors.negative,
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
