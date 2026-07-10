@@ -575,3 +575,73 @@ watched the app auto-advance from "Fund your account" to "Authorize trading" wit
 with no manual refresh — confirming the single-source-of-truth poll drives the UI correctly.
 `personal_sign` (step 2) and copying env values (step 3) need the real device/wallet and are left
 for the user to complete.
+
+## 2026-07-10 — [blocker] ChangePubKey is a rotation, not a re-print — signing twice silently strands the server on a dead key
+
+Fallout from the account-identity fix above: the account/apiKeyIndex-based gate correctly caught
+"wrong account", but had no way to catch a NARROWER, nastier trap — the user tapped "Sign &
+authorize" for account 179, then tapped it again (poll hadn't advanced the UI away from that step
+yet). ChangePubKey doesn't "reprint an existing key" — it installs a brand new one at the same
+`(account, apiKeyIndex)` slot, overwriting whatever was there. The server had already been given
+the FIRST key; the chain now only recognizes the SECOND. Every subsequent order failed
+`21120 invalid signature`, and `deriveStep`'s inputs (account matches, apiKeys.length > 0, server
+configured) all still looked completely fine — the on-chain key changing underneath the server is
+invisible to every signal the gate was checking.
+
+**Investigated whether the vendored WASM can detect this directly**, per the request: enumerated
+every JS global the compiled binary actually registers (`GenerateAPIKey`, `CreateClient`,
+`CreateAuthToken`, `SignChangePubKey`, and 16 other `Sign*` functions — a fuller list than
+`signer.ts`'s wrapper had ever needed before) and found one undocumented until now: `CheckClient`.
+It makes a REAL network call from inside the Go/WASM sandbox (`GET /api/v1/apikeys?account_index=`)
+rather than delegating to JS's `fetch` the way every other exported function does — and that call
+fails under Node with a DNS resolution error (`wasm_exec.js` is Go's browser-oriented glue file;
+whatever `net.Dial` shim it expects isn't there in this environment). Confirmed this isn't a
+sandbox/permissions issue — same failure with the sandbox disabled. Not something to patch around
+in vendored SDK glue code; ruled out.
+
+**Fallback approach, live-verified instead:** signed and submitted a real (harmless — the order
+index can never exist, so it can never cancel anything or move funds) CancelOrder using a
+throwaway, never-registered key. Got back exactly `{"code":21120,"message":"invalid signature"}` —
+the same code the user's real orders were failing with, and distinct from the generic `29500`
+other failure classes return (see the earlier "sendTx error codes are inconsistent" entry). This
+is a strictly more faithful self-test than the auth-token approach the task suggested as an
+example — tried that too first: a bad auth token against `accountActiveOrders` comes back as a
+generic `29500 internal server error: invalid signature`, not the specific `21120` the order path
+actually produces, which would need message-substring matching instead of a clean code check.
+
+**Fix — four pieces:**
+1. `server/src/keySelfTest.ts` + wiring in `orders.ts`/`server.ts`: submits the real self-test
+   CancelOrder once at startup (background, non-blocking — a network hiccup here shouldn't hang
+   the whole server) whenever key material is configured. `GET /api/lighter/config` now reports
+   `serverKeyInvalid` and — this is the part that actually closes the gate — `serverWalletConfigured`
+   itself goes `false` on a proven-invalid key, so `deriveStep` already routes back to
+   `activateServer` with zero changes to the gate logic itself.
+2. `server/src/changePubKey.ts`: every successful registration now also writes `server/.env.pending`
+   (git-ignored) with the three values, a timestamp, and instructions — not a replacement for the
+   app screen, a backstop for it. The private key itself was already kept out of console output on
+   purpose (log aggregators are a bigger exposure surface than a local git-ignored file); this adds
+   a durable copy without reversing that.
+3. `TradingScreen.tsx`: an order/cancel failure with code 21120 gets its own alert — "the server's
+   key looks stale, most likely authorized twice" — with a "Re-authorize" action, same pattern as
+   the existing 409 "Fix setup". Since `deriveStep`'s own inputs don't change when only the
+   on-chain key rotates, this needed a way to force the onboarding screen open regardless of what
+   step currently computes to: a `keyStale` flag in `UserScreen`, auto-clearing once the
+   underlying data genuinely reaches "ready" again (i.e. the operator actually restarted with a
+   working key).
+4. `OnboardingStatusScreen.tsx`: the exact race that caused this — sign, then tap again before the
+   ~2s poll moves the UI off the "Sign & authorize" button — now has an explicit local guard
+   (`hasSignedThisSession`) independent of the poll's timing, not just the button's normal
+   in-flight `loading` state. Resets on any step transition, so it doesn't block the *next*
+   legitimate authorize (initial or recovery) — just an immediate double-tap of the same one.
+
+**Regression tests:** `server/src/keySelfTest.test.ts` (5 cases) covers the pure classification —
+the specific 21120 signature is invalid, everything else (a generic 29500, a network error,
+success, no code at all) is not, so a network blip or an unrelated failure class never
+false-alarms the operator into re-authorizing when nothing was actually wrong with the key.
+
+**Did not live-verify against the user's real session** — the server was deliberately mis-pinned
+to a placeholder account at the time to let the user reach the (unrelated) account-mismatch card,
+and touching `.env.local` or restarting with real credentials would have stepped on that in-flight
+test. The 21120 classification and the self-test's real on-chain call were both verified live via
+an isolated throwaway key instead (see above) — the same signal, reproduced independently rather
+than on the account that mattered.

@@ -40,6 +40,14 @@ recipe uses:
 All signing happens entirely inside the WASM sandbox; private key material never leaves the Go
 runtime's memory as a JS value except as the hex string returned by `GenerateAPIKey`.
 
+The binary also registers `CheckClient(apiKeyIndex, accountIndex)` and 16 other `Sign*` functions
+this recipe doesn't need. `CheckClient` looks like it's meant for exactly the key-validity check
+`server/src/keySelfTest.ts` needs — but unlike everything else here, it makes a real network call
+from inside the Go/WASM sandbox instead of delegating to JS's `fetch`, and that call fails under
+Node with a DNS resolution error (this glue file is Go's browser-oriented build; whatever
+`net.Dial` shim it expects for outbound requests isn't present in Node). Confirmed live, sandbox
+on and off — see `docs/lighter-signing-notes.md` and `FRICTION_LOG.md`'s key-rotation entry.
+
 ## Why WASM over a community SDK
 
 We evaluated the community TypeScript wrappers (`lighter-ts-sdk`, `@reservoir0x/lighter-ts-sdk`,

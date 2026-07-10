@@ -100,6 +100,27 @@ all — Lighter's server routes withdrawals exclusively to the account's own reg
 so the server's API key alone is sufficient authorization (see `server/src/orders.ts#submitWithdraw`,
 which signs and submits it as a normal L2 `sendTx`, same as an order — not an L1 contract call).
 
+**ChangePubKey rotates, it doesn't reprint.** Submitting it a second time for the same
+`(accountIndex, apiKeyIndex)` installs a brand new keypair at that slot — it isn't idempotent and
+there's no "show me the currently-active key again" call. Whatever the server was holding from an
+earlier submit stops being recognized on-chain the moment a later one confirms, with no error or
+warning at submit time — the only symptom is every subsequent order failing
+`21120 invalid signature` (see `FRICTION_LOG.md`'s key-rotation entry for the live trap this
+caused and the fix).
+
+The vendored WASM has one function relevant to detecting this that this recipe doesn't use:
+`CheckClient(apiKeyIndex, accountIndex)` (found by enumerating every JS global the compiled
+binary actually registers — it isn't mentioned in `server/signer/README.md`'s list, which only
+covers the ones already in use). Unlike every other exported function, `CheckClient` makes a real
+network call *from inside the Go/WASM sandbox* (`GET /api/v1/apikeys?account_index=`) rather than
+delegating to JS's `fetch`, and that call fails under Node with a DNS resolution error —
+`wasm_exec.js` is Go's browser-oriented glue file, and whatever `net.Dial` shim `CheckClient`
+needs for outbound requests isn't present in a Node environment. Confirmed this is inherent to the
+WASM build, not a sandbox/permissions issue in this environment specifically (same failure with
+sandboxing disabled). Key-validity self-testing in this recipe instead submits a real, harmless
+transaction through the normal JS-side `fetch` path and checks for the `21120` code directly — see
+`server/src/keySelfTest.ts`.
+
 ## 3. Testnet vs mainnet
 
 Confirmed live and from source, not apidocs.lighter.xyz (which has zero testnet mentions across
