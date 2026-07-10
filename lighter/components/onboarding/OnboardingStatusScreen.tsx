@@ -139,6 +139,29 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
     }
   };
 
+  /**
+   * "Re-authorize" (recovery cards only, never the first-time "Sign & authorize") always rotates
+   * the on-chain key — there's no "just re-display the existing credentials" mode, since
+   * ChangePubKey has no way to read a key back, only replace it. A user reading these two
+   * similar-looking buttons quickly ("Re-authorize" vs. plain, non-destructive "Check again") can
+   * tap the wrong one without registering that it just invalidated whatever key the server was
+   * holding — this is what actually happened live (see FRICTION_LOG.md's key-rotation entry).
+   * Embedded-wallet personal_sign has no separate native confirmation UI to catch that mistake,
+   * so the app has to be the one that asks.
+   */
+  const confirmReauthorize = () => {
+    Alert.alert(
+      "Generate a new trading key?",
+      "This replaces whatever key the chain currently has for this account right now — any key " +
+        "the server (or a previous screen) was holding stops working immediately, with no way to " +
+        "get it back.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Generate new key", style: "destructive", onPress: handleRegister },
+      ],
+    );
+  };
+
   const steps: OnboardingStep[] = ["deposit", "registerApiKey", "activateServer"];
   const currentIndex = steps.indexOf(step === "ready" ? "activateServer" : step);
 
@@ -233,7 +256,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
           ) : hasSignedThisSession ? (
             <ActivityIndicator color={COLORS.accent} />
           ) : (
-            <PillButton title="Re-authorize" onPress={handleRegister} loading={isRegistering} />
+            <PillButton title="Re-authorize" onPress={confirmReauthorize} loading={isRegistering} />
           )}
           <PillButton title="Check again" onPress={handleCheckAgain} variant="secondary" loading={isCheckingAgain} />
         </View>
@@ -280,7 +303,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
               <Text style={styles.cardBody}>
                 This session doesn&apos;t have those values anymore — re-authorize to get a fresh set.
               </Text>
-              <PillButton title="Re-authorize" onPress={handleRegister} loading={isRegistering} />
+              <PillButton title="Re-authorize" onPress={confirmReauthorize} loading={isRegistering} />
             </>
           )}
           <PillButton title="Check again" onPress={handleCheckAgain} variant="secondary" loading={isCheckingAgain} />

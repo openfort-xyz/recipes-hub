@@ -645,3 +645,31 @@ and touching `.env.local` or restarting with real credentials would have stepped
 test. The 21120 classification and the self-test's real on-chain call were both verified live via
 an isolated throwaway key instead (see above) — the same signal, reproduced independently rather
 than on the account that mattered.
+
+**Addendum — traced the actual live incident, not just the general trap.** The team lead reported
+the rotation happened with "no visible prompt": app reloaded (any in-memory `registrationResult`
+gone), server mis-pinned, user on the "Wrong account on the server" card, tapped what they
+believed was "Check again" — and a brand-new key appeared with no separate confirmation step.
+Audited the exact build that was live at the time (`de0334a`, the gate-unification commit,
+before the four fixes above) and every commit in this file's history back to the original
+scaffold: `handleCheckAgain` has only ever called `refresh()` — a pure read, no signing, in every
+version. There is no code path, at any point in this recipe's history, where anything other than
+an explicit tap on a "Sign & authorize"/"Re-authorize" button calls `registerLighterApiKey`.
+
+So "no visible prompt" wasn't a code-triggered auto-fire — it's the embedded wallet SDK itself:
+`personal_sign` on an embedded (non-custodial-but-managed) wallet has no separate native
+confirmation dialog the way a browser-extension wallet would. The app's own button tap *is* the
+entire confirmation. On the account-mismatch card specifically, "Re-authorize" (destructive —
+rotates the key) sits directly above "Check again" (safe — just re-reads state), both plain pill
+buttons with no visual distinction in consequence. A tap intended for one and landing on the
+other completes instantly and silently, with nothing to interrupt it — this is almost certainly
+what actually happened, not a code bug in the traditional sense.
+
+**Fix:** "Re-authorize" (recovery cards only — never the first-time "Sign & authorize", which has
+no existing key to destroy) now goes through an `Alert.alert` confirmation ("Generate a new
+trading key? This replaces whatever key the chain currently has... with no way to get it back")
+before calling `registerLighterApiKey`. `Cancel` is the default; the destructive action needs an
+explicit second tap on "Generate new key". This is a genuinely different fix from the
+double-sign debounce two entries up — that one stops a second tap of the *same already-completed*
+action; this one adds a deliberate pause before the *first* tap of a destructive one, precisely
+because the SDK provides no native equivalent.
