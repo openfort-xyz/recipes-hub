@@ -6,11 +6,15 @@ import { PillButton } from "./ui";
 import { COLORS, RADII } from "../constants/theme";
 
 export default function LoginScreen() {
-  const { signUpGuest, isLoading: guestLoading } = useGuestAuth();
-  const { initOAuth, isLoading: oauthLoading, error } = useOAuth();
+  const { signUpGuest, isLoading: guestLoading, error: guestError } = useGuestAuth();
+  const { initOAuth, isLoading: oauthLoading, error: oauthError } = useOAuth();
+  const error = guestError ?? oauthError;
 
-  const handleGuestLogin = () => {
-    signUpGuest();
+  const handleGuestLogin = async () => {
+    const result = await signUpGuest();
+    if (result?.error) {
+      console.error("Guest sign-up failed:", result.error);
+    }
   };
 
   const handleGoogleLogin = async () => {
