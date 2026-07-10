@@ -2,12 +2,13 @@ import { useEmbeddedEthereumWallet } from "@openfort/react-native";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
+import { AssetSelectScreen } from "./AssetSelectScreen";
 import { CreateWalletScreen } from "./onboarding/CreateWalletScreen";
 import { OnboardingStatusScreen } from "./onboarding/OnboardingStatusScreen";
 import { TradingScreen } from "./TradingScreen";
 import { WithdrawScreen } from "./WithdrawScreen";
 import { COLORS } from "../constants/theme";
-import { fetchAccount, type LighterAccount } from "../services/lighterServerClient";
+import { fetchAccount, type LighterAccount, type Market } from "../services/lighterServerClient";
 import { L1_CHAIN_ID } from "../constants/network";
 
 type Screen = "onboarding" | "trading" | "withdraw";
@@ -16,6 +17,7 @@ export function UserScreen() {
   const ethereum = useEmbeddedEthereumWallet({ chainId: L1_CHAIN_ID });
   const [view, setView] = useState<Screen>("onboarding");
   const [account, setAccount] = useState<LighterAccount | null>(null);
+  const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
 
   const hasTriggeredCreate = React.useRef(false);
   useEffect(() => {
@@ -35,18 +37,22 @@ export function UserScreen() {
     }
   }, [ethereum]);
 
-  const refreshAccount = React.useCallback(async () => {
-    if (ethereum.status !== "connected") return;
+  /** Returns the freshly fetched account so callers (e.g. post-order fill detection) can use it
+   * directly instead of waiting for the next render. */
+  const refreshAccount = React.useCallback(async (): Promise<LighterAccount | null> => {
+    if (ethereum.status !== "connected") return null;
     try {
       const result = await fetchAccount(ethereum.activeWallet.address);
       setAccount(result.account);
+      return result.account;
     } catch (err) {
       console.error("Failed to refresh account:", err);
+      return null;
     }
   }, [ethereum]);
 
   useEffect(() => {
-    // See hooks/useLighterMarket.ts for why this is exempted from set-state-in-effect.
+    // See hooks/useLighterMarkets.ts for why this is exempted from set-state-in-effect.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshAccount();
   }, [refreshAccount]);
@@ -98,17 +104,22 @@ export function UserScreen() {
   }
 
   if (view === "withdraw") {
+    return <WithdrawScreen account={account} onBack={() => setView("trading")} onRefreshAccount={refreshAccount} />;
+  }
+
+  if (!selectedMarket) {
     return (
-      <WithdrawScreen
-        account={account}
-        onBack={() => setView("trading")}
-        onRefreshAccount={refreshAccount}
-      />
+      <AssetSelectScreen account={account} onSelect={setSelectedMarket} onWithdraw={() => setView("withdraw")} />
     );
   }
 
   return (
-    <TradingScreen account={account} onOpenWithdraw={() => setView("withdraw")} onRefreshAccount={refreshAccount} />
+    <TradingScreen
+      market={selectedMarket}
+      account={account}
+      onBack={() => setSelectedMarket(null)}
+      onRefreshAccount={refreshAccount}
+    />
   );
 }
 

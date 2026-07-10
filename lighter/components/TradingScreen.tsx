@@ -3,39 +3,71 @@ import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacit
 
 import { Keypad, PillButton } from "./ui";
 import { COLORS, RADII } from "../constants/theme";
-import { useLighterMarket } from "../hooks/useLighterMarket";
+import { useLighterOrderBook } from "../hooks/useLighterOrderBook";
 import { useLighterOrders } from "../hooks/useLighterOrders";
-import type { LighterAccount } from "../services/lighterServerClient";
+import type { LighterAccount, Market } from "../services/lighterServerClient";
 
 const SLIPPAGE = 0.005; // 0.5%, marketable-limit IOC order
 const ORDER_TYPE_LIMIT = 0;
 const TIME_IN_FORCE_IMMEDIATE_OR_CANCEL = 0;
 const ORDER_EXPIRY_NIL = 0;
+// sendTx returns only a tx_hash — no fill status (verified live, see FRICTION_LOG.md) — so fill
+// detection compares position/balance before vs. after this delay.
+const FILL_CHECK_DELAY_MS = 2000;
 
-type FlowStep = "overview" | "direction" | "amount" | "confirm" | "result";
+type FlowStep = "overview" | "amount" | "confirm" | "result";
 type Direction = "buy" | "sell";
 
 interface TradingScreenProps {
+  market: Market;
   account: LighterAccount | null;
-  onOpenWithdraw: () => void;
-  onRefreshAccount: () => void;
+  onBack: () => void;
+  onRefreshAccount: () => Promise<LighterAccount | null>;
+}
+
+interface OrderResult {
+  direction: Direction;
+  txHash: string;
+  requestedSize: number;
+  requestedPrice: number;
+  filled: boolean | "unknown";
 }
 
 function toRawInt(value: number, decimals: number): number {
   return Math.round(value * 10 ** decimals);
 }
 
-export function TradingScreen({ account, onOpenWithdraw, onRefreshAccount }: TradingScreenProps) {
-  const { market, orderBook, midPrice, isLoading: marketLoading } = useLighterMarket();
+/** Perp: signed position size for this market. Spot: base-asset wallet balance. */
+function getRelevantBalance(account: LighterAccount | null, market: Market): number {
+  if (!account) return 0;
+  if (market.marketType === "perp") {
+    const position = account.positions.find((p) => p.market_id === market.marketIndex);
+    if (!position) return 0;
+    const size = Number.parseFloat(position.position);
+    return position.sign >= 0 ? size : -size;
+  }
+  const baseSymbol = market.symbol.split("/")[0];
+  const asset = account.assets?.find((a) => a.symbol === baseSymbol);
+  return asset ? Number.parseFloat(asset.balance) : 0;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function TradingScreen({ market, account, onBack, onRefreshAccount }: TradingScreenProps) {
+  const { bestBid, bestAsk, midPrice, isLoading: marketLoading } = useLighterOrderBook(market.marketIndex);
   const { orders, isLoading: ordersLoading, createOrder, cancelOrder } = useLighterOrders();
+  const marketOrders = useMemo(
+    () => orders.filter((o) => o.market_index === market.marketIndex),
+    [orders, market.marketIndex],
+  );
 
   const [step, setStep] = useState<FlowStep>("overview");
   const [direction, setDirection] = useState<Direction | null>(null);
   const [amount, setAmount] = useState("0");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [result, setResult] = useState<{ txHash: string; direction: Direction; amount: string } | null>(null);
-
-  const collateral = account ? Number.parseFloat(account.available_balance) : 0;
+  const [result, setResult] = useState<OrderResult | null>(null);
 
   const estimatedSize = useMemo(() => {
     const usd = Number.parseFloat(amount) || 0;
@@ -51,14 +83,12 @@ export function TradingScreen({ account, onOpenWithdraw, onRefreshAccount }: Tra
   };
 
   const handleSubmit = async () => {
-    if (!market || !direction || !orderBook) return;
+    if (!direction) return;
     const usdAmount = Number.parseFloat(amount);
     if (!Number.isFinite(usdAmount) || usdAmount <= 0) {
       Alert.alert("Invalid amount", "Enter a positive USD amount.");
       return;
     }
-    const bestAsk = orderBook.asks[0] ? Number.parseFloat(orderBook.asks[0].price) : null;
-    const bestBid = orderBook.bids[0] ? Number.parseFloat(orderBook.bids[0].price) : null;
     const isAsk = direction === "sell";
     const referencePrice = isAsk ? bestBid : bestAsk;
     if (!referencePrice) {
@@ -67,30 +97,38 @@ export function TradingScreen({ account, onOpenWithdraw, onRefreshAccount }: Tra
     }
     const limitPrice = isAsk ? referencePrice * (1 - SLIPPAGE) : referencePrice * (1 + SLIPPAGE);
     const baseSize = usdAmount / limitPrice;
-    if (baseSize < Number.parseFloat(market.min_base_amount)) {
+    if (baseSize < Number.parseFloat(market.minBaseAmount)) {
       Alert.alert(
         "Amount too small",
-        `Minimum order size is ${market.min_base_amount} ${market.symbol} (~$${(
-          Number.parseFloat(market.min_base_amount) * limitPrice
+        `Minimum order size is ${market.minBaseAmount} ${market.symbol} (~$${(
+          Number.parseFloat(market.minBaseAmount) * limitPrice
         ).toFixed(2)}).`,
       );
       return;
     }
 
     setIsSubmitting(true);
+    const balanceBefore = getRelevantBalance(account, market);
     try {
       const response = await createOrder({
+        marketIndex: market.marketIndex,
         clientOrderIndex: 0, // NilClientOrderIndex — let the server assign the order index
-        baseAmount: toRawInt(baseSize, market.supported_size_decimals),
-        price: toRawInt(limitPrice, market.supported_price_decimals),
+        baseAmount: toRawInt(baseSize, market.sizeDecimals),
+        price: toRawInt(limitPrice, market.priceDecimals),
         isAsk,
         orderType: ORDER_TYPE_LIMIT,
         timeInForce: TIME_IN_FORCE_IMMEDIATE_OR_CANCEL,
         orderExpiry: ORDER_EXPIRY_NIL,
       });
-      setResult({ txHash: response.txHash, direction, amount });
+
+      await sleep(FILL_CHECK_DELAY_MS);
+      const freshAccount = await onRefreshAccount();
+      const balanceAfter = freshAccount ? getRelevantBalance(freshAccount, market) : null;
+      const filled: boolean | "unknown" =
+        balanceAfter === null ? "unknown" : Math.abs(balanceAfter - balanceBefore) > 1e-9;
+
+      setResult({ direction, txHash: response.txHash, requestedSize: baseSize, requestedPrice: limitPrice, filled });
       setStep("result");
-      onRefreshAccount();
     } catch (err) {
       Alert.alert("Order failed", err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -100,7 +138,7 @@ export function TradingScreen({ account, onOpenWithdraw, onRefreshAccount }: Tra
 
   const handleCancel = async (orderIndex: number) => {
     try {
-      await cancelOrder(orderIndex);
+      await cancelOrder(market.marketIndex, orderIndex);
     } catch (err) {
       Alert.alert("Cancel failed", err instanceof Error ? err.message : "Unknown error");
     }
@@ -114,20 +152,15 @@ export function TradingScreen({ account, onOpenWithdraw, onRefreshAccount }: Tra
         ) : (
           <>
             <Text style={styles.priceValue}>{midPrice ? `$${midPrice.toFixed(2)}` : "—"}</Text>
-            <Text style={styles.priceLabel}>{market?.symbol ?? "…"} mid price</Text>
+            <Text style={styles.priceLabel}>{market.symbol}</Text>
           </>
         )}
       </View>
 
-      <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>Available balance</Text>
-        <Text style={styles.balanceValue}>${collateral.toFixed(2)}</Text>
-      </View>
-
-      {orders.length > 0 && (
+      {marketOrders.length > 0 && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Open orders</Text>
-          {orders.map((order) => (
+          {marketOrders.map((order) => (
             <View key={order.order_id} style={styles.orderRow}>
               <View>
                 <Text style={styles.orderText}>
@@ -142,7 +175,7 @@ export function TradingScreen({ account, onOpenWithdraw, onRefreshAccount }: Tra
           ))}
         </View>
       )}
-      {ordersLoading && orders.length === 0 && <Text style={styles.mutedText}>Loading orders…</Text>}
+      {ordersLoading && marketOrders.length === 0 && <Text style={styles.mutedText}>Loading orders…</Text>}
 
       <View style={styles.actionRow}>
         <PillButton
@@ -163,17 +196,19 @@ export function TradingScreen({ account, onOpenWithdraw, onRefreshAccount }: Tra
           style={styles.actionButton}
         />
       </View>
-      <PillButton title="Withdraw" onPress={onOpenWithdraw} variant="secondary" />
+      <PillButton title="Back to assets" onPress={onBack} variant="secondary" />
     </>
   );
 
   const renderAmount = () => (
     <View style={styles.amountFlow}>
-      <Text style={styles.flowTitle}>{direction === "buy" ? "Buy" : "Sell"} {market?.symbol}</Text>
+      <Text style={styles.flowTitle}>
+        {direction === "buy" ? "Buy" : "Sell"} {market.symbol}
+      </Text>
       <Text style={styles.amountDisplay}>${amount}</Text>
       {estimatedSize !== null && (
         <Text style={styles.estimateText}>
-          ≈ {estimatedSize.toFixed(4)} {market?.symbol}
+          ≈ {estimatedSize.toFixed(4)} {market.symbol}
         </Text>
       )}
       <Keypad value={amount} onChange={setAmount} maxDecimals={2} />
@@ -193,8 +228,7 @@ export function TradingScreen({ account, onOpenWithdraw, onRefreshAccount }: Tra
     <View style={styles.card}>
       <Text style={styles.cardTitle}>Confirm {direction}</Text>
       <Text style={styles.cardBody}>
-        {direction === "buy" ? "Spend" : "Sell"} ${amount} of {market?.symbol} at market (IOC, 0.5% slippage
-        buffer). This submits immediately to Lighter mainnet.
+        {direction === "buy" ? "Spend" : "Sell"} ${amount} of {market.symbol}, immediate-or-cancel.
       </Text>
       <PillButton
         title={isSubmitting ? "Submitting…" : "Confirm"}
@@ -206,23 +240,46 @@ export function TradingScreen({ account, onOpenWithdraw, onRefreshAccount }: Tra
     </View>
   );
 
-  const renderResult = () => (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>Order submitted</Text>
-      <Text style={styles.cardBody}>
-        {result?.direction === "buy" ? "Bought" : "Sold"} ~${result?.amount} of {market?.symbol}.
-      </Text>
-      <Text style={styles.hashText} numberOfLines={1}>
-        {result?.txHash}
-      </Text>
-      <PillButton title="Done" onPress={resetFlow} />
-    </View>
-  );
+  const renderResult = () => {
+    if (!result) return null;
+    const statusText = result.filled === "unknown" ? "Submitted" : result.filled ? "Filled" : "Not filled";
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{statusText}</Text>
+        <View style={styles.resultRow}>
+          <Text style={styles.resultKey}>Asset</Text>
+          <Text style={styles.resultValue}>{market.symbol}</Text>
+        </View>
+        <View style={styles.resultRow}>
+          <Text style={styles.resultKey}>Side</Text>
+          <Text style={styles.resultValue}>{result.direction === "buy" ? "Buy" : "Sell"}</Text>
+        </View>
+        <View style={styles.resultRow}>
+          <Text style={styles.resultKey}>Size</Text>
+          <Text style={styles.resultValue}>
+            {result.requestedSize.toFixed(market.sizeDecimals)} {market.symbol.split("/")[0]}
+          </Text>
+        </View>
+        <View style={styles.resultRow}>
+          <Text style={styles.resultKey}>Price</Text>
+          <Text style={styles.resultValue}>${result.requestedPrice.toFixed(2)}</Text>
+        </View>
+        {result.filled === false && (
+          <Text style={styles.cardBody}>No match within the slippage buffer — nothing was charged.</Text>
+        )}
+        <Text style={styles.hashLabel}>Transaction</Text>
+        <Text style={styles.hashText} selectable numberOfLines={2}>
+          {result.txHash}
+        </Text>
+        <PillButton title="Done" onPress={resetFlow} />
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>{market?.symbol ?? "Lighter"}</Text>
+        <Text style={styles.heading}>{market.symbol}</Text>
         {step === "overview" && renderOverview()}
         {step === "amount" && renderAmount()}
         {step === "confirm" && renderConfirm()}
@@ -262,24 +319,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: COLORS.textSecondary,
     fontSize: 14,
-  },
-  balanceCard: {
-    backgroundColor: COLORS.surfaceRaised,
-    borderRadius: RADII.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 20,
-  },
-  balanceLabel: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-  },
-  balanceValue: {
-    color: COLORS.textPrimary,
-    fontSize: 32,
-    fontWeight: "700",
-    marginTop: 4,
-    fontVariant: ["tabular-nums"],
   },
   card: {
     backgroundColor: COLORS.surfaceRaised,
@@ -359,6 +398,24 @@ const styles = StyleSheet.create({
   },
   amountActionButton: {
     flex: 1,
+  },
+  resultRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  resultKey: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+  },
+  resultValue: {
+    color: COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  hashLabel: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    marginTop: 4,
   },
   hashText: {
     color: COLORS.textTertiary,

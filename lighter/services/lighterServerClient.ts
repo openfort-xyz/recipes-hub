@@ -16,8 +16,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export interface LighterServerConfig {
   apiBaseUrl: string;
   chainId: number;
-  marketIndex: number;
-  marketSymbol: string;
   network: "testnet" | "mainnet";
   serverWalletConfigured: boolean;
 }
@@ -35,6 +33,13 @@ export interface LighterAccountPosition {
   unrealized_pnl: string;
 }
 
+export interface LighterAccountAsset {
+  symbol: string;
+  asset_id: number;
+  balance: string;
+  locked_balance: string;
+}
+
 export interface LighterAccount {
   index: number;
   l1_address: string;
@@ -42,6 +47,7 @@ export interface LighterAccount {
   collateral: string;
   available_balance: string;
   positions: LighterAccountPosition[];
+  assets: LighterAccountAsset[];
 }
 
 export interface LighterApiKeyEntry {
@@ -61,19 +67,20 @@ export function fetchAccount(l1Address: string): Promise<AccountResponse> {
   return request(`/api/lighter/account?l1Address=${encodeURIComponent(l1Address)}`);
 }
 
-export interface MarketMeta {
+export interface Market {
+  marketIndex: number;
   symbol: string;
-  market_id: number;
-  status: string;
-  min_base_amount: string;
-  min_quote_amount: string;
-  supported_size_decimals: number;
-  supported_price_decimals: number;
-  supported_quote_decimals: number;
+  marketType: "perp" | "spot";
+  sizeDecimals: number;
+  priceDecimals: number;
+  minBaseAmount: string;
+  minQuoteAmount: string;
+  price: string;
 }
 
-export function fetchMarket(): Promise<MarketMeta> {
-  return request("/api/lighter/market");
+/** All currently active markets (perp + spot), with live prices — discovered fresh each call. */
+export function fetchMarkets(): Promise<{ markets: Market[] }> {
+  return request("/api/lighter/markets");
 }
 
 export interface OrderBookLevel {
@@ -90,8 +97,8 @@ export interface OrderBookResponse {
   asks: OrderBookLevel[];
 }
 
-export function fetchOrderBook(limit = 10): Promise<OrderBookResponse> {
-  return request(`/api/lighter/orderbook?limit=${limit}`);
+export function fetchOrderBook(marketIndex: number, limit = 10): Promise<OrderBookResponse> {
+  return request(`/api/lighter/orderbook?marketIndex=${marketIndex}&limit=${limit}`);
 }
 
 export interface ActiveOrder {
@@ -139,6 +146,7 @@ export function submitChangePubKey(accountIndex: number, l1Sig: string): Promise
 }
 
 export interface CreateOrderRequest {
+  marketIndex: number;
   clientOrderIndex: number;
   baseAmount: number;
   price: number;
@@ -159,8 +167,8 @@ export function createOrder(order: CreateOrderRequest): Promise<SubmitOrderRespo
   return request("/api/lighter/order", { method: "POST", body: JSON.stringify(order) });
 }
 
-export function cancelOrder(orderIndex: number): Promise<SubmitOrderResponse> {
-  return request("/api/lighter/order/cancel", { method: "POST", body: JSON.stringify({ orderIndex }) });
+export function cancelOrder(marketIndex: number, orderIndex: number): Promise<SubmitOrderResponse> {
+  return request("/api/lighter/order/cancel", { method: "POST", body: JSON.stringify({ marketIndex, orderIndex }) });
 }
 
 export interface WithdrawResponse {

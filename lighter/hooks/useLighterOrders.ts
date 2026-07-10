@@ -26,7 +26,7 @@ export function useLighterOrders(pollMs = 5000) {
   }, []);
 
   useEffect(() => {
-    // See useLighterMarket.ts for why this poll effect is exempted from set-state-in-effect.
+    // See useLighterMarkets.ts for why this poll effect is exempted from set-state-in-effect.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
     const interval = setInterval(refresh, pollMs);
@@ -43,8 +43,8 @@ export function useLighterOrders(pollMs = 5000) {
   );
 
   const cancelOrder = useCallback(
-    async (orderIndex: number) => {
-      const result = await cancelOrderRequest(orderIndex);
+    async (marketIndex: number, orderIndex: number) => {
+      const result = await cancelOrderRequest(marketIndex, orderIndex);
       await refresh();
       return result;
     },
