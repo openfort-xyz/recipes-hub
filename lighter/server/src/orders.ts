@@ -1,5 +1,6 @@
 import type { Config } from "./config.js";
-import { getNextNonce, sendTx } from "./lighterApi.js";
+import { computeInitialWaitMs, waitForFillConfirmation, type FillConfirmationTrade } from "./fillConfirmation.js";
+import { getAccountTrades, getNextNonce, sendTx, type LighterTrade } from "./lighterApi.js";
 import {
   ASSET_ROUTE_TYPE_PERPS,
   createAuthToken,
@@ -64,7 +65,17 @@ export interface CreateOrderInput {
   orderExpiry: number;
 }
 
-export async function submitCreateOrder(config: Config, order: CreateOrderInput) {
+export interface CreateOrderResult {
+  txHash: string;
+  signedHash: string;
+  /** True only once a matching trade is confirmed via /api/v1/trades — never a guess. */
+  filled: boolean;
+  /** Present only when filled — the actual matched size/price, which can differ slightly from
+   * the requested marketable-limit price. */
+  trade?: FillConfirmationTrade;
+}
+
+export async function submitCreateOrder(config: Config, order: CreateOrderInput): Promise<CreateOrderResult> {
   const wallet = await ensureSigningClient(config);
   const nonce = await getNextNonce(config, wallet.accountIndex, wallet.apiKeyIndex);
   const signed = signCreateOrder({
@@ -74,7 +85,20 @@ export async function submitCreateOrder(config: Config, order: CreateOrderInput)
     accountIndex: wallet.accountIndex,
   });
   const result = await sendTx(config, signed.txType, signed.txInfo);
-  return { txHash: result.tx_hash, signedHash: signed.txHash };
+
+  const authToken = await getAuthToken(config);
+  const trade = await waitForFillConfirmation({
+    txHash: result.tx_hash,
+    initialWaitMs: computeInitialWaitMs(result.predicted_execution_time_ms, Date.now()),
+    fetchTrades: () => getAccountTrades(config, wallet.accountIndex, authToken, 10),
+  });
+
+  return {
+    txHash: result.tx_hash,
+    signedHash: signed.txHash,
+    filled: trade !== null,
+    ...(trade ? { trade } : {}),
+  };
 }
 
 export async function submitCancelOrder(config: Config, marketIndex: number, orderIndex: number) {
@@ -95,6 +119,13 @@ export async function getAuthToken(config: Config): Promise<string> {
   const wallet = await ensureSigningClient(config);
   const deadline = Math.floor(Date.now() / 1000) + 60 * 60; // 1 hour
   return createAuthToken(deadline, wallet.apiKeyIndex, wallet.accountIndex);
+}
+
+/** The authoritative fill record for the configured account — see getAccountTrades. */
+export async function getRecentTrades(config: Config, limit = 20): Promise<LighterTrade[]> {
+  const wallet = await ensureSigningClient(config);
+  const authToken = await getAuthToken(config);
+  return getAccountTrades(config, wallet.accountIndex, authToken, limit);
 }
 
 // Verified on-chain via eth_call to USDC_ASSET_INDEX() / tokenToAssetIndex() — see FRICTION_LOG.md.

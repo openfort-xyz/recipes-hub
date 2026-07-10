@@ -13,7 +13,7 @@ import {
 } from "./lighterApi.js";
 import { getActiveMarkets, requireMarket } from "./markets.js";
 import { createEncryptionSession } from "./openfort.js";
-import { getAuthToken, submitCancelOrder, submitCreateOrder, submitWithdraw } from "./orders.js";
+import { getAuthToken, getRecentTrades, submitCancelOrder, submitCreateOrder, submitWithdraw } from "./orders.js";
 
 function handleError(req: Request, res: Response, error: unknown): void {
   const route = `${req.method} ${req.path}`;
@@ -132,6 +132,30 @@ export async function handleOpenOrders(req: Request, res: Response, config: Conf
     // No market_id filter — the portfolio/open-orders view wants everything across all 5 markets.
     const orders = await getAccountActiveOrders(config, config.lighter.accountIndex, authToken);
     res.status(200).json({ orders });
+  } catch (error) {
+    handleError(req, res, error);
+  }
+}
+
+export async function handleTrades(req: Request, res: Response, config: Config): Promise<void> {
+  try {
+    if (config.lighter.accountIndex === null) {
+      res.status(200).json({ trades: [] });
+      return;
+    }
+    const limitRaw = req.query["limit"];
+    const limit = typeof limitRaw === "string" ? Number.parseInt(limitRaw, 10) : 20;
+    const trades = await getRecentTrades(config, Number.isFinite(limit) ? limit : 20);
+    res.status(200).json({
+      trades: trades.map((t) => ({
+        txHash: t.tx_hash,
+        marketIndex: t.market_id,
+        size: t.size,
+        price: t.price,
+        timestamp: t.timestamp,
+        isAsk: t.ask_account_id === config.lighter.accountIndex,
+      })),
+    });
   } catch (error) {
     handleError(req, res, error);
   }

@@ -17,6 +17,7 @@ import {
   handleOpenOrders,
   handleOrderBook,
   handleShieldSession,
+  handleTrades,
   handleWithdraw,
   notFoundHandler,
 } from "./routes.js";
@@ -61,6 +62,7 @@ app.get("/api/lighter/account", (req, res) => handleAccount(req, res, config));
 app.get("/api/lighter/markets", (req, res) => handleMarkets(req, res, config));
 app.get("/api/lighter/orderbook", (req, res) => handleOrderBook(req, res, config));
 app.get("/api/lighter/orders", (req, res) => handleOpenOrders(req, res, config));
+app.get("/api/lighter/trades", (req, res) => handleTrades(req, res, config));
 app.post("/api/lighter/changepubkey/message", rateLimitTrading, (req, res) =>
   handleChangePubKeyMessage(req, res, config),
 );

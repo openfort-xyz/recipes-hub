@@ -181,6 +181,42 @@ export async function getAccountActiveOrders(
   return body.orders ?? [];
 }
 
+export interface LighterTrade {
+  tx_hash: string;
+  market_id: number;
+  size: string;
+  price: string;
+  timestamp: number;
+  ask_account_id: number;
+  bid_account_id: number;
+}
+
+/**
+ * GET /api/v1/trades — the authoritative fill record. Requires sort_by + limit (undocumented on
+ * apidocs.lighter.xyz's parameter list as "required" until you omit them and get code 20001; see
+ * FRICTION_LOG.md) and, per the docs, an auth token for any non-market-wide query. An IOC order
+ * that fills appears here with the tx_hash from sendTx's response; one that expires unmatched
+ * never appears here at all — there is no "confirmed no match" record, only "absent so far."
+ */
+export async function getAccountTrades(
+  config: Config,
+  accountIndex: number,
+  authToken: string,
+  limit = 20,
+): Promise<LighterTrade[]> {
+  const url = new URL("/api/v1/trades", config.lighter.apiBaseUrl);
+  url.searchParams.set("account_index", String(accountIndex));
+  url.searchParams.set("sort_by", "timestamp");
+  url.searchParams.set("sort_dir", "desc");
+  url.searchParams.set("limit", String(limit));
+  const response = await fetch(url, { headers: { authorization: authToken } });
+  const body = (await response.json()) as LighterEnvelope & { trades?: LighterTrade[] };
+  if (!response.ok || body.code !== 200) {
+    throw new LighterApiError(body.message ?? "Failed to fetch trades", body.code, response.status);
+  }
+  return body.trades ?? [];
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -237,11 +273,17 @@ export async function requestFaucet(config: Config, l1Address: string): Promise<
   }
 }
 
-export async function sendTx(
-  config: Config,
-  txType: number,
-  txInfo: string,
-): Promise<{ tx_hash: string }> {
+export interface SendTxResult {
+  tx_hash: string;
+  /**
+   * Unix ms timestamp (NOT a duration) of when Lighter predicts this tx will actually execute —
+   * verified live by decoding it against wall-clock time at response receipt (see FRICTION_LOG.md).
+   * Absent from the type by default because callers must not assume it's always present.
+   */
+  predicted_execution_time_ms?: number;
+}
+
+export async function sendTx(config: Config, txType: number, txInfo: string): Promise<SendTxResult> {
   const url = new URL("/api/v1/sendTx", config.lighter.apiBaseUrl);
   const body = new URLSearchParams();
   body.set("tx_type", String(txType));
@@ -251,9 +293,14 @@ export async function sendTx(
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: body.toString(),
   });
-  const json = (await response.json()) as LighterEnvelope & { tx_hash?: string };
+  const json = (await response.json()) as LighterEnvelope & SendTxResult;
   if (!response.ok || json.code !== 200) {
     throw new LighterApiError(json.message ?? "sendTx failed", json.code, response.status);
   }
-  return { tx_hash: json.tx_hash ?? "" };
+  return {
+    tx_hash: json.tx_hash ?? "",
+    ...(json.predicted_execution_time_ms !== undefined
+      ? { predicted_execution_time_ms: json.predicted_execution_time_ms }
+      : {}),
+  };
 }
