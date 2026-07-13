@@ -58,6 +58,7 @@ export default function SwapFlow() {
                 toAsset={state.toAsset}
                 amount={state.amount}
                 recipient={state.recipient}
+                confidentiality={state.confidentiality}
                 liveQuote={state.liveQuote}
                 estimateError={state.estimateError}
                 isLoadingEstimate={state.isLoadingEstimate}
@@ -66,6 +67,7 @@ export default function SwapFlow() {
                 onToAssetChange={actions.setToAsset}
                 onAmountChange={actions.setAmount}
                 onRecipientChange={actions.setRecipient}
+                onConfidentialityChange={actions.setConfidentiality}
                 onFlip={actions.flipAssets}
               />
             )}
@@ -79,6 +81,7 @@ export default function SwapFlow() {
                   fromAsset={state.fromAsset}
                   toAsset={state.toAsset}
                   recipient={state.recipient}
+                  confidentiality={state.confidentiality}
                 />
               )}
 
