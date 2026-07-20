@@ -133,7 +133,7 @@ export function getServerKeyValidity(): KeySelfTestResult | null {
  * Proves the server's configured key is actually recognized on-chain before trusting it for real
  * trades. ChangePubKey rotates the on-chain key at (account, apiKeyIndex) on every submit — sign
  * twice and the server's configured key silently goes stale with no other signal until an order
- * fails (see FRICTION_LOG.md's key-rotation entry). Only meaningful once, at startup: this
+ * fails. Only meaningful once, at startup: this
  * submits a real (harmless) transaction, so it isn't something to run on every request.
  */
 export async function selfTestServerKey(config: Config): Promise<KeySelfTestResult> {
@@ -226,7 +226,7 @@ export async function getRecentTrades(config: Config, limit = 20): Promise<Light
   return getAccountTrades(config, wallet.accountIndex, authToken, limit);
 }
 
-// Verified on-chain via eth_call to USDC_ASSET_INDEX() / tokenToAssetIndex() — see FRICTION_LOG.md.
+// Verified on-chain via eth_call to USDC_ASSET_INDEX() / tokenToAssetIndex().
 const USDC_ASSET_INDEX = 3;
 
 /**

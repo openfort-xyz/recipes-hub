@@ -105,8 +105,7 @@ which signs and submits it as a normal L2 `sendTx`, same as an order — not an 
 there's no "show me the currently-active key again" call. Whatever the server was holding from an
 earlier submit stops being recognized on-chain the moment a later one confirms, with no error or
 warning at submit time — the only symptom is every subsequent order failing
-`21120 invalid signature` (see `FRICTION_LOG.md`'s key-rotation entry for the live trap this
-caused and the fix).
+`21120 invalid signature`.
 
 The vendored WASM has one function relevant to detecting this that this recipe doesn't use:
 `CheckClient(apiKeyIndex, accountIndex)` (found by enumerating every JS global the compiled
@@ -124,7 +123,7 @@ transaction through the normal JS-side `fetch` path and checks for the `21120` c
 ## 3. Testnet vs mainnet
 
 Confirmed live and from source, not apidocs.lighter.xyz (which has zero testnet mentions across
-every page checked — see `FRICTION_LOG.md`):
+every page checked):
 
 | | testnet (default) | mainnet |
 |---|---|---|
@@ -149,7 +148,7 @@ that worked. `GET /api/v1/layer1BasicInfo` (also undocumented) additionally conf
 a `FaucetContract` address in `contract_addresses`, alongside testnet's `ZkLighterContract` and
 `USDCContract` — but the faucet REST call is the actually-usable path; testnet's L1 side reports a
 custom `chainId 123456` with no discoverable public RPC (it collides with an unrelated public
-chain, "ADIL Devnet" — see `FRICTION_LOG.md`), so the on-chain deposit flow isn't reachable on
+chain, "ADIL Devnet"), so the on-chain deposit flow isn't reachable on
 testnet even if you wanted to exercise it directly.
 
 `GET /api/v1/deposit/networks` on testnet lists Base/Arbitrum One/Avalanche C-Chain using their
@@ -163,5 +162,4 @@ this recipe builds against.
 *what* (ChangePubKey registers a key; depositing creates an account) but never state the *how* of
 the signature mechanism — no mention of `personal_sign` vs EIP-712, no message template. Both
 pages point to the SDKs "for implementation details" without embedding them. We verified this by
-fetching both pages directly (2026-07-10) before falling back to source. This gap is logged in
-`../FRICTION_LOG.md`.
+fetching both pages directly (2026-07-10) before falling back to source.

@@ -16,8 +16,7 @@ interface OnboardingStatusScreenProps {
   onboarding: OnboardingState;
   /** Set by UserScreen when a live order failed with Lighter's invalid-signature code — forces
    * the stale-key recovery card open regardless of what step currently computes to, since
-   * deriveStep can't detect a mid-session key rotation on its own (see FRICTION_LOG.md's
-   * key-rotation entry). */
+   * deriveStep can't detect a mid-session key rotation on its own. */
   keyStale?: boolean;
 }
 
@@ -46,8 +45,8 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
   const [isRegistering, setIsRegistering] = useState(false);
   // Once a sign+submit succeeds, the button that triggered it must not allow an immediate
   // re-tap — ChangePubKey rotates the on-chain key on every submit, so a second tap before the
-  // server has picked up the first key silently invalidates it (see FRICTION_LOG.md's
-  // key-rotation entry: this is exactly how the user burned a working key). Resets whenever step
+  // server has picked up the first key silently invalidates it (this is exactly how a user
+  // burned a working key). Resets whenever step
   // changes, since that proves the poll caught up to something new and any "pending" state here
   // is stale.
   const [hasSignedThisSession, setHasSignedThisSession] = useState(false);
@@ -82,7 +81,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
       // No success alert — the 2s poll advances the step automatically the moment it lands.
     } catch {
       // The server already retried a few times — Lighter's testnet faucet is intermittently
-      // flaky (see FRICTION_LOG.md). Refresh immediately in case an earlier retry actually
+      // flaky. Refresh immediately in case an earlier retry actually
       // succeeded upstream despite this final attempt reporting failure.
       await refresh();
       Alert.alert("Faucet unavailable", "Try again — Lighter's testnet faucet is a bit flaky.");

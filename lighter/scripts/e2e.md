@@ -3,8 +3,8 @@
 Two paths: **testnet** (default, free, no wallet funding needed — you can run this yourself right
 now) and **mainnet** (real funds/gas, needs a human with wallet-funding authority). Both were
 verified against live endpoints piece-by-piece during development (account lookup, order book,
-`nextNonce`, `sendTx` signature validation, and — for testnet — the faucet call itself; see
-`FRICTION_LOG.md`), but the full guest-login-through-withdrawal flow inside the actual app has not
+`nextNonce`, `sendTx` signature validation, and — for testnet — the faucet call itself), but the
+full guest-login-through-withdrawal flow inside the actual app has not
 been run start to finish by an automated agent. This is the exact checklist for whoever does that
 first.
 
@@ -40,8 +40,8 @@ first.
    email again. **Verify**: you land back on the SAME wallet address and, if you'd already
    completed onboarding, go straight to the trading screen — no re-onboarding.
 4. **Verify**: if you deliberately break something (e.g. use an invalid project key), the error
-   banner shows a real message for BOTH auth paths — this was a real bug (see `FRICTION_LOG.md`,
-   guest errors used to be silently swallowed).
+   banner shows a real message for BOTH auth paths — this was a real bug (guest errors used to be
+   silently swallowed).
 5. **Verify**: `GET /api/lighter/account?l1Address=<your address>` returns
    `{"onboarded": false, "account": null, "apiKeys": []}` for a fresh guest — a real response from
    Lighter testnet.
@@ -147,5 +147,3 @@ error rather than a crash.
 - [ ] At least one buy and one sell order both return a `txHash` and are reflected in account
       balance/positions (both networks)
 - [ ] Withdrawal confirmed back at the original wallet address (both networks)
-- [ ] Any deviation from this doc (different message format, different error shape, etc.)
-      recorded as a new dated entry in `FRICTION_LOG.md`

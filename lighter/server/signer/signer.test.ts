@@ -279,7 +279,7 @@ describe("signWithdraw", () => {
       TEST_ACCOUNT_INDEX,
     );
     const result = signWithdraw({
-      assetIndex: 3, // USDC, verified on-chain via USDC_ASSET_INDEX() — see FRICTION_LOG.md
+      assetIndex: 3, // USDC, verified on-chain via USDC_ASSET_INDEX()
       routeType: ASSET_ROUTE_TYPE_PERPS,
       amount: 5_000_000, // 5 USDC at 6 decimals
       nonce: 1,

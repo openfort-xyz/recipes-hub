@@ -2,8 +2,7 @@ import type { AccountResponse, LighterServerConfig } from "../services/lighterSe
 
 // Pure logic, deliberately separated from useLighterOnboarding.ts's React/fetch wiring so it has
 // no runtime dependency on react-native (whose Flow syntax vitest can't parse) and can carry a
-// regression test on its own — see onboardingGate.test.ts and FRICTION_LOG.md's split-brain
-// entry for why that regression test exists.
+// regression test on its own — see onboardingGate.test.ts.
 
 export type OnboardingStep = "deposit" | "registerApiKey" | "activateServer" | "ready";
 
@@ -26,8 +25,7 @@ export function deriveStep(
   // adoption after a restart), not because the logic itself changed.
   if (!serverConfig?.serverWalletConfigured) return "activateServer";
   // Not enough that SOME key is configured — it has to be signing for THIS account, or trades
-  // silently execute on whatever account the server env is actually pinned to (see
-  // FRICTION_LOG.md's split-brain entry).
+  // silently execute on whatever account the server env is actually pinned to.
   if (accountsMismatch(account, serverConfig)) return "activateServer";
   return "ready";
 }

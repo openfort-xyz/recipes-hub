@@ -1,8 +1,8 @@
 import { LighterApiError } from "./lighterApi.js";
 
 // Lighter's signature-verification layer rejects with this SPECIFIC code before it even checks
-// whether the referenced order exists — verified live (see FRICTION_LOG.md's key-rotation
-// entry): a throwaway, never-registered key produces exactly this code and message on a real
+// whether the referenced order exists — verified live: a throwaway, never-registered key
+// produces exactly this code and message on a real
 // sendTx call, distinct from the generic 29500 other failure classes return.
 export const INVALID_SIGNATURE_CODE = 21120;
 

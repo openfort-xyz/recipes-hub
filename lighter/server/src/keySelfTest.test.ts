@@ -10,7 +10,7 @@ describe("classifySelfTestOutcome", () => {
 
   it("does not classify a generic Lighter error as invalid — only the specific signature code counts", () => {
     // e.g. the generic 29500 "internal server error" this recipe has seen for unrelated failure
-    // classes (see FRICTION_LOG.md's sendTx error code entry) — a false positive here would send
+    // classes — a false positive here would send
     // an operator chasing a key rotation that never happened.
     const error = new LighterApiError("internal server error", 29500, 400);
     expect(classifySelfTestOutcome(error)).toBe("valid");

@@ -30,7 +30,7 @@ function defaultSleep(ms: number): Promise<void> {
 }
 
 /**
- * sendTx's response carries no fill status (verified live, see FRICTION_LOG.md) — a submitted IOC
+ * sendTx's response carries no fill status (verified live) — a submitted IOC
  * order either shows up in /api/v1/trades once matched, or never appears there at all if it
  * expired unmatched. There is no "confirmed no match" signal, only "absent so far", so this polls
  * the authoritative trade record for a bounded window and returns null on timeout rather than
@@ -72,8 +72,8 @@ export async function waitForFillConfirmation(options: WaitForFillOptions): Prom
 }
 
 /**
- * predicted_execution_time_ms is a Unix ms timestamp (not a duration — verified live, see
- * FRICTION_LOG.md), so the wait before the first poll is however long remains until that instant,
+ * predicted_execution_time_ms is a Unix ms timestamp (not a duration — verified live), so the
+ * wait before the first poll is however long remains until that instant,
  * clamped to a sane range in case Lighter ever omits the field or returns something implausible.
  */
 export function computeInitialWaitMs(predictedExecutionTimeMs: number | undefined, nowMs: number): number {

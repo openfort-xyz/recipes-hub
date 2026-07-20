@@ -66,7 +66,7 @@ export function handleConfig(_req: Request, res: Response, config: Config): void
   const hasKeyMaterial = Boolean(config.lighter.apiKeyPrivateKey && config.lighter.accountIndex !== null);
   // Having SOME key configured isn't enough — ChangePubKey rotates the on-chain key at
   // (account, apiKeyIndex) on every submit, so a key that was valid a registration ago can be
-  // silently stale now (see FRICTION_LOG.md's key-rotation entry). selfTestServerKey (run once
+  // silently stale now. selfTestServerKey (run once
   // at startup — see server.ts) is the only thing that actually proves the configured key still
   // matches what's on-chain; a null result just means the check hasn't completed yet.
   const keyValidity = getServerKeyValidity();
@@ -80,7 +80,7 @@ export function handleConfig(_req: Request, res: Response, config: Config): void
     // Not a secret — just an integer identifying which account the server signs for, so the app
     // can catch a split-brain (server env pointing at a different account than the one it's
     // showing/trading) instead of silently treating "some key is configured" as "the right key
-    // is configured". See FRICTION_LOG.md.
+    // is configured".
     accountIndex: config.lighter.accountIndex,
   });
 }

@@ -8,7 +8,7 @@ import { getLighterDepositContractAddress, getUsdcContractAddress } from "../uti
  * 0x831EF69BaB8AF8B1037a4961B8d0674b124E7008 on Ethereum mainnet, via Blockscout) since
  * apidocs.lighter.xyz only documents the function selector and a prose parameter description,
  * not an ABI. Independently confirmed by matching keccak256("deposit(address,uint16,uint8,uint256)")
- * against the documented 0x8a857083 selector. See FRICTION_LOG.md.
+ * against the documented 0x8a857083 selector.
  */
 const DEPOSIT_ABI = [
   {

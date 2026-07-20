@@ -8,7 +8,7 @@
 - `server/` is a separate Node/Express backend that holds the Lighter API key, signs orders via a
   vendored WASM build of `lighter-go`, and exposes a Shield encryption-session endpoint.
 - See `docs/lighter-signing-notes.md` for the exact signing mechanics (ChangePubKey vs deposits vs
-  orders) and `FRICTION_LOG.md` for everything that was non-obvious building this.
+  orders).
 
 ## iOS builds: never disable code signing
 
@@ -17,7 +17,7 @@ launches fine and only fails on the FIRST auth call, with a misleading `Openfort
 INVALID_CONFIGURATION ("Storage is not accessible...")` — an unsigned binary can't reach the
 simulator's Keychain, which `expo-secure-store`/`@openfort/openfort-js` need for session storage.
 Cost a debugging round to trace back. Always build normally (signed, even for the simulator) with
-Openfort or any other keychain-dependent SDK. See `FRICTION_LOG.md` for the full trace.
+Openfort or any other keychain-dependent SDK.
 
 ## Setup commands
 
@@ -75,11 +75,9 @@ Openfort or any other keychain-dependent SDK. See `FRICTION_LOG.md` for the full
 - App follows the `hyperliquid/` recipe's structure (expo-router, `services/` + `hooks/` split,
   `utils/config.ts` env validation via `expo-constants`).
 - Never hardcode contract addresses/ABIs without a cited source — this recipe encodes real
-  mainnet transactions; see `services/depositFlow.ts` and `FRICTION_LOG.md` for how the deposit
-  ABI was verified.
+  mainnet transactions; see `services/depositFlow.ts` for how the deposit ABI was verified.
 
 ## PR instructions
 
 - Title format: `[lighter] <summary>`.
 - Update `.env.example` (both app and server) and this file if new configuration flags are added.
-- Append a dated `FRICTION_LOG.md` entry for anything non-obvious you hit.

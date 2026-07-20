@@ -46,7 +46,7 @@ this recipe doesn't need. `CheckClient` looks like it's meant for exactly the ke
 from inside the Go/WASM sandbox instead of delegating to JS's `fetch`, and that call fails under
 Node with a DNS resolution error (this glue file is Go's browser-oriented build; whatever
 `net.Dial` shim it expects for outbound requests isn't present in Node). Confirmed live, sandbox
-on and off — see `docs/lighter-signing-notes.md` and `FRICTION_LOG.md`'s key-rotation entry.
+on and off — see `docs/lighter-signing-notes.md`.
 
 ## Why WASM over a community SDK
 
@@ -58,7 +58,7 @@ produced the binary, and it stays server-side only (never shipped to the mobile 
 
 ## Verification
 
-Signature outputs were validated two ways (see `../FRICTION_LOG.md` for the full trace):
+Signature outputs were validated two ways:
 
 1. The vendored build reproduces every assertion in `lighter-go`'s own
    `examples/wasm/test_wasm.mjs` fixture (deterministic Poseidon signatures for CreateOrder,

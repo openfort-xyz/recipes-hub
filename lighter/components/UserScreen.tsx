@@ -35,7 +35,7 @@ export function UserScreen() {
     // is necessary but NOT sufficient: embeddedState can reach READY while the separate
     // embeddedAccounts fetch (which produces `wallets`) is still in flight, briefly reporting
     // "disconnected" + empty wallets — indistinguishable from genuinely having no wallet. Verified
-    // live (see FRICTION_LOG.md): embeddedState was already 4 (READY) on the very first render
+    // live: embeddedState was already 4 (READY) on the very first render
     // with walletsLen still 0. Rather than chase the SDK's exact internal ordering, wait for this
     // snapshot to hold steady for a settle window before trusting it — any subsequent state change
     // (the fetch resolving, embeddedState moving again) cancels this timer via the effect cleanup.

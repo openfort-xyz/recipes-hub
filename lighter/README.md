@@ -150,4 +150,3 @@ faucet to real deposit automatically — no app-side config needed.
 - [Lighter API Docs](https://apidocs.lighter.xyz)
 - [lighter-go](https://github.com/elliottech/lighter-go) (source for the vendored signer)
 - `docs/lighter-signing-notes.md` — ground-truth signing mechanics with source citations
-- `FRICTION_LOG.md` — everything that was non-obvious building this

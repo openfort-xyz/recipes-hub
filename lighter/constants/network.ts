@@ -10,7 +10,7 @@ import { getL1ChainId, getL1ChainName, getL1NativeSymbol, getL1RpcUrls } from ".
  * (services/depositFlow.ts). Lighter's own testnet "L1" (reported chainId 123456 via
  * /api/v1/layer1BasicInfo) has no discoverable public RPC — it collides with an unrelated public
  * chain ("ADIL Devnet") and isn't something an external wallet can transact against. See
- * FRICTION_LOG.md and docs/lighter-signing-notes.md.
+ * docs/lighter-signing-notes.md.
  */
 export const L1_CHAIN_ID = getL1ChainId();
 

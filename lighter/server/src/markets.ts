@@ -38,7 +38,7 @@ export async function getActiveMarkets(config: Config): Promise<Market[]> {
 /**
  * Validates a market index against the live active-market list before any order/orderbook
  * request uses it — Lighter's own error for an invalid market_id is not always a clean 400
- * (see FRICTION_LOG.md for other endpoints' inconsistent error specificity), so this recipe
+ * (other endpoints' error specificity is inconsistent), so this recipe
  * checks up front and fails with an unambiguous message.
  */
 export function requireMarket(markets: Market[], marketIndex: number): Market {

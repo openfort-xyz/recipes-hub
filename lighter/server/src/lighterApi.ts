@@ -193,8 +193,8 @@ export interface LighterTrade {
 
 /**
  * GET /api/v1/trades — the authoritative fill record. Requires sort_by + limit (undocumented on
- * apidocs.lighter.xyz's parameter list as "required" until you omit them and get code 20001; see
- * FRICTION_LOG.md). Live-verified the auth token is required unconditionally — every param
+ * apidocs.lighter.xyz's parameter list as "required" until you omit them and get code
+ * 20001). Live-verified the auth token is required unconditionally — every param
  * combination tried without one, including a pure market-wide query, returned code 20001 "auth
  * query param and Authorization header are empty" (apidocs.lighter.xyz's own wording, "auth is
  * required for master accounts and sub accounts", is ambiguous but matches this). An IOC order
@@ -250,10 +250,10 @@ const FAUCET_RETRY_DELAY_MS = 2000;
  * Testnet-only. GET /api/v1/faucet?l1_address=... both creates the Lighter account AND credits
  * it (verified live: a fresh address got 10,000 USDC margin balance, 3 ETH, 1,000,000 LIT
  * instantly) — no on-chain L1 transaction required. Undocumented on apidocs.lighter.xyz, found by
- * probing (see FRICTION_LOG.md).
+ * probing.
  *
  * Also intermittently flaky (~1-in-3 success rate observed live, plain 500s through CloudFront,
- * no rate-limit headers — see FRICTION_LOG.md) while unrelated endpoints stay healthy, so this
+ * no rate-limit headers) while unrelated endpoints stay healthy, so this
  * retries a few times before giving up. Caller must gate this to testnet — the endpoint's
  * mainnet behavior was not tested and is assumed nonexistent/disabled.
  */
@@ -280,7 +280,7 @@ export interface SendTxResult {
   tx_hash: string;
   /**
    * Unix ms timestamp (NOT a duration) of when Lighter predicts this tx will actually execute —
-   * verified live by decoding it against wall-clock time at response receipt (see FRICTION_LOG.md).
+   * verified live by decoding it against wall-clock time at response receipt.
    * Absent from the type by default because callers must not assume it's always present.
    */
   predicted_execution_time_ms?: number;

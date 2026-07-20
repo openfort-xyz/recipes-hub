@@ -16,11 +16,11 @@ const ORDER_EXPIRY_NIL = 0;
 // Lighter's signature-verification-layer rejection — must match server/src/keySelfTest.ts's
 // INVALID_SIGNATURE_CODE. ChangePubKey rotates the on-chain key on every submit, so signing twice
 // silently strands the server on the earlier (now-invalid) key with no other warning until an
-// order hits exactly this (see FRICTION_LOG.md's key-rotation entry).
+// order hits exactly this.
 const INVALID_SIGNATURE_CODE = 21120;
 
-// Explorer lives inside the trading app itself, not a standalone domain (see FRICTION_LOG.md
-// correction). Verified live: both hosts resolve real /explorer/logs/<tx_hash> lookups (a
+// Explorer lives inside the trading app itself, not a standalone domain. Verified live: both
+// hosts resolve real /explorer/logs/<tx_hash> lookups (a
 // bogus hash on either host renders "Log not found" rather than a generic app shell).
 const EXPLORER_HOST: Record<LighterServerConfig["network"], string> = {
   testnet: "https://testnet.app.lighter.xyz",
@@ -68,8 +68,8 @@ function toRawInt(value: number, decimals: number): number {
  * caught before the user ever reaches trading (UserScreen's onboarding gate re-evaluates
  * continuously), but a server restart mid-session could still land in this narrow window.
  * A 21120 means the server's key itself was rejected — most likely stale from a second
- * ChangePubKey submit rotating it out from under the server (see FRICTION_LOG.md's key-rotation
- * entry). Neither is a dead end: both offer a specific recovery action instead of just "OK".
+ * ChangePubKey submit rotating it out from under the server. Neither is a dead end: both
+ * offer a specific recovery action instead of just "OK".
  */
 function showOrderError(title: string, err: unknown, onFixSetup: () => void, onKeyStale: () => void): void {
   const message = err instanceof Error ? err.message : "Unknown error";
