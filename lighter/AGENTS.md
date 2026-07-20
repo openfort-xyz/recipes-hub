@@ -72,8 +72,8 @@ Openfort or any other keychain-dependent SDK.
 - TypeScript strict; server additionally enables `noUncheckedIndexedAccess`,
   `exactOptionalPropertyTypes`, `noPropertyAccessFromIndexSignature`, `verbatimModuleSyntax`.
 - Server is ESM Express, same shape as `x402/backend` — `config.ts` / `routes.ts` / `server.ts`.
-- App follows the `hyperliquid/` recipe's structure (expo-router, `services/` + `hooks/` split,
-  `utils/config.ts` env validation via `expo-constants`).
+- App uses expo-router with a `services/` + `hooks/` split and `utils/config.ts` env validation
+  via `expo-constants` — the structure shared by this hub's mobile recipes.
 - Never hardcode contract addresses/ABIs without a cited source — this recipe encodes real
   mainnet transactions; see `services/depositFlow.ts` for how the deposit ABI was verified.
 

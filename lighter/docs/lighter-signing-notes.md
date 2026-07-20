@@ -27,7 +27,7 @@ account, you can simply deposit some assets to Lighter."* The flow is:
 **What this means for the Openfort integration:** account creation needs the embedded wallet to
 sign and broadcast a normal EVM transaction (ERC-20 `approve` + contract `deposit`, or a plain
 USDC transfer for the CCTP path) — the same `wallet.sendTransaction` / `wallet.getProvider()`
-pattern used elsewhere in this recipes-hub (see `hyperliquid/utils/transactions.ts`), not a
+pattern used elsewhere in this recipes-hub, not a
 message-signing flow. There is nothing to wire into Shield/embedded-wallet message signing for
 this step specifically.
 
