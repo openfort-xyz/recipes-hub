@@ -1,6 +1,6 @@
 # Openfort × vaults.fyi
 
-[vaults.fyi](https://vaults.fyi) is one API for DeFi yield: discovery, ready-to-sign transaction payloads, and position tracking across 80+ protocols and 1,000+ yield strategies. This recipe shows how to combine an Openfort embedded wallet with the vaults.fyi API to discover the best USDC vaults for the user's wallet, deposit directly into any of them, track positions across every protocol, and claim rewards.
+[vaults.fyi](https://vaults.fyi) is one API for DeFi yield: discovery, ready-to-sign transaction payloads, and position tracking across 80+ protocols and 1,000+ yield strategies. This recipe shows how to combine an Openfort embedded wallet with the vaults.fyi API to discover the best USDC vaults for the user's wallet, deposit directly into any of them, track positions across every protocol, and claim rewards. It also adds two beta surfaces on the same API: borrowing against collateral, and fixed-term (Pendle) positions.
 
 The deposit calldata vaults.fyi returns targets the canonical protocol contract directly. There is no wrapper contract, no idle cash buffer, and no required user-facing fee. The position the user holds is identical to one they would hold by interacting with Morpho, Sky, or Aave from any other wallet.
 
@@ -10,6 +10,8 @@ The deposit calldata vaults.fyi returns targets the canonical protocol contract 
 - **No wrapper, no lock-in.** If you stop using vaults.fyi, your users still hold real positions in the canonical vaults that any wallet can manage.
 - **Portfolio reads everything.** The positions endpoint returns every vault position the user holds across every supported protocol, including ones opened outside this app.
 - **Two-step rewards flow.** `rewards/context` returns claim ids for any reward the user can claim across protocols; `rewards/claim` returns the per-network transactions to execute.
+- **Borrow against collateral (beta).** Discover borrow markets across every network vaults.fyi supports (Ethereum, Base, Arbitrum, Optimism, Gnosis, and more) spanning Aave, Compound, Morpho, Spark, and others, then supply, borrow, repay, and withdraw. The action endpoint returns the same ready-to-sign `actions` array as deposit, so the borrow flow reuses the exact same signer, and each transaction carries its own `chainId` so the wallet switches chains automatically.
+- **Fixed-term / Pendle (beta).** Swap into a Pendle principal token for a fixed rate and swap back out, using the same transaction shape.
 
 ## 1. Setup
 
@@ -83,12 +85,26 @@ Open `http://localhost:5173`. Sign in with Openfort, fund the wallet with USDC o
 
 For the full API reference, see [docs.vaults.fyi](https://docs.vaults.fyi) and the OpenAPI spec at `https://api.vaults.fyi/v2/documentation/`.
 
+## Borrow and fixed-term (beta)
+
+Borrow and Pendle live under the `/beta` routes and are not part of the stable v2 SDK, so this recipe calls them directly through the same Vite proxy (`/api/vaults-fyi/*`) the SDK uses. The API key stays server-side exactly as it does for earn. See [the beta reference](https://docs.vaults.fyi/api-reference/beta).
+
+Borrow is **market-based** rather than vault-based: a market exposes several assets, and you supply one asset as collateral to borrow a different asset against it. Every action is scoped to `(network, marketId, assetAddress)`.
+
+| Step | Endpoint | What you get |
+|---|---|---|
+| Discover markets | `GET /beta/borrow/markets/` (all networks, paginated) or `/:network` | Markets with per-asset supply/borrow rates, liquidity, and risk params (`maxLtv`, `liquidationThreshold`) |
+| Read state | `GET /beta/borrow/markets/transactions/context/:user/:network/:marketId/:assetAddress` | A per-action step machine (supply / withdraw / borrow / repay) |
+| Act | `GET /beta/borrow/markets/transactions/:action/:user/:network/:marketId/:assetAddress?amount=` | The same `{ currentActionIndex, actions[] }` bundle as deposit — approve + act |
+| Fixed-term | `GET /beta/fixed-term/transactions/:action/:user/:network/:vaultId` | swap-in (asset → PT) / swap-out (PT → asset) |
+
 ## Files
 
 - `src/lib/vaultsFyi.ts` — `@vaultsfyi/sdk` client instance, configured to proxy through Vite so the API key stays server-side.
-- `src/hooks/useDepositOptions.ts`, `usePositions.ts`, `useRewards.ts` — React Query hooks.
-- `src/hooks/useExecuteAction.ts` — sequential signer using wagmi's `useSendTransaction`, awaits each receipt before proceeding.
-- `src/components/DiscoverPanel.tsx`, `ActionPanel.tsx`, `PositionsPanel.tsx`, `RewardsPanel.tsx` — UI for each flow.
+- `src/lib/vaultsFyiBeta.ts` — direct fetch client for the beta borrow + fixed-term endpoints, routed through the same proxy.
+- `src/hooks/useDepositOptions.ts`, `usePositions.ts`, `useRewards.ts`, `useBorrowMarkets.ts` — React Query hooks.
+- `src/hooks/useExecuteAction.ts` — sequential signer using wagmi's `useSendTransaction`, awaits each receipt before proceeding. Shared by earn, borrow, and fixed-term.
+- `src/components/DiscoverPanel.tsx`, `ActionPanel.tsx`, `PositionsPanel.tsx`, `RewardsPanel.tsx`, `BorrowPanel.tsx`, `FixedTermPanel.tsx` — UI for each flow.
 - `vite.config.ts` — dev proxy that injects the vaults.fyi API key server-side.
 
 ## Resources

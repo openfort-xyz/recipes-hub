@@ -1,9 +1,15 @@
-import React from "react";
-import { ActivityIndicator, StyleSheet, Text, View, TouchableOpacity } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import * as Clipboard from 'expo-clipboard';
+import React, { useCallback, useState } from "react";
+import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import * as Clipboard from "expo-clipboard";
+import { useFunding, useFundingChains } from "@openfort/react-native";
+import type { FundingChain, FundingCurrency } from "@openfort/react-native";
+import { parseUnits } from "viem";
 
-import { GradientButton } from "../ui";
+import { BackChevron, Card, Keypad, PillButton, SuccessCheck, colors, spacing } from "../ui";
+import { CAIP2_CHAINS } from "../../constants/network";
+import { HYPERLIQUID_USDC_TOKEN_ADDRESS } from "../../constants/hyperliquid";
+
+type FundStep = "overview" | "source" | "source-amount" | "source-result" | "move-amount" | "move-confirm" | "move-result";
 
 interface FundHyperliquidScreenProps {
   walletAddress?: string;
@@ -12,6 +18,8 @@ interface FundHyperliquidScreenProps {
   hyperliquidBalance?: number | null;
   isLoading: boolean;
   onContinue: () => void;
+  onTransfer: (amount: string) => Promise<boolean>;
+  isTransferring: boolean;
   step: number;
   totalSteps: number;
 }
@@ -19,187 +27,518 @@ interface FundHyperliquidScreenProps {
 export const FundHyperliquidScreen: React.FC<FundHyperliquidScreenProps> = ({
   walletAddress,
   hyperliquidAddress,
-  walletBalance,
   hyperliquidBalance,
+  walletBalance,
   isLoading,
   onContinue,
+  onTransfer,
+  isTransferring,
   step,
   totalSteps,
 }) => {
-  const truncatedHyperliquid = React.useMemo(() => {
-    if (!hyperliquidAddress) return null;
-    return `${hyperliquidAddress.slice(0, 6)}…${hyperliquidAddress.slice(-4)}`;
-  }, [hyperliquidAddress]);
+  const [flow, setFlow] = useState<FundStep>("overview");
+  const [selectedChain, setSelectedChain] = useState<FundingChain | null>(null);
+  const [sourceAmount, setSourceAmount] = useState("");
+  const [moveAmount, setMoveAmount] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const funding = useFunding();
+  const fundingChains = useFundingChains();
 
   const hasExchangeBalance = (hyperliquidBalance ?? 0) > 0;
 
-  const copyToClipboard = async () => {
-    if (hyperliquidAddress) {
-      await Clipboard.setStringAsync(hyperliquidAddress);
+  const copyAddress = useCallback(async () => {
+    if (!walletAddress) return;
+    await Clipboard.setStringAsync(walletAddress);
+    setCopied(true);
+  }, [walletAddress]);
+
+  const usdcCurrency = useCallback(
+    (chain: FundingChain): FundingCurrency | undefined =>
+      chain.currencies.find((currency) => currency.symbol === "USDC") ?? chain.currencies[0],
+    []
+  );
+
+  const startFunding = useCallback(async () => {
+    if (!walletAddress || !selectedChain) return;
+    const currency = usdcCurrency(selectedChain);
+    if (!currency) return;
+
+    setFlow("source-result");
+    try {
+      await funding.fund(
+        { chain: CAIP2_CHAINS.ARBITRUM_SEPOLIA, currency: HYPERLIQUID_USDC_TOKEN_ADDRESS, address: walletAddress },
+        {
+          type: "evm",
+          source: {
+            chain: selectedChain.id,
+            currency: currency.address,
+            amount: parseUnits(sourceAmount || "0", currency.decimals).toString(),
+          },
+        }
+      );
+    } catch {
+      // funding.error already carries the failure; the result screen reads it.
     }
-  };
+  }, [walletAddress, selectedChain, sourceAmount, usdcCurrency, funding]);
+
+  if (flow === "source") {
+    return (
+      <SourceChainStep
+        step={step}
+        totalSteps={totalSteps}
+        chains={fundingChains.chains}
+        loading={fundingChains.loading}
+        isAvailable={fundingChains.isAvailable}
+        onBack={() => setFlow("overview")}
+        onSelect={(chain) => {
+          setSelectedChain(chain);
+          setFlow("source-amount");
+        }}
+      />
+    );
+  }
+
+  if (flow === "source-amount" && selectedChain) {
+    const currency = usdcCurrency(selectedChain);
+    return (
+      <AmountStep
+        title={`Deposit from ${selectedChain.name}`}
+        subtitle={`Enter how much ${currency?.symbol ?? "USDC"} to send from ${selectedChain.name}.`}
+        amount={sourceAmount}
+        onChangeAmount={setSourceAmount}
+        onBack={() => setFlow("source")}
+        onContinue={startFunding}
+        continueLabel="Get deposit address"
+      />
+    );
+  }
+
+  if (flow === "source-result") {
+    return (
+      <SourceResultStep
+        session={funding.session}
+        status={funding.status}
+        loading={funding.loading}
+        error={funding.error}
+        onDone={() => {
+          funding.reset();
+          setSourceAmount("");
+          setSelectedChain(null);
+          setFlow("overview");
+        }}
+      />
+    );
+  }
+
+  if (flow === "move-amount") {
+    return (
+      <AmountStep
+        title="Move to Hyperliquid"
+        subtitle="USDC sent here is credited to your Hyperliquid account in under a minute. Minimum 5 USDC."
+        amount={moveAmount}
+        onChangeAmount={setMoveAmount}
+        onBack={() => setFlow("overview")}
+        onContinue={() => setFlow("move-confirm")}
+        continueLabel="Review"
+      />
+    );
+  }
+
+  if (flow === "move-confirm") {
+    return (
+      <MoveConfirmStep
+        amount={moveAmount}
+        isTransferring={isTransferring}
+        onBack={() => setFlow("move-amount")}
+        onConfirm={async () => {
+          const success = await onTransfer(moveAmount);
+          if (success) {
+            setFlow("move-result");
+          }
+        }}
+      />
+    );
+  }
+
+  if (flow === "move-result") {
+    return (
+      <MoveResultStep
+        amount={moveAmount}
+        onDone={() => {
+          setMoveAmount("");
+          setFlow("overview");
+        }}
+      />
+    );
+  }
+
+  return (
+    <OverviewStep
+      step={step}
+      totalSteps={totalSteps}
+      walletAddress={walletAddress}
+      hyperliquidAddress={hyperliquidAddress}
+      walletBalance={walletBalance}
+      hyperliquidBalance={hyperliquidBalance}
+      hasExchangeBalance={hasExchangeBalance}
+      isLoading={isLoading}
+      copied={copied}
+      onCopyAddress={copyAddress}
+      onAddMoney={() => setFlow("source")}
+      onMoveToHyperliquid={() => setFlow("move-amount")}
+      onContinue={onContinue}
+    />
+  );
+};
+
+// --- Step components -------------------------------------------------------
+
+interface OverviewStepProps {
+  step: number;
+  totalSteps: number;
+  walletAddress?: string;
+  hyperliquidAddress?: string;
+  walletBalance?: number | null;
+  hyperliquidBalance?: number | null;
+  hasExchangeBalance: boolean;
+  isLoading: boolean;
+  copied: boolean;
+  onCopyAddress: () => void;
+  onAddMoney: () => void;
+  onMoveToHyperliquid: () => void;
+  onContinue: () => void;
+}
+
+const OverviewStep: React.FC<OverviewStepProps> = ({
+  step,
+  totalSteps,
+  walletAddress,
+  hyperliquidAddress,
+  walletBalance,
+  hyperliquidBalance,
+  hasExchangeBalance,
+  isLoading,
+  copied,
+  onCopyAddress,
+  onAddMoney,
+  onMoveToHyperliquid,
+  onContinue,
+}) => {
+  const truncatedAddress = walletAddress ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}` : "—";
+  const tradesOnDifferentAccount =
+    !!hyperliquidAddress && !!walletAddress && hyperliquidAddress.toLowerCase() !== walletAddress.toLowerCase();
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={["#0F1419", "#1A1F2E", "#0F1419"]}
-        style={styles.backgroundGradient}
-      />
-
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.stepBadge}>
           <Text style={styles.stepText}>Step {step} of {totalSteps}</Text>
         </View>
 
-        <View style={styles.header}>
-          <Text style={styles.title}>Add balance</Text>
-          <Text style={styles.subtitle}>
-            Your Hyperliquid wallet already has USDC available for trading. Continue when ready.
-          </Text>
-        </View>
+        <Text style={styles.title}>Add balance</Text>
+        <Text style={styles.subtitle}>Fund your wallet, then move USDC into Hyperliquid to start trading.</Text>
 
-        <View style={styles.statusRow}>
-          <View style={styles.statusCard}>
-            <Text style={styles.statusLabel}>USDC (Spot) Balance</Text>
-            <View style={styles.statusValueRow}>
-              <Text style={styles.statusValue}>{`${hyperliquidBalance?.toFixed(8) ?? "0.00000000"} USDC`}</Text>
-              <Text style={[styles.statusBadge, hasExchangeBalance ? styles.readyBadge : styles.pendingBadge]}>
-                {hasExchangeBalance ? "Ready" : "No Funds"}
-              </Text>
-            </View>
-            <Text style={styles.statusHint}>Your Hyperliquid account USDC balance available for trading.</Text>
+        <Card style={styles.balanceCard}>
+          <Text style={styles.balanceLabel}>Wallet (Arbitrum Sepolia)</Text>
+          <Text style={styles.balanceValue}>{isLoading ? "…" : `${(walletBalance ?? 0).toFixed(2)} USDC`}</Text>
+        </Card>
+
+        <Card style={styles.balanceCard}>
+          <Text style={styles.balanceLabel}>Hyperliquid</Text>
+          <View style={styles.balanceValueRow}>
+            <Text style={styles.balanceValue}>{isLoading ? "…" : `${(hyperliquidBalance ?? 0).toFixed(2)} USDC`}</Text>
+            <Text style={[styles.badge, hasExchangeBalance ? styles.badgeReady : styles.badgePending]}>
+              {hasExchangeBalance ? "Ready" : "No funds"}
+            </Text>
           </View>
-        </View>
+        </Card>
 
-        <View style={styles.addressCard}>
-          <Text style={styles.addressLabel}>Hyperliquid wallet address</Text>
+        {tradesOnDifferentAccount && (
+          <Card style={styles.addressCard}>
+            <Text style={styles.hint}>
+              Trading is configured to use a different Hyperliquid account ({hyperliquidAddress?.slice(0, 6)}…
+              {hyperliquidAddress?.slice(-4)}). The &quot;Move to Hyperliquid&quot; deposit below always credits{" "}
+              <Text style={styles.hintLink}>this wallet&apos;s</Text> own address, not that account.
+            </Text>
+          </Card>
+        )}
+
+        <PillButton title="Add money" onPress={onAddMoney} />
+        <PillButton title="Move to Hyperliquid" onPress={onMoveToHyperliquid} variant="secondary" />
+
+        <Card style={styles.addressCard}>
+          <Text style={styles.balanceLabel}>Wallet address</Text>
           <View style={styles.addressRow}>
-            <Text style={styles.addressValue}>{truncatedHyperliquid ?? "—"}</Text>
-            {hyperliquidAddress && (
-              <TouchableOpacity style={styles.copyButton} onPress={copyToClipboard}>
-                <Text style={styles.copyButtonText}>Copy</Text>
-              </TouchableOpacity>
-            )}
+            <Text style={styles.addressValue}>{truncatedAddress}</Text>
+            <TouchableOpacity onPress={onCopyAddress}>
+              <Text style={styles.copyLink}>{copied ? "Copied" : "Copy"}</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.addressHint}>This is your Hyperliquid account address where USDC balances are held.</Text>
-        </View>
+          <Text style={styles.hint}>
+            On testnet, real bridges rarely route to Arbitrum Sepolia — the fastest way to fund this address is the{" "}
+            <Text style={styles.hintLink} onPress={() => Linking.openURL("https://app.hyperliquid-testnet.xyz/drip")}>
+              Hyperliquid testnet faucet
+            </Text>
+            .
+          </Text>
+        </Card>
 
-        <View style={styles.card}>
-          <GradientButton
-            title={hasExchangeBalance ? "Continue to trading" : "I have funded my account"}
-            onPress={onContinue}
-          />
+        <PillButton title={hasExchangeBalance ? "Continue to trading" : "I'll fund later"} onPress={onContinue} variant="secondary" />
+      </ScrollView>
+    </View>
+  );
+};
+
+interface SourceChainStepProps {
+  step: number;
+  totalSteps: number;
+  chains: FundingChain[];
+  loading: boolean;
+  isAvailable: boolean;
+  onBack: () => void;
+  onSelect: (chain: FundingChain) => void;
+}
+
+const SourceChainStep: React.FC<SourceChainStepProps> = ({ chains, loading, isAvailable, onBack, onSelect }) => (
+  <View style={styles.container}>
+    <View style={styles.header}>
+      <BackChevron onPress={onBack} />
+    </View>
+    <ScrollView contentContainerStyle={styles.content}>
+      <Text style={styles.title}>Deposit from</Text>
+      <Text style={styles.subtitle}>Pick the chain you&apos;re sending USDC from.</Text>
+
+      {loading ? (
+        <ActivityIndicator color={colors.accent} />
+      ) : !isAvailable || chains.length === 0 ? (
+        <Card>
+          <Text style={styles.hint}>
+            Funding isn&apos;t available for this project yet, or no route exists to Arbitrum Sepolia testnet. Use the wallet
+            address on the previous screen with the Hyperliquid faucet instead.
+          </Text>
+        </Card>
+      ) : (
+        chains.map((chain) => (
+          <TouchableOpacity key={chain.id} style={styles.chainRow} onPress={() => onSelect(chain)} activeOpacity={0.7}>
+            <Text style={styles.chainName}>{chain.name}</Text>
+            <Text style={styles.chainCurrencies}>{chain.currencies.map((c) => c.symbol).join(", ")}</Text>
+          </TouchableOpacity>
+        ))
+      )}
+    </ScrollView>
+  </View>
+);
+
+interface AmountStepProps {
+  title: string;
+  subtitle: string;
+  amount: string;
+  onChangeAmount: (value: string) => void;
+  onBack: () => void;
+  onContinue: () => void;
+  continueLabel: string;
+}
+
+const AmountStep: React.FC<AmountStepProps> = ({ title, subtitle, amount, onChangeAmount, onBack, onContinue, continueLabel }) => {
+  const parsed = parseFloat(amount);
+  const isValid = !Number.isNaN(parsed) && parsed > 0;
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <BackChevron onPress={onBack} />
+      </View>
+      <View style={styles.amountContent}>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
+        <Text style={styles.amountDisplay}>${amount || "0"}</Text>
+        <View style={styles.keypadWrapper}>
+          <Keypad value={amount} onChange={onChangeAmount} />
         </View>
+        <PillButton title={continueLabel} onPress={onContinue} disabled={!isValid} />
       </View>
     </View>
   );
 };
 
+interface SourceResultStepProps {
+  session: ReturnType<typeof useFunding>["session"];
+  status: ReturnType<typeof useFunding>["status"];
+  loading: boolean;
+  error: Error | null;
+  onDone: () => void;
+}
+
+const SourceResultStep: React.FC<SourceResultStepProps> = ({ session, status, loading, error, onDone }) => {
+  const paymentMethod = session?.paymentMethod;
+
+  return (
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title}>Deposit address</Text>
+        {loading && !paymentMethod ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color={colors.accent} />
+            <Text style={styles.hint}>Preparing your deposit address…</Text>
+          </View>
+        ) : error ? (
+          <Card>
+            <Text style={styles.hint}>{error.message}</Text>
+          </Card>
+        ) : paymentMethod ? (
+          <>
+            <Card style={styles.addressCard}>
+              <Text style={styles.balanceLabel}>Send to</Text>
+              <Text style={styles.addressValue}>{paymentMethod.receiverAddress}</Text>
+              <Text style={styles.hint}>Status: {status}</Text>
+            </Card>
+            {paymentMethod.deeplinks.map((deeplink) => (
+              <PillButton
+                key={deeplink.app}
+                title={deeplink.label}
+                variant="secondary"
+                onPress={() => Linking.openURL(deeplink.url)}
+              />
+            ))}
+          </>
+        ) : null}
+        <PillButton title="Done" onPress={onDone} />
+      </ScrollView>
+    </View>
+  );
+};
+
+interface MoveConfirmStepProps {
+  amount: string;
+  isTransferring: boolean;
+  onBack: () => void;
+  onConfirm: () => void;
+}
+
+const MoveConfirmStep: React.FC<MoveConfirmStepProps> = ({ amount, isTransferring, onBack, onConfirm }) => (
+  <View style={styles.container}>
+    <View style={styles.header}>
+      <BackChevron onPress={onBack} />
+    </View>
+    <View style={styles.amountContent}>
+      <Text style={styles.title}>Confirm</Text>
+      <Card style={styles.balanceCard}>
+        <Text style={styles.balanceLabel}>Sending to Hyperliquid</Text>
+        <Text style={styles.balanceValue}>{amount} USDC</Text>
+      </Card>
+      <PillButton title="Confirm transfer" onPress={onConfirm} loading={isTransferring} />
+    </View>
+  </View>
+);
+
+interface MoveResultStepProps {
+  amount: string;
+  onDone: () => void;
+}
+
+const MoveResultStep: React.FC<MoveResultStepProps> = ({ amount, onDone }) => (
+  <View style={styles.container}>
+    <View style={styles.resultContent}>
+      <SuccessCheck />
+      <Text style={styles.title}>Sent</Text>
+      <Text style={styles.subtitle}>{amount} USDC is on its way to your Hyperliquid account.</Text>
+      <PillButton title="Done" onPress={onDone} />
+    </View>
+  </View>
+);
+
+// --- Styles ------------------------------------------------------------
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F1419",
+    backgroundColor: colors.background,
   },
-  backgroundGradient: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+  header: {
+    paddingTop: 56,
+    paddingHorizontal: spacing.md,
   },
   content: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.xl,
+    paddingTop: 56,
+    paddingBottom: spacing.xl,
+    gap: spacing.md,
+  },
+  amountContent: {
     flex: 1,
-    paddingHorizontal: 32,
-    paddingTop: 96,
-    paddingBottom: 48,
-    gap: 32,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    gap: spacing.md,
+  },
+  resultContent: {
+    flex: 1,
+    paddingHorizontal: spacing.xl,
+    justifyContent: "center",
+    gap: spacing.md,
   },
   stepBadge: {
     alignSelf: "flex-start",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: "rgba(0, 212, 170, 0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(0, 212, 170, 0.35)",
+    backgroundColor: colors.accentMuted,
   },
   stepText: {
-    color: "#00D4AA",
-    fontWeight: "600",
+    color: colors.accent,
+    fontWeight: "700",
     fontSize: 12,
     letterSpacing: 0.5,
   },
-  header: {
-    gap: 12,
-  },
   title: {
     fontSize: 28,
-    fontWeight: "700",
-    color: "#FFFFFF",
+    fontWeight: "800",
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+    textAlign: "center",
   },
   subtitle: {
-    fontSize: 16,
-    color: "#8B949E",
-    lineHeight: 24,
+    fontSize: 15,
+    color: colors.textSecondary,
+    lineHeight: 21,
+    textAlign: "center",
   },
-  statusRow: {
-    flexDirection: "row",
-    gap: 20,
-    flexWrap: "wrap",
+  balanceCard: {
+    gap: spacing.xs,
   },
-  statusCard: {
-    flex: 1,
-    padding: 20,
-    borderRadius: 16,
-    backgroundColor: "rgba(26, 31, 46, 0.75)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
-    gap: 12,
-  },
-  statusLabel: {
-    color: "#8B949E",
+  balanceLabel: {
+    color: colors.textSecondary,
     fontSize: 13,
-    letterSpacing: 0.2,
   },
-  statusValueRow: {
+  balanceValueRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  statusValue: {
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "600",
+  balanceValue: {
+    color: colors.textPrimary,
+    fontSize: 22,
+    fontWeight: "700",
   },
-  statusBadge: {
+  badge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
     fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
+    fontWeight: "700",
+    overflow: "hidden",
   },
-  readyBadge: {
-    backgroundColor: "rgba(0, 212, 170, 0.12)",
-    color: "#00D4AA",
+  badgeReady: {
+    backgroundColor: colors.accentMuted,
+    color: colors.accent,
   },
-  pendingBadge: {
-    backgroundColor: "rgba(255, 199, 0, 0.12)",
-    color: "#FCD34D",
-  },
-  statusHint: {
-    color: "#6B7280",
-    fontSize: 13,
-    lineHeight: 18,
+  badgePending: {
+    backgroundColor: colors.disabled,
+    color: colors.textSecondary,
   },
   addressCard: {
-    padding: 20,
-    borderRadius: 16,
-    backgroundColor: "rgba(26, 31, 46, 0.75)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
-    gap: 10,
-  },
-  addressLabel: {
-    color: "#8B949E",
-    fontSize: 13,
+    gap: spacing.sm,
   },
   addressRow: {
     flexDirection: "row",
@@ -207,52 +546,59 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   addressValue: {
-    color: "#FFFFFF",
-    fontSize: 18,
+    color: colors.textPrimary,
+    fontSize: 16,
     fontWeight: "600",
     fontFamily: "monospace",
     flex: 1,
   },
-  copyButton: {
-    backgroundColor: "rgba(0, 212, 170, 0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(0, 212, 170, 0.35)",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginLeft: 12,
+  copyLink: {
+    color: colors.accent,
+    fontWeight: "700",
+    fontSize: 14,
   },
-  copyButtonText: {
-    color: "#00D4AA",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  addressHint: {
-    color: "#6B7280",
+  hint: {
+    color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 18,
   },
-  card: {
-    backgroundColor: "rgba(26, 31, 46, 0.9)",
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
-    gap: 20,
+  hintLink: {
+    color: colors.accent,
   },
-  callout: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "500",
-    lineHeight: 22,
-  },
-  progressRow: {
+  chainRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    justifyContent: "space-between",
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  progressText: {
-    color: "#8B949E",
-    fontSize: 14,
+  chainName: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  chainCurrencies: {
+    color: colors.textSecondary,
+    fontSize: 13,
+  },
+  amountDisplay: {
+    fontSize: 56,
+    fontWeight: "800",
+    color: colors.textPrimary,
+    textAlign: "center",
+    fontVariant: ["tabular-nums"],
+  },
+  keypadWrapper: {
+    marginTop: spacing.md,
+  },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
   },
 });

@@ -84,6 +84,14 @@ export interface ExecutionStatusResponse {
   swapDetails: SwapDetails;
 }
 
+/**
+ * Privacy level for a swap. `public` is a normal on-chain swap. `basic` and
+ * `advanced` route the swap through NEAR's Confidential Intents so the trade is
+ * not broadcast publicly. Confidential levels require an authenticated (JWT)
+ * 1Click integration that has been granted access — see the README.
+ */
+export type Confidentiality = "public" | "basic" | "advanced";
+
 /** Client-supplied portion of a quote request; the server fills the rest. */
 export interface QuoteRequestParams {
   originAsset: string;
@@ -92,4 +100,6 @@ export interface QuoteRequestParams {
   recipient: string;
   refundTo: string;
   dry: boolean;
+  /** Defaults to `public` when omitted. */
+  confidentiality?: Confidentiality;
 }

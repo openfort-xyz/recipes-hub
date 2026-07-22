@@ -83,3 +83,13 @@ export const QUOTE_DEADLINE_MINUTES = 30;
 export const STATUS_POLL_INTERVAL_MS = 4000;
 
 export const TERMINAL_STATUSES = ["SUCCESS", "REFUNDED", "FAILED"] as const;
+
+// Confidential swaps (NEAR Confidential Intents) are invite-only and require an
+// authenticated 1Click integration. The browser can't see the server-side JWT,
+// so this public flag gates whether the privacy toggle is shown at all. Set it
+// only once your 1Click JWT has confidential access enabled.
+export const CONFIDENTIAL_SWAPS_ENABLED =
+  process.env.NEXT_PUBLIC_CONFIDENTIAL_ENABLED === "true";
+
+// The confidentiality level applied when the user turns on the privacy toggle.
+export const PRIVATE_CONFIDENTIALITY = "basic" as const;

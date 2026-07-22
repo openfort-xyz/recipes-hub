@@ -1,10 +1,14 @@
 "use client";
 
 import { formatUnits } from "viem";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, Lock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { chainLabel } from "@/features/near-intents/constants";
-import type { QuoteResponse, SwapAsset } from "@/features/near-intents/types";
+import type {
+  Confidentiality,
+  QuoteResponse,
+  SwapAsset,
+} from "@/features/near-intents/types";
 import AssetIcon from "./AssetIcon";
 
 interface QuoteDisplayProps {
@@ -12,6 +16,7 @@ interface QuoteDisplayProps {
   fromAsset: SwapAsset;
   toAsset: SwapAsset;
   recipient: string;
+  confidentiality: Confidentiality;
 }
 
 const truncate = (value: string): string =>
@@ -30,13 +35,22 @@ export default function QuoteDisplay({
   fromAsset,
   toAsset,
   recipient,
+  confidentiality,
 }: QuoteDisplayProps) {
   const { quote: q } = quote;
   const minReceived = formatUnits(BigInt(q.minAmountOut), toAsset.decimals);
+  const isPrivate = confidentiality !== "public";
 
   return (
     <Card className="w-full max-w-md">
       <CardContent className="space-y-4 p-6">
+        {isPrivate && (
+          <div className="flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 dark:border-violet-900 dark:bg-violet-950 dark:text-violet-300">
+            <Lock className="h-4 w-4" />
+            Private swap — routed through NEAR Confidential Intents
+          </div>
+        )}
+
         <Leg
           label="You send"
           asset={fromAsset}
