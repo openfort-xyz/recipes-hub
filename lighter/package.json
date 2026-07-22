@@ -1,0 +1,47 @@
+{
+  "name": "@openfort/openfort-lighter",
+  "main": "entrypoint.ts",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "expo start --dev-client --tunnel --clear",
+    "dev:ios": "expo start --ios --clear",
+    "dev:android": "expo start --android --clear",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "doctor": "pnpm dlx expo-doctor@latest --verbose --pnpm && pnpm expo install --fix --pnpm"
+  },
+  "dependencies": {
+    "@openfort/react-native": "1.1.7",
+    "dotenv": "16.4.5",
+    "event-target-polyfill": "0.0.4",
+    "expo": "57.0.4",
+    "expo-application": "57.0.0",
+    "expo-clipboard": "57.0.0",
+    "expo-constants": "57.0.3",
+    "expo-crypto": "57.0.0",
+    "expo-haptics": "57.0.0",
+    "expo-linking": "57.0.2",
+    "expo-router": "57.0.4",
+    "expo-secure-store": "57.0.0",
+    "expo-splash-screen": "57.0.2",
+    "expo-web-browser": "57.0.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.0",
+    "react-native-get-random-values": "1.11.0",
+    "react-native-safe-area-context": "~5.7.0",
+    "viem": "2.55.0"
+  },
+  "devDependencies": {
+    "@babel/core": "7.29.7",
+    "@types/react": "19.2.17",
+    "eslint": "9.39.4",
+    "eslint-config-expo": "57.0.0",
+    "typescript": "~6.0.3",
+    "vitest": "4.1.10"
+  },
+  "private": true
+}
