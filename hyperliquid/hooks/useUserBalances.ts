@@ -40,6 +40,7 @@ export const useWalletBalance = (walletAddress?: string) => {
 
   useEffect(() => {
     if (!walletAddress) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-mount + refetch-on-address-change; this recipe's data layer is custom hooks, not a query library.
     fetchBalance();
   }, [walletAddress, fetchBalance]);
 

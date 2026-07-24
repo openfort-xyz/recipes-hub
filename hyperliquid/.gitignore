@@ -13,3 +13,6 @@ expo-env.d.ts
 # Expo cache and device files
 .expo/cache/
 .expo/devices.json
+
+# expo export output
+dist/

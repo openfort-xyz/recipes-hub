@@ -1,19 +1,26 @@
 import "../polyfills";
 import * as Hyperliquid from "@nktkas/hyperliquid";
-import { createL1ActionHash } from "@nktkas/hyperliquid/signing";
+import { canonicalize, createL1ActionHash } from "@nktkas/hyperliquid/signing";
+import { OrderRequest } from "@nktkas/hyperliquid/api/exchange";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ethers } from "ethers";
+import { encodeFunctionData, parseUnits } from "viem";
 
-import type { FrontendOpenOrdersResponse, L2BookResponse } from "@nktkas/hyperliquid/api/info";
+import type { ConnectedEmbeddedEthereumWallet } from "@openfort/react-native";
+import type { L2BookResponse, FrontendOpenOrdersResponse } from "@nktkas/hyperliquid";
 
 import {
   HYPE_ASSET_ID,
   HYPE_MARKET_ID,
   HYPE_SYMBOL,
+  HYPERLIQUID_BRIDGE_ADDRESS,
   HYPERLIQUID_TESTNET_HTTP_URL,
+  HYPERLIQUID_USDC_DECIMALS,
+  HYPERLIQUID_USDC_TOKEN_ADDRESS,
   PRICE_POLL_INTERVAL_MS,
   DEFAULT_SLIPPAGE,
 } from "../constants/hyperliquid";
+import { CHAIN_IDS_HEX } from "../constants/network";
 
 // Removed WebSocket transport - using HTTP transport for better React Native compatibility
 const httpTransport = new Hyperliquid.HttpTransport({
@@ -21,7 +28,7 @@ const httpTransport = new Hyperliquid.HttpTransport({
 });
 
 const infoClient = new Hyperliquid.InfoClient({
-    transport: httpTransport, 
+    transport: httpTransport,
 });
 
 // Removed priceClient using WebSocket transport - using HTTP transport instead
@@ -49,27 +56,31 @@ const DEFAULT_HYPE_SIZING: HypeSizing = {
 export const DEFAULT_MIN_HYPE_ORDER_SIZE = DEFAULT_HYPE_SIZING.minSize;
 const IS_TESTNET = HYPERLIQUID_TESTNET_HTTP_URL.toLowerCase().includes("testnet");
 
-// @nktkas/hyperliquid 0.32 removed `actionSorter`; the order action is a plain
-// object built in Hyperliquid's canonical field order (a, b, p, s, r, t), which
-// is what `createL1ActionHash` hashes over.
 type OrderWire = {
-  a: number;
-  b: boolean;
-  p: string;
-  s: string;
-  r: boolean;
-  t: { limit: { tif: "Gtc" } };
+    a: number;
+    b: boolean;
+    p: string;
+    s: string;
+    r: boolean;
+    t: { limit: { tif: "Gtc" } };
 };
-type OrderAction = { type: "order"; orders: OrderWire[]; grouping: "na" };
 
-type EmbeddedWalletSigner = {
-    signTypedData?: (
-        domain: Record<string, unknown>,
-        types: Record<string, Array<{ name: string; type: string }>>,
-        message: Record<string, unknown>
-    ) => Promise<string>;
-    exportPrivateKey?: () => Promise<string>;
-};
+// The embedded wallet as exposed by `useEmbeddedEthereumWallet().activeWallet`.
+// Only the two members this module actually needs.
+export type EmbeddedWallet = Pick<ConnectedEmbeddedEthereumWallet, "address" | "getProvider">;
+
+const ERC20_TRANSFER_ABI = [
+  {
+    name: "transfer",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ name: "success", type: "bool" }],
+  },
+] as const;
 
 let hypeSizingPromise: Promise<HypeSizing> | null = null;
 
@@ -113,7 +124,7 @@ const fetchRecentFillForOrder = async (
             aggregateByTime: false,
         });
 
-        const matchedFill = fills.find((fill: any) => fill.oid === oid);
+        const matchedFill = fills.find((fill) => fill.oid === oid);
         if (matchedFill) {
             console.log('Matched fill details for order:', {
                 coin: matchedFill.coin,
@@ -138,7 +149,7 @@ const fetchRecentFillForOrder = async (
 const fetchHypeSizing = async (): Promise<HypeSizing> => {
     try {
         const spotMeta = await infoClient.spotMeta();
-        const token = spotMeta.tokens.find((t: any) => t.index === 1035);
+        const token = spotMeta.tokens.find((t) => t.index === 1035);
         if (!token) {
             throw new Error('HYPE token metadata not found in spotMeta response');
         }
@@ -177,15 +188,17 @@ const getHypeSizing = async (): Promise<HypeSizing> => {
     }
 };
 
+// Signs a Hyperliquid L1 action through the embedded wallet's EIP-1193 provider.
+// `@nktkas/hyperliquid` 0.25+ dropped `actionSorter`; `canonicalize` (schema-driven
+// key reordering) is the replacement, since `createL1ActionHash` hashes the action
+// object in insertion-key order.
 const signAndSubmitOrder = async (
     params: {
-        activeWallet: any;
-        action: OrderAction;
-        embeddedWallet?: EmbeddedWalletSigner;
-        privateKey?: string | null;
+        activeWallet: EmbeddedWallet;
+        action: Record<string, unknown>;
     }
 ) => {
-    const { activeWallet, action, embeddedWallet, privateKey } = params;
+    const { activeWallet, action } = params;
     const nonce = Date.now();
     const actionHash = createL1ActionHash({ action, nonce });
 
@@ -208,50 +221,14 @@ const signAndSubmitOrder = async (
         connectionId: actionHash,
     };
 
-    let signatureHex: string | undefined;
-
-    if (privateKey) {
-        const normalizedKey = privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`;
-        const wallet = new ethers.Wallet(normalizedKey);
-        signatureHex = await wallet.signTypedData(domain, types, message);
-    } else if (embeddedWallet?.signTypedData) {
-        signatureHex = await embeddedWallet.signTypedData(
-            domain,
-            {
-                EIP712Domain: [
-                    { name: "name", type: "string" },
-                    { name: "version", type: "string" },
-                    { name: "chainId", type: "uint256" },
-                    { name: "verifyingContract", type: "address" },
-                ],
-                ...types,
-            },
-            message
-        );
-    } else {
-        const provider = await activeWallet.getProvider();
-        try {
-            signatureHex = await provider.request({
-                method: 'eth_signTypedData_v4',
-                params: [
-                    activeWallet.address,
-                    JSON.stringify({
-                        domain,
-                        types,
-                        primaryType: 'Agent',
-                        message,
-                    }),
-                ],
-            });
-        } catch (error: any) {
-            const errMessage = error?.message ?? 'Unknown provider error';
-            throw new Error(`Unable to sign Hyperliquid order: ${errMessage}`);
-        }
-    }
-
-    if (!signatureHex) {
-        throw new Error('Failed to obtain signature for Hyperliquid order');
-    }
+    const provider = await activeWallet.getProvider();
+    const signatureHex = (await provider.request({
+        method: "eth_signTypedData_v4",
+        params: [
+            activeWallet.address,
+            JSON.stringify({ domain, types, primaryType: "Agent", message }),
+        ],
+    })) as string;
 
     console.log('Signed order hex:', signatureHex);
 
@@ -290,7 +267,7 @@ export const useHypeUsdc = (intervalMs = PRICE_POLL_INTERVAL_MS) => {
     const [price, setPrice] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const hasLoadedRef = useRef(false);
+    const [hasLoaded, setHasLoaded] = useState(false);
     const isMountedRef = useRef(true);
 
     useEffect(() => {
@@ -307,9 +284,6 @@ export const useHypeUsdc = (intervalMs = PRICE_POLL_INTERVAL_MS) => {
                 return;
             }
 
-            if (!hasLoadedRef.current) {
-                setIsLoading(true);
-            }
             try {
                 // Use HTTP transport instead of WebSocket for better reliability in React Native
                 const allMids = await infoClient.allMids();
@@ -322,7 +296,7 @@ export const useHypeUsdc = (intervalMs = PRICE_POLL_INTERVAL_MS) => {
                 }
                 setPrice(Number(value));
                 setError(null);
-                hasLoadedRef.current = true;
+                setHasLoaded(true);
             } catch (err) {
                 if (!isMountedRef.current) {
                     return;
@@ -335,23 +309,20 @@ export const useHypeUsdc = (intervalMs = PRICE_POLL_INTERVAL_MS) => {
             }
         };
 
-        // Initial fetch
         fetchPrice();
-
-        // Set up interval for subsequent fetches
         const interval = setInterval(fetchPrice, intervalMs);
 
         return () => clearInterval(interval);
     }, [intervalMs]);
 
-    return { price, isLoading: !hasLoadedRef.current ? isLoading : false, error };
+    return { price, isLoading: hasLoaded ? false : isLoading, error };
 };
 
 export const useHypeOrderBook = (intervalMs = PRICE_POLL_INTERVAL_MS) => {
     const [book, setBook] = useState<L2BookResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const hasLoadedRef = useRef(false);
+    const [hasLoaded, setHasLoaded] = useState(false);
     const isMountedRef = useRef(true);
 
     useEffect(() => {
@@ -368,10 +339,6 @@ export const useHypeOrderBook = (intervalMs = PRICE_POLL_INTERVAL_MS) => {
                 return;
             }
 
-            if (!hasLoadedRef.current) {
-                setIsLoading(true);
-            }
-
             try {
                 const snapshot = await infoClient.l2Book({
                     coin: HYPE_SYMBOL,
@@ -384,7 +351,7 @@ export const useHypeOrderBook = (intervalMs = PRICE_POLL_INTERVAL_MS) => {
 
                 setBook(snapshot);
                 setError(null);
-                hasLoadedRef.current = true;
+                setHasLoaded(true);
             } catch (err) {
                 if (!isMountedRef.current) {
                     return;
@@ -407,7 +374,7 @@ export const useHypeOrderBook = (intervalMs = PRICE_POLL_INTERVAL_MS) => {
         };
     }, [intervalMs]);
 
-    return { book, isLoading: !hasLoadedRef.current ? isLoading : false, error };
+    return { book, isLoading: hasLoaded ? false : isLoading, error };
 };
 
 export const useHypeOpenOrders = (
@@ -417,7 +384,7 @@ export const useHypeOpenOrders = (
     const [orders, setOrders] = useState<FrontendOpenOrdersResponse>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const hasLoadedRef = useRef(false);
+    const [hasLoaded, setHasLoaded] = useState(false);
     const isMountedRef = useRef(true);
 
     useEffect(() => {
@@ -436,13 +403,9 @@ export const useHypeOpenOrders = (
         if (!address) {
             setOrders([]);
             setError(null);
-            hasLoadedRef.current = false;
+            setHasLoaded(false);
             setIsLoading(false);
             return;
-        }
-
-        if (!hasLoadedRef.current) {
-            setIsLoading(true);
         }
 
         try {
@@ -451,13 +414,9 @@ export const useHypeOpenOrders = (
                 return;
             }
 
-            const nextOrders = Array.isArray(response)
-                ? response.map((order) => ({ ...order }))
-                : [];
-
-            setOrders(nextOrders);
+            setOrders(Array.isArray(response) ? [...response] : []);
             setError(null);
-            hasLoadedRef.current = true;
+            setHasLoaded(true);
         } catch (err) {
             if (!isMountedRef.current) {
                 return;
@@ -472,18 +431,15 @@ export const useHypeOpenOrders = (
     }, [address]);
 
     useEffect(() => {
-        const run = async () => {
-            await fetchOpenOrders();
-        };
-
-        run();
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-mount + interval poll; this recipe's data layer is custom hooks, not a query library.
+        fetchOpenOrders();
 
         if (!address) {
             return undefined;
         }
 
         const interval = setInterval(() => {
-            run();
+            fetchOpenOrders();
         }, intervalMs);
 
         return () => {
@@ -493,7 +449,7 @@ export const useHypeOpenOrders = (
 
     return {
         orders,
-        isLoading: !hasLoadedRef.current ? isLoading : false,
+        isLoading: hasLoaded ? false : isLoading,
         error,
         refetch: fetchOpenOrders,
     };
@@ -540,10 +496,10 @@ export const useHypeBalances = (address: `0x${string}` | undefined) => {
                     }
                     : null,
             };
-            
-            setBalances({ 
-                account: accountData, 
-                positions: positionsData 
+
+            setBalances({
+                account: accountData,
+                positions: positionsData
             });
             setError(null);
         } catch (err) {
@@ -555,50 +511,125 @@ export const useHypeBalances = (address: `0x${string}` | undefined) => {
     }, [address]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-mount; this recipe's data layer is custom hooks, not a query library.
         fetchBalances();
     }, [fetchBalances]);
 
     return { balances, isLoading, error, refetch: fetchBalances };
 };
 
-// Transfer USDC to Hyperliquid
+// Transfer USDC to Hyperliquid: a plain ERC-20 transfer of the bridge's accepted
+// USDC to Hyperliquid's testnet Bridge2 contract on Arbitrum Sepolia. The bridge
+// credits whichever address sent the transfer, in under a minute, for amounts
+// >= 5 USDC (smaller amounts are not credited and are unrecoverable).
 export const transfer = async (
-    activeWallet: any,
+    activeWallet: EmbeddedWallet,
     amount: number
 ): Promise<boolean> => {
-    /*
-     * Reference implementation (from commit 46ad2404644658f40c20d0a5f8a3b0bdc2b565f5^)
-     * kept for easy copy/paste when wiring real transfers:
-     *
-     * try {
-     *   // Use hardcoded private key
-     *   const privateKey = "";
-     *
-     *   // Create exchange client with testnet flag
-     *   const exchangeClient = new Hyperliquid.ExchangeClient({
-     *     wallet: privateKey,
-     *     transport: new Hyperliquid.HttpTransport({ isTestnet: true })
-     *   });
-     *
-     *   // TODO: invoke exchangeClient to submit deposit transaction
-     *   return true;
-     * } catch (error) {
-     *   console.error('Transfer to Hyperliquid failed:', error);
-     *   throw error;
-     * }
-     */
+    try {
+        const units = parseUnits(amount.toString(), HYPERLIQUID_USDC_DECIMALS);
+        const data = encodeFunctionData({
+            abi: ERC20_TRANSFER_ABI,
+            functionName: "transfer",
+            args: [HYPERLIQUID_BRIDGE_ADDRESS, units],
+        });
 
-    // Transfer functionality to be implemented
-    console.log('Transfer function called with:', { activeWallet: activeWallet.address, amount });
-    return false;
+        const provider = await activeWallet.getProvider();
+        await provider.request({
+            method: "wallet_sendCalls",
+            params: [
+                {
+                    version: "1.0",
+                    chainId: CHAIN_IDS_HEX.ARBITRUM_SEPOLIA,
+                    from: activeWallet.address,
+                    calls: [{ to: HYPERLIQUID_USDC_TOKEN_ADDRESS, value: "0x0", data }],
+                },
+            ],
+        });
+
+        return true;
+    } catch (error) {
+        console.error('Transfer to Hyperliquid failed:', error);
+        throw error;
+    }
+};
+
+const buildOrderWire = (
+    assetId: number,
+    isBuy: boolean,
+    price: string,
+    size: string
+): OrderWire => ({
+    a: assetId,
+    b: isBuy,
+    p: price,
+    s: size,
+    r: false,
+    t: {
+        limit: { tif: "Gtc" },
+    },
+});
+
+const submitOrder = async (
+    activeWallet: EmbeddedWallet,
+    orderWire: OrderWire,
+    side: "buy" | "sell"
+): Promise<OrderPlacementResult> => {
+    const action = canonicalize(OrderRequest.entries.action, {
+        type: "order",
+        orders: [orderWire],
+        grouping: "na",
+    });
+    console.log('Final action structure:', JSON.stringify(action, null, 2));
+
+    const result = await signAndSubmitOrder({ activeWallet, action });
+    console.log(`${side === "buy" ? "Buy" : "Sell"} order result:`, result);
+
+    if (result.response?.type === 'order') {
+        const statuses = result.response.data.statuses;
+        const firstStatus = statuses[0];
+
+        if ('filled' in firstStatus) {
+            console.log('Order filled successfully!');
+            console.log('- Filled size:', firstStatus.filled.totalSz);
+            console.log('- Average price:', firstStatus.filled.avgPx);
+            await fetchRecentFillForOrder(activeWallet.address, firstStatus.filled.oid);
+            return {
+                status: 'filled',
+                side,
+                orderId: firstStatus.filled.oid,
+                avgPrice: firstStatus.filled.avgPx,
+                totalSize: firstStatus.filled.totalSz,
+                requestedPrice: orderWire.p,
+                requestedSize: orderWire.s,
+                timestamp: Date.now(),
+            };
+        }
+        if ('resting' in firstStatus) {
+            console.log('Order placed but not filled immediately');
+            console.log('- Order ID:', firstStatus.resting.oid);
+            return {
+                status: 'resting',
+                side,
+                orderId: firstStatus.resting.oid,
+                requestedPrice: orderWire.p,
+                requestedSize: orderWire.s,
+                timestamp: Date.now(),
+            };
+        }
+        if ('error' in firstStatus) {
+            throw new Error(`Order failed: ${firstStatus.error}`);
+        }
+    }
+
+    throw new Error(`Unexpected order response format: ${JSON.stringify(result)}`);
 };
 
 // Buy HYPE using USDC on Hyperliquid
 export const buy = async (
-    activeWallet: any,
+    activeWallet: EmbeddedWallet,
     amount: number,
-    slippage: number = DEFAULT_SLIPPAGE,
-    options?: { openfortClient?: { embeddedWallet?: EmbeddedWalletSigner } }
+    slippage: number = DEFAULT_SLIPPAGE
 ): Promise<OrderPlacementResult> => {
     try {
         console.log('Attempting to buy HYPE with', amount, 'USDC');
@@ -611,7 +642,6 @@ export const buy = async (
 
         const { szDecimals, minSize, assetId } = await getHypeSizing();
         const assetIdForOrder = assetId ?? HYPE_ASSET_ID;
-        console.log('HYPE sizing details:', { szDecimals, minSize, assetId: assetIdForOrder });
 
         const buyPriceRaw = parseFloat(hypePrice) * (1 + slippage);
         // Force 3 decimal places for tick size compatibility
@@ -632,117 +662,20 @@ export const buy = async (
         }
 
         const rawQuantity = amount / buyPrice;
-        console.log('Raw quantity before rounding:', rawQuantity);
         let quantity = Number(rawQuantity.toFixed(szDecimals));
-        console.log('Quantity after rounding to szDecimals:', quantity);
         if (quantity < minSize) {
             quantity = minSize;
-            console.log('Quantity adjusted to minSize:', quantity);
         }
 
         const quantityStr = quantity
             .toFixed(szDecimals)
             .replace(/\.0+$/, '')
             .replace(/(\.\d*[1-9])0+$/, '$1');
-        console.log('Final quantity string for order:', quantityStr);
 
-        console.log('Calculated buy order:');
-        console.log('- Mid price:', parseFloat(hypePrice).toFixed(6), 'USDC');
-        console.log('- Buy price (with slippage):', buyPriceStr, 'USDC');
-        console.log('- Quantity:', quantityStr, 'HYPE');
-        console.log('- Asset ID:', assetIdForOrder);
+        console.log('Calculated buy order:', { midPrice: hypePrice, buyPriceStr, quantityStr, assetIdForOrder });
 
-        const orderWire = {
-            a: assetIdForOrder,
-            b: true,
-            p: buyPriceStr,
-            s: quantityStr,
-            r: false,
-            t: {
-                limit: { tif: "Gtc" as const },
-            },
-        };
-        console.log('Order wire structure:', JSON.stringify(orderWire, null, 2));
-
-        const embeddedWallet = options?.openfortClient?.embeddedWallet;
-
-        let result;
-        let privateKeyHex: string | null = null;
-
-        if (typeof activeWallet.getPrivateKey === 'function') {
-            try {
-                privateKeyHex = await activeWallet.getPrivateKey();
-            } catch (err) {
-                console.warn('activeWallet.getPrivateKey failed, will try other signing paths:', err);
-                privateKeyHex = null;
-            }
-        }
-
-        if (!privateKeyHex && embeddedWallet?.exportPrivateKey) {
-            try {
-                privateKeyHex = await embeddedWallet.exportPrivateKey();
-            } catch (err) {
-                console.warn('embeddedWallet.exportPrivateKey failed, falling back to direct signing:', err);
-                privateKeyHex = null;
-            }
-        }
-
-        const action: OrderAction = {
-            type: "order",
-            orders: [orderWire],
-            grouping: "na",
-        };
-        console.log('Final action structure:', JSON.stringify(action, null, 2));
-
-        result = await signAndSubmitOrder({
-            activeWallet,
-            action,
-            embeddedWallet,
-            privateKey: privateKeyHex,
-        });
-
-        console.log('Buy order result:', result);
-
-        // Handle the exchange response
-        if (result.response?.type === 'order') {
-            const statuses = result.response.data.statuses;
-            const firstStatus = statuses[0];
-
-            if ('filled' in firstStatus) {
-                console.log('Order filled successfully!');
-                console.log('- Filled size:', firstStatus.filled.totalSz);
-                console.log('- Average price:', firstStatus.filled.avgPx);
-                await fetchRecentFillForOrder(activeWallet?.address, firstStatus.filled.oid);
-                const timestamp = Date.now();
-                return {
-                    status: 'filled',
-                    side: 'buy',
-                    orderId: firstStatus.filled.oid,
-                    avgPrice: firstStatus.filled.avgPx,
-                    totalSize: firstStatus.filled.totalSz,
-                    requestedPrice: buyPriceStr,
-                    requestedSize: quantityStr,
-                    timestamp,
-                };
-            } else if ('resting' in firstStatus) {
-                console.log('Order placed but not filled immediately');
-                console.log('- Order ID:', firstStatus.resting.oid);
-                const timestamp = Date.now();
-                return {
-                    status: 'resting',
-                    side: 'buy',
-                    orderId: firstStatus.resting.oid,
-                    requestedPrice: buyPriceStr,
-                    requestedSize: quantityStr,
-                    timestamp,
-                };
-            } else if ('error' in firstStatus) {
-                throw new Error(`Order failed: ${firstStatus.error}`);
-            }
-        }
-
-        throw new Error(`Unexpected order response format: ${JSON.stringify(result)}`);
-
+        const orderWire = buildOrderWire(assetIdForOrder, true, buyPriceStr, quantityStr);
+        return await submitOrder(activeWallet, orderWire, 'buy');
     } catch (error) {
         console.error('Buy HYPE failed:', error);
         throw error;
@@ -751,10 +684,9 @@ export const buy = async (
 
 // Sell HYPE using USDC on Hyperliquid
 export const sell = async (
-    activeWallet: any,
+    activeWallet: EmbeddedWallet,
     amount: number,
-    slippage: number = DEFAULT_SLIPPAGE,
-    options?: { openfortClient?: { embeddedWallet?: EmbeddedWalletSigner } }
+    slippage: number = DEFAULT_SLIPPAGE
 ): Promise<OrderPlacementResult> => {
     try {
         console.log('Attempting to sell', amount, 'HYPE');
@@ -779,11 +711,6 @@ export const sell = async (
             .replace(/\.0+$/, '')
             .replace(/(\.\d*[1-9])0+$/, '$1');
 
-        console.log('Price calculation for sell:');
-        console.log('- Raw sell price:', sellPriceRaw);
-        console.log('- Rounded to', tickDecimals, 'decimals:', sellPriceRounded);
-        console.log('- Final price string:', sellPriceStr);
-
         if (amount < minSize) {
             throw new Error(`Order size too small. Hyperliquid requires at least ${minSize} ${HYPE_SYMBOL} per order.`);
         }
@@ -794,102 +721,10 @@ export const sell = async (
             .replace(/\.0+$/, '')
             .replace(/(\.\d*[1-9])0+$/, '$1');
 
-        console.log('Calculated sell order:');
-        console.log('- Mid price:', parseFloat(hypePrice).toFixed(6), 'USDC');
-        console.log('- Sell price (with slippage):', sellPriceStr, 'USDC');
-        console.log('- Asset ID:', assetIdForOrder);
-        console.log('- Quantity:', quantityStr, 'HYPE');
+        console.log('Calculated sell order:', { midPrice: hypePrice, sellPriceStr, quantityStr, assetIdForOrder });
 
-        const orderWire = {
-            a: assetIdForOrder,
-            b: false,
-            p: sellPriceStr,
-            s: quantityStr,
-            r: false,
-            t: {
-                limit: { tif: "Gtc" as const },
-            },
-        };
-
-        const embeddedWallet = options?.openfortClient?.embeddedWallet;
-
-        let result;
-        let privateKeyHex: string | null = null;
-
-        if (typeof activeWallet.getPrivateKey === 'function') {
-            try {
-                privateKeyHex = await activeWallet.getPrivateKey();
-            } catch (err) {
-                console.warn('activeWallet.getPrivateKey failed, will try other signing paths:', err);
-                privateKeyHex = null;
-            }
-        }
-
-        if (!privateKeyHex && embeddedWallet?.exportPrivateKey) {
-            try {
-                privateKeyHex = await embeddedWallet.exportPrivateKey();
-            } catch (err) {
-                console.warn('embeddedWallet.exportPrivateKey failed, falling back to direct signing:', err);
-                privateKeyHex = null;
-            }
-        }
-
-        const action: OrderAction = {
-            type: "order",
-            orders: [orderWire],
-            grouping: "na",
-        };
-        console.log('Final action structure:', JSON.stringify(action, null, 2));
-
-        result = await signAndSubmitOrder({
-            activeWallet,
-            action,
-            embeddedWallet,
-            privateKey: privateKeyHex,
-        });
-
-        console.log('Sell order result:', result);
-
-        // Handle the exchange response
-        if (result.response?.type === 'order') {
-            const statuses = result.response.data.statuses;
-            const firstStatus = statuses[0];
-
-            if ('filled' in firstStatus) {
-                console.log('Sell order filled successfully!');
-                console.log('- Filled size:', firstStatus.filled.totalSz);
-                console.log('- Average price:', firstStatus.filled.avgPx);
-                await fetchRecentFillForOrder(activeWallet?.address, firstStatus.filled.oid);
-                const timestamp = Date.now();
-                return {
-                    status: 'filled',
-                    side: 'sell',
-                    orderId: firstStatus.filled.oid,
-                    avgPrice: firstStatus.filled.avgPx,
-                    totalSize: firstStatus.filled.totalSz,
-                    requestedPrice: sellPriceStr,
-                    requestedSize: quantityStr,
-                    timestamp,
-                };
-            } else if ('resting' in firstStatus) {
-                console.log('Sell order placed but not filled immediately');
-                console.log('- Order ID:', firstStatus.resting.oid);
-                const timestamp = Date.now();
-                return {
-                    status: 'resting',
-                    side: 'sell',
-                    orderId: firstStatus.resting.oid,
-                    requestedPrice: sellPriceStr,
-                    requestedSize: quantityStr,
-                    timestamp,
-                };
-            } else if ('error' in firstStatus) {
-                throw new Error(`Sell order failed: ${firstStatus.error}`);
-            }
-        }
-
-        throw new Error(`Unexpected sell order response format: ${JSON.stringify(result)}`);
-
+        const orderWire = buildOrderWire(assetIdForOrder, false, sellPriceStr, quantityStr);
+        return await submitOrder(activeWallet, orderWire, 'sell');
     } catch (error) {
         console.error('Sell HYPE failed:', error);
         throw error;

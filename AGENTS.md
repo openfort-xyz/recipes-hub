@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project overview
-- Collection of Openfort integration samples (`7702`, `aave`, `agent-permissions`, `hyperliquid`, `lifi`, `morpho`, `mpp`, `near-intents`, `usdc`, `vaults-fyi`, `x402`).
+- Collection of Openfort integration samples (`7702`, `aave`, `agent-permissions`, `hyperliquid`, `lifi`, `morpho`, `mpp`, `near-intents`, `telegram-bot`, `usdc`, `vaults-fyi`, `x402`).
 - Each subdirectory has its own `AGENTS.md` with detailed setup instructions; start at the sample you are modifying.
 
 ## Setup commands

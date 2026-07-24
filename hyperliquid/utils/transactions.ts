@@ -1,21 +1,19 @@
 import { Alert } from 'react-native';
 
-import { HYPE_SYMBOL, DEFAULT_SLIPPAGE } from '../constants/hyperliquid';
+import { HYPE_SYMBOL, DEFAULT_SLIPPAGE, HYPERLIQUID_MIN_DEPOSIT_USDC } from '../constants/hyperliquid';
 import { transfer, buy, sell, DEFAULT_MIN_HYPE_ORDER_SIZE } from '../services/HyperliquidClient';
-import type { OrderPlacementResult } from '../services/HyperliquidClient';
+import type { EmbeddedWallet, OrderPlacementResult } from '../services/HyperliquidClient';
 
 export interface TransactionHandlers {
   handleBuy: (
-    activeWallet: any,
-    openfortClient: any,
+    activeWallet: EmbeddedWallet,
     buyAmount: string,
     hypeBalances: any,
     setIsBuying: (loading: boolean) => void
   ) => Promise<OrderPlacementResult | null>;
 
   handleSell: (
-    activeWallet: any,
-    openfortClient: any,
+    activeWallet: EmbeddedWallet,
     sellAmount: string,
     hypeBalances: any,
     setIsSelling: (loading: boolean) => void
@@ -24,8 +22,7 @@ export interface TransactionHandlers {
   handleTransfer: (
     transferAmount: string,
     walletBalance: any,
-    activeWallet: any,
-    _exportPrivateKey: () => Promise<string>,
+    activeWallet: EmbeddedWallet,
     setIsTransferring: (loading: boolean) => void,
     setTransferAmount: (amount: string) => void,
     refetch: () => void
@@ -34,8 +31,7 @@ export interface TransactionHandlers {
 
 export const transactionHandlers: TransactionHandlers = {
   handleBuy: async (
-    activeWallet: any,
-    openfortClient: any,
+    activeWallet,
     buyAmount,
     hypeBalances,
     setIsBuying
@@ -65,9 +61,7 @@ export const transactionHandlers: TransactionHandlers = {
 
     setIsBuying(true);
     try {
-      const result = await buy(activeWallet, amount, DEFAULT_SLIPPAGE, {
-        openfortClient,
-      });
+      const result = await buy(activeWallet, amount, DEFAULT_SLIPPAGE);
 
       if (result) {
         return result;
@@ -85,8 +79,7 @@ export const transactionHandlers: TransactionHandlers = {
   },
 
   handleSell: async (
-    activeWallet: any,
-    openfortClient: any,
+    activeWallet,
     sellAmount,
     hypeBalances,
     setIsSelling
@@ -117,9 +110,7 @@ export const transactionHandlers: TransactionHandlers = {
     setIsSelling(true);
 
     try {
-      const result = await sell(activeWallet, amount, DEFAULT_SLIPPAGE, {
-        openfortClient,
-      });
+      const result = await sell(activeWallet, amount, DEFAULT_SLIPPAGE);
 
       if (result) {
         return result;
@@ -140,7 +131,6 @@ export const transactionHandlers: TransactionHandlers = {
     transferAmount,
     walletBalance,
     activeWallet,
-    _exportPrivateKey,
     setIsTransferring,
     setTransferAmount,
     refetch
@@ -158,8 +148,8 @@ export const transactionHandlers: TransactionHandlers = {
       return false;
     }
 
-    if (amount < 5) {
-      Alert.alert('Invalid Amount', 'Transfer amount must be greater than 5 USDC');
+    if (amount < HYPERLIQUID_MIN_DEPOSIT_USDC) {
+      Alert.alert('Invalid Amount', `Transfer amount must be at least ${HYPERLIQUID_MIN_DEPOSIT_USDC} USDC — smaller deposits are not credited by the Hyperliquid bridge.`);
       return false;
     }
 
@@ -181,14 +171,10 @@ export const transactionHandlers: TransactionHandlers = {
       return false;
     } catch (error) {
       console.error('Transfer error:', error);
-      Alert.alert('Transfer Failed', 'Failed to transfer funds. Please try again.');
+      Alert.alert('Transfer Failed', error instanceof Error ? error.message : 'Failed to transfer funds. Please try again.');
       return false;
     } finally {
       setIsTransferring(false);
     }
   }
 };
-
-export const getMaxAmount = (balance: any): string => {
-  return balance?.toString() || '0';
-}; 

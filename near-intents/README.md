@@ -25,6 +25,7 @@ pnpx gitpick openfort-xyz/recipes-hub/tree/main/near-intents openfort-near-inten
 1. (Optional) Request a JWT at [partners.near-intents.org](https://partners.near-intents.org)
 2. Without a JWT the public endpoints work but apply a 0.2% fee and lower rate limits
 3. The JWT is read server-side only — it is never exposed to the browser
+4. (Optional) For **confidential swaps**, ask the NEAR team to enable Confidential Intents on your JWT — it's invite-only. Confidential quotes require an authenticated JWT; the public endpoint rejects them.
 
 ## 3. Configure Environment
 
@@ -41,7 +42,8 @@ NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID=pol_...     # Optional
 NEXT_PUBLIC_OPENFORT_DEFAULT_CHAIN_ID=8453          # Base
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=...            # Optional, enables wallet sign-in
 
-ONECLICK_JWT=...                                    # Optional, server-side only
+ONECLICK_JWT=...                                    # Optional, server-side only (required for confidential swaps)
+NEXT_PUBLIC_CONFIDENTIAL_ENABLED=true               # Optional, shows the Public/Private toggle
 ```
 
 Sign-in is restricted to **email** and **external wallet**. The wallet option only
@@ -64,11 +66,32 @@ pnpm dev
 2. **Deposit** — the Openfort wallet signs one transfer of the input asset to the deposit address (native send or ERC-20 `transfer`), switching chains first if needed.
 3. **Track** — `GET /api/status` polls `/v0/status` until the swap reaches `SUCCESS`, `REFUNDED`, or `FAILED`, with origin/destination explorer links.
 
+### Confidential swaps
+
+Set `NEXT_PUBLIC_CONFIDENTIAL_ENABLED=true` to show a **Public / Private** toggle
+in the swap form. Choosing *Private* adds one field to the quote request —
+`confidentiality: "basic"` — which routes the swap through [NEAR Confidential
+Intents](https://www.near.org/blog/confidential-intents) so the trade isn't
+broadcast on the public chain.
+
+This is the "foreign-to-foreign" confidential path, so nothing else changes: the
+deposit is still a normal `ORIGIN_CHAIN` → `DESTINATION_CHAIN` transfer signed by
+the Openfort wallet — no signed intents, no NEAR account. The `confidentiality`
+value is added server-side in `oneclick-server.ts` and threaded from the toggle
+through `useSwapController`.
+
+Two requirements: confidential quotes **require an authenticated JWT** (the public
+endpoint returns `401`), and access is **invite-only** — until your integration is
+enabled the API returns an invite-only message. The recipe maps that error to a
+clear prompt to request access or switch back to a public swap. The API also
+accepts `confidentiality: "advanced"` for a higher privacy tier.
+
 ## Features
 
 - **Cross-chain swaps** across Ethereum, Base, Arbitrum, Optimism, Polygon, and Avalanche
 - **Openfort embedded wallets** with email/social authentication
 - **Single-deposit UX** — solvers handle routing and settlement; no NEAR keys needed
+- **Confidential swaps** (optional) — a Public/Private toggle routes trades through NEAR Confidential Intents so they aren't broadcast publicly
 - **Gas sponsorship** with Openfort policies (optional)
 - **Live status tracking** with explorer links — the 1Click status response's
   `explorerUrl` is only trusted when absolute; otherwise links fall back to a

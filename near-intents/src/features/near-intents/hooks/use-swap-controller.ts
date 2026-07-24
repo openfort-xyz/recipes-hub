@@ -23,6 +23,7 @@ import {
   pickDefaultPair,
 } from "@/features/near-intents/utils/asset-helpers";
 import type {
+  Confidentiality,
   ExecutionStatusResponse,
   Quote,
   QuoteResponse,
@@ -37,6 +38,7 @@ interface SwapState {
   toAsset: SwapAsset | null;
   amount: string;
   recipient: string;
+  confidentiality: Confidentiality;
   liveQuote: Quote | null;
   estimateError: string | null;
   isLoadingEstimate: boolean;
@@ -55,6 +57,7 @@ const INITIAL_STATE: SwapState = {
   toAsset: null,
   amount: DEFAULT_SWAP_AMOUNT,
   recipient: "",
+  confidentiality: "public",
   liveQuote: null,
   estimateError: null,
   isLoadingEstimate: false,
@@ -74,6 +77,11 @@ const isTerminal = (status: SwapStatus | null): boolean =>
 // Turn raw 1Click errors into actionable copy. The "amount too low" error
 // reports the minimum in origin base units; convert it to a human amount.
 const humanizeQuoteError = (message: string, fromAsset: SwapAsset): string => {
+  // Confidential swaps are invite-only and require a confidential-enabled JWT.
+  // Surface a clear next step instead of a raw 401 / invite-only message.
+  if (/confidential|invite/i.test(message) && /auth|invite|401/i.test(message)) {
+    return "Confidential swaps aren't enabled for this 1Click key yet. Request access at partners.near-intents.org, or switch off private mode to swap publicly.";
+  }
   const match = message.match(/at least (\d+)/);
   if (match) {
     const min = formatUnits(BigInt(match[1]), fromAsset.decimals);
@@ -95,6 +103,7 @@ export interface SwapController {
     setToAsset: (asset: SwapAsset | null) => void;
     setAmount: (amount: string) => void;
     setRecipient: (recipient: string) => void;
+    setConfidentiality: (value: Confidentiality) => void;
     flipAssets: () => void;
     getQuote: () => Promise<void>;
     confirmDeposit: () => Promise<void>;
@@ -119,7 +128,8 @@ export const useSwapController = (): SwapController => {
   const [isLoadingAssets, setIsLoadingAssets] = useState(true);
   const [state, setState] = useState<SwapState>(INITIAL_STATE);
 
-  const { fromAsset, toAsset, amount, step, quote, recipient } = state;
+  const { fromAsset, toAsset, amount, step, quote, recipient, confidentiality } =
+    state;
 
   useEffect(() => {
     let cancelled = false;
@@ -227,6 +237,7 @@ export const useSwapController = (): SwapController => {
           amount: amountBase,
           recipient: effectiveRecipient,
           refundTo: walletAddress,
+          confidentiality,
           dry: true,
         });
         setState((prev) => ({
@@ -251,7 +262,7 @@ export const useSwapController = (): SwapController => {
     return () => {
       window.clearTimeout(timeout);
     };
-  }, [step, fromAsset, toAsset, amount, walletAddress, recipient]);
+  }, [step, fromAsset, toAsset, amount, walletAddress, recipient, confidentiality]);
 
   const handleGetQuote = useCallback(async () => {
     if (!fromAsset || !toAsset || !amount || !walletAddress || !isReady) {
@@ -290,6 +301,7 @@ export const useSwapController = (): SwapController => {
         amount: amountBase,
         recipient,
         refundTo: walletAddress,
+        confidentiality,
         dry: false,
       });
       if (!result.quote.depositAddress) {
@@ -311,7 +323,7 @@ export const useSwapController = (): SwapController => {
             : "Failed to fetch quote",
       }));
     }
-  }, [fromAsset, toAsset, amount, walletAddress, isReady, recipient]);
+  }, [fromAsset, toAsset, amount, walletAddress, isReady, recipient, confidentiality]);
 
   const handleConfirmDeposit = useCallback(async () => {
     if (!quote || !fromAsset || !walletAddress || !fromAsset.chainId) {
@@ -431,6 +443,8 @@ export const useSwapController = (): SwapController => {
         setState((prev) => ({ ...prev, amount: value })),
       setRecipient: (value: string) =>
         setState((prev) => ({ ...prev, recipient: value })),
+      setConfidentiality: (value: Confidentiality) =>
+        setState((prev) => ({ ...prev, confidentiality: value })),
       flipAssets: () =>
         setState((prev) => {
           // Origin must stay EVM, so only flip when the destination is an
@@ -459,6 +473,7 @@ export const useSwapController = (): SwapController => {
           fromAsset: prev.fromAsset,
           toAsset: prev.toAsset,
           recipient: prev.recipient,
+          confidentiality: prev.confidentiality,
         })),
     }),
     [handleGetQuote, handleConfirmDeposit]

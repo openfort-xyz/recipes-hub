@@ -3,17 +3,19 @@ import { ScrollView, Text, View, StyleSheet, Linking, Pressable } from "react-na
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
 import { WalletData } from "@/types/wallet";
-
-const CopyIcon = ({ size = 16, color = "#6772e5" }) => (
-  <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-    <Text style={{ fontSize: size * 0.9, color, fontWeight: '400', lineHeight: size }}>⧉</Text>
-  </View>
-);
+import { colors, radii, cardShadow } from "../../constants/theme";
 
 interface Props {
   walletB: WalletData | null;
   onNext: () => void;
 }
+
+const STEPS = [
+  "Copy the wallet address above",
+  "Open the Circle faucet",
+  'Select the "Ethereum Sepolia" network',
+  "Paste the address and request $10 USDC",
+];
 
 export const FaucetScreen = ({ walletB, onNext }: Props) => {
   const [copied, setCopied] = useState(false);
@@ -21,71 +23,65 @@ export const FaucetScreen = ({ walletB, onNext }: Props) => {
   const copyToClipboard = useCallback((address: string) => {
     Clipboard.setStringAsync(address);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1000);
+    setTimeout(() => setCopied(false), 1500);
   }, []);
 
   const openFaucet = useCallback(() => {
     Linking.openURL("https://faucet.circle.com/");
-    // After opening the faucet, transition to waiting screen
-    setTimeout(() => {
-      onNext();
-    }, 2000); // Give user 2 seconds to see the browser open
+    // After opening the faucet, transition to the waiting screen.
+    setTimeout(() => onNext(), 2000);
   }, [onNext]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Get Test USDC</Text>
-      <Text style={styles.subtitle}>Step 2: Get faucet funds for Wallet B on Ethereum Sepolia</Text>
-      
-      <View style={styles.section}>
-        <Text style={styles.label}>Wallet B Address</Text>
-        <View style={styles.addressContainer}>
-          <Text style={styles.address} numberOfLines={1} ellipsizeMode="middle">{walletB?.address}</Text>
-          <Pressable
-            style={({ pressed }) => [
-              styles.copyButton,
-              pressed && styles.buttonPressed
-            ]}
-            onPress={() => walletB && copyToClipboard(walletB.address)}
-          >
-            <View style={styles.iconContainer}>
-              {copied ? (
-                <Text style={styles.copiedText}>✓</Text>
-              ) : (
-                <CopyIcon size={16} />
-              )}
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.stepPill}>
+          <Text style={styles.stepPillText}>Step 2 of 3</Text>
+        </View>
+        <Text style={styles.title}>Add test USDC</Text>
+        <Text style={styles.subtitle}>Fund Wallet B with $10 from Circle's Ethereum Sepolia faucet.</Text>
+
+        <Pressable
+          style={({ pressed }) => [styles.addressCard, pressed && styles.buttonPressed]}
+          onPress={() => walletB && copyToClipboard(walletB.address)}
+        >
+          <View style={styles.addressText}>
+            <Text style={styles.addressLabel}>Wallet B address</Text>
+            <Text style={styles.address} numberOfLines={1} ellipsizeMode="middle">
+              {walletB?.address}
+            </Text>
+          </View>
+          <View style={[styles.copyChip, copied && styles.copyChipDone]}>
+            <Text style={[styles.copyChipText, copied && styles.copyChipTextDone]}>
+              {copied ? "Copied" : "Copy"}
+            </Text>
+          </View>
+        </Pressable>
+
+        <View style={styles.steps}>
+          {STEPS.map((step, i) => (
+            <View key={i} style={styles.stepRow}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>{i + 1}</Text>
+              </View>
+              <Text style={styles.stepText}>{step}</Text>
             </View>
-          </Pressable>
+          ))}
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={styles.instructions}>
-          1. Copy the wallet address above{"\n"}
-          2. Open the Circle faucet{"\n"}
-          3. Select "Ethereum Sepolia" network{"\n"}
-          4. Paste the address and request $10 USDC
+        <Text style={styles.note}>
+          After opening the faucet you'll land on a screen that detects your funds automatically.
         </Text>
-        <View style={styles.buttonWrap}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.customButton,
-              styles.primaryButton,
-              pressed && styles.buttonPressed
-            ]}
-            onPress={openFaucet}>
-            <Text style={[styles.buttonText, styles.primaryButtonText]}>Open Circle Faucet</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.disclaimer}>
-        <Text style={styles.disclaimerText}>
-          Note: After clicking "Open Circle Faucet", you'll be taken to a waiting screen that will automatically detect when funds arrive.
-        </Text>
-      </View>
       </ScrollView>
+
+      <View style={styles.footer}>
+        <Pressable
+          style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}
+          onPress={openFaucet}
+        >
+          <Text style={styles.primaryButtonText}>Open Circle faucet</Text>
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 };
@@ -93,147 +89,141 @@ export const FaucetScreen = ({ walletB, onNext }: Props) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fafbfc',
+    backgroundColor: colors.bg,
   },
   container: {
-    flexGrow: 1,
     padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingBottom: 8,
   },
-  section: {
-    width: '100%',
-    maxWidth: 400,
+  stepPill: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.greenSoft,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radii.pill,
     marginBottom: 16,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e6ebf1',
-    borderRadius: 8,
-    padding: 16,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#424770',
-    marginBottom: 6,
-    letterSpacing: 0.2,
+  stepPillText: {
+    color: colors.greenPressed,
+    fontSize: 13,
+    fontWeight: "700",
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    fontSize: 30,
+    fontWeight: "800",
+    color: colors.text,
+    letterSpacing: -0.6,
     marginBottom: 8,
-    textAlign: 'center',
-    color: '#1a1f36',
-    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
-    marginBottom: 32,
-    textAlign: 'center',
-    color: '#8898aa',
-    fontWeight: '400',
+    color: colors.textMuted,
+    fontWeight: "500",
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  addressCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: colors.bg,
+    borderRadius: radii.card,
+    borderWidth: 1,
+    borderColor: colors.surfaceBorder,
+    padding: 18,
+    marginBottom: 24,
+    ...cardShadow,
+  },
+  addressText: {
+    flex: 1,
+    gap: 4,
+  },
+  addressLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
   },
   address: {
-    fontFamily: 'monospace',
-    fontSize: 13,
-    backgroundColor: '#f6f9fc',
-    color: '#6772e5',
-    padding: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#e6ebf1',
-    flex: 1,
-    marginRight: 8,
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.text,
+    fontVariant: ["tabular-nums"],
   },
-  instructions: {
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 16,
-    color: '#525f7f',
-  },
-  buttonWrap: {
-    width: '100%',
-    maxWidth: 400,
-    marginTop: 12,
-  },
-  disclaimer: {
-    marginTop: 24,
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e6ebf1',
-    width: '100%',
-    maxWidth: 400,
-  },
-  disclaimerText: {
-    fontSize: 13,
-    color: '#8898aa',
-    lineHeight: 20,
-  },
-  customButton: {
-    paddingVertical: 12,
+  copyChip: {
+    backgroundColor: colors.surface,
     paddingHorizontal: 16,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
+    paddingVertical: 9,
+    borderRadius: radii.pill,
+  },
+  copyChipDone: {
+    backgroundColor: colors.greenSoft,
+  },
+  copyChipText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  copyChipTextDone: {
+    color: colors.greenPressed,
+  },
+  steps: {
+    gap: 18,
+    marginBottom: 24,
+  },
+  stepRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  stepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepNumberText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: colors.text,
+  },
+  stepText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "500",
+    color: colors.text,
+    lineHeight: 22,
+  },
+  note: {
+    fontSize: 14,
+    color: colors.textMuted,
+    lineHeight: 20,
+    fontWeight: "500",
+  },
+  footer: {
+    padding: 24,
+    paddingTop: 8,
   },
   primaryButton: {
-    backgroundColor: '#6772e5',
-    borderColor: '#6772e5',
+    height: 58,
+    borderRadius: radii.pill,
+    backgroundColor: colors.green,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  secondaryButton: {
-    backgroundColor: '#fff',
-    borderColor: '#e6ebf1',
-  },
-  successButton: {
-    backgroundColor: '#00d924',
-    borderColor: '#00d924',
-  },
-  buttonText: {
-    fontSize: 15,
-    fontWeight: '500',
+  primaryButtonPressed: {
+    backgroundColor: colors.greenPressed,
+    transform: [{ scale: 0.99 }],
   },
   primaryButtonText: {
-    color: '#fff',
-  },
-  secondaryButtonText: {
-    color: '#424770',
-  },
-  successButtonText: {
-    color: '#fff',
-  },
-  addressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  copyButton: {
-    padding: 8,
-    borderRadius: 6,
-    backgroundColor: '#f6f9fc',
-    borderWidth: 1,
-    borderColor: '#e6ebf1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 32,
-    minHeight: 32,
-  },
-  copiedText: {
-    color: '#00d924',
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 16,
-  },
-  iconContainer: {
-    width: 16,
-    height: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    color: colors.onGreen,
+    fontSize: 18,
+    fontWeight: "700",
   },
   buttonPressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.98 }],
+    opacity: 0.85,
   },
 });
