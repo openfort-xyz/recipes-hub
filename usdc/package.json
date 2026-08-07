@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
-    "@openfort/react-native": "^1.1.5",
+    "@openfort/react-native": "2.0.0",
     "@react-navigation/native": "^7.3.7",
     "dotenv": "^17.4.2",
     "expo": "~57.0.2",
@@ -36,7 +36,7 @@
     "react-native-get-random-values": "~1.11.0",
     "react-native-reanimated": "4.5.0",
     "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "~4.25.2",
+    "react-native-screens": "~4.26.0",
     "react-native-web": "~0.21.0",
     "react-native-webview": "13.16.1",
     "react-native-worklets": "0.10.0"
@@ -46,5 +46,6 @@
     "react-test-renderer": "19.2.3",
     "typescript": "~6.0.3"
   },
-  "private": true
+  "private": true,
+  "packageManager": "pnpm@10.30.3"
 }

@@ -26,7 +26,7 @@
 
 ## Upgrade notes (June 2026)
 - Migrated from ESLint to **Biome** (config in `biome.json`, `files.includes` + `css.parser.tailwindDirectives`) and runs on **Vite 8**.
-- Keep `wagmi` on `^2` / `@wagmi/connectors` on `^5` — `@openfort/react` peer-caps wagmi at 2.x. Tailwind stays on v3.
+- Keep `@openfort/react` on `2.0.1` and `wagmi` on `^3`. Tailwind stays on v3.
 
 ## PR instructions
 - Title format: `[morpho] <summary>`.

@@ -1,23 +1,25 @@
 import { AaveProvider } from '@aave/react'
 import { OpenfortProvider, RecoveryMethod } from '@openfort/react'
-import { getDefaultConfig, OpenfortWagmiBridge } from '@openfort/react/wagmi'
+import { embeddedWalletConnector, OpenfortWagmiBridge } from '@openfort/react/wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type React from 'react'
 import { base, baseSepolia } from 'viem/chains'
-import { createConfig, WagmiProvider } from 'wagmi'
+import { createConfig, http, WagmiProvider } from 'wagmi'
+import { injected, walletConnect } from 'wagmi/connectors'
 import { aaveClient } from './lib/aave'
 import { getEnvironmentStatus } from './utils/envValidation'
 
 const queryClient = new QueryClient()
 
-const wagmiConfig = createConfig(
-  getDefaultConfig({
-    appName: 'Openfort Wallet App',
-    walletConnectProjectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || 'demo',
-    chains: [base, baseSepolia],
-    ssr: false,
-  })
-)
+const walletConnectProjectId = import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID
+const connectors = [embeddedWalletConnector(), injected()]
+if (walletConnectProjectId) connectors.push(walletConnect({ projectId: walletConnectProjectId }))
+
+const wagmiConfig = createConfig({
+  chains: [base, baseSepolia],
+  connectors,
+  transports: { [base.id]: http(), [baseSepolia.id]: http() },
+})
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const envStatus = getEnvironmentStatus()

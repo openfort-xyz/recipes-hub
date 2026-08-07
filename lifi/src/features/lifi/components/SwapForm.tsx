@@ -14,6 +14,7 @@ import {
 import { useAccount, useBalance, useReadContract } from "wagmi";
 import { erc20Abi, formatUnits, zeroAddress } from "viem";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { isWagmiChainId } from "@/features/openfort/config/wagmi-config";
 
 // wagmi v3 removed `token` from useBalance (native-only). Fetch native balances
 // with useBalance and ERC-20 balances with useReadContract(balanceOf).
@@ -31,18 +32,19 @@ function useTokenBalance({
   enabled: boolean;
 }): { formatted: string; isFetching: boolean } {
   const isNative = !token;
+  const wagmiChainId = chainId && isWagmiChainId(chainId) ? chainId : undefined;
   const native = useBalance({
     address,
-    chainId,
-    query: { enabled: enabled && isNative },
+    chainId: wagmiChainId,
+    query: { enabled: enabled && isNative && Boolean(wagmiChainId) },
   });
   const erc20 = useReadContract({
     abi: erc20Abi,
     address: token,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    chainId,
-    query: { enabled: enabled && !isNative && Boolean(address) },
+    chainId: wagmiChainId,
+    query: { enabled: enabled && !isNative && Boolean(address) && Boolean(wagmiChainId) },
   });
   if (isNative) {
     return {

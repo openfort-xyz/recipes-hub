@@ -12,14 +12,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@openfort/react": "^1.1.1",
-    "@tanstack/react-query": "^5.101.0",
+    "@openfort/react": "2.0.1",
+    "@solana-program/compute-budget": "0.13.0",
+    "@solana-program/token": "0.12.0",
+    "@solana/kit": "6.10.0",
+    "@solana/kora": "0.2.1",
+    "@tanstack/react-query": "^5.101.1",
+    "@walletconnect/ethereum-provider": "2.23.10",
     "@vaultsfyi/sdk": "^2.3.5",
-    "@wagmi/connectors": "^8.0.15",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "viem": "^2.52.2",
-    "wagmi": "^3.6.16"
+    "wagmi": "^3.6.20"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
@@ -32,5 +36,6 @@
     "tailwindcss": "^3.4.17",
     "typescript": "~5.9.3",
     "vite": "^8.0.16"
-  }
+  },
+  "packageManager": "pnpm@10.30.3+sha512.c961d1e0a2d8e354ecaa5166b822516668b7f44cb5bd95122d590dd81922f606f5473b6d23ec4a5be05e7fcd18e8488d47d978bbe981872f1145d06e9a740017"
 }

@@ -1,5 +1,6 @@
-import { getDefaultConfig } from "@openfort/react/wagmi";
-import { createConfig } from "wagmi";
+import { embeddedWalletConnector } from "@openfort/react/wagmi";
+import { createConfig, http } from "wagmi";
+import { injected } from "wagmi/connectors";
 import {
   arbitrum,
   arbitrumSepolia,
@@ -35,12 +36,28 @@ const chains = mainnetIds.has(DEFAULT_CHAIN_ID)
   ? mainnetChains
   : testnetChains;
 
-export const wagmiConfig = createConfig(
-  getDefaultConfig({
-    appName: "Openfort LiFi Demo",
-    chains,
-  })
-);
+export type WagmiChainId = (typeof chains)[number]["id"];
+export const isWagmiChainId = (chainId: number): chainId is WagmiChainId =>
+  chains.some((chain) => chain.id === chainId);
+
+export const wagmiConfig = createConfig({
+  chains,
+  connectors: [embeddedWalletConnector(), injected()],
+  ssr: true,
+  transports: {
+    [mainnet.id]: http(),
+    [polygon.id]: http(),
+    [arbitrum.id]: http(),
+    [optimism.id]: http(),
+    [base.id]: http(),
+    [avalanche.id]: http(),
+    [sepolia.id]: http(),
+    [polygonAmoy.id]: http(),
+    [arbitrumSepolia.id]: http(),
+    [optimismSepolia.id]: http(),
+    [baseSepolia.id]: http(),
+  },
+});
 
 export type WagmiConfigType = typeof wagmiConfig;
 

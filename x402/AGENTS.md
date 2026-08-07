@@ -5,11 +5,11 @@ This document provides specific guidance for AI coding assistants working with t
 ## Quick Context
 
 You are working on a **React + Vite + Express.js** application that demonstrates x402 payment protocol integration with Openfort smart accounts. The stack includes:
-- Frontend: React 19, TypeScript, Tailwind CSS v4, Wagmi 2.x, viem 2.x, Vite 8
+- Frontend: React 19, TypeScript, Tailwind CSS v4, Wagmi 3.x, viem 2.x, Vite 8
 - Backend: Express.js 5, TypeScript, Openfort Node SDK
 - Tools: Biome for frontend (not Prettier; backend has no linter), pnpm (not npm), TypeScript ~5.9.3
 
-> Upgrade notes (June 2026): frontend moved to React 19 + Vite 8; keep `wagmi` on `^2` (`@openfort/react` peer-caps it at 2.x). Frontend `biome.json` is on the 2.4 schema with `noExplicitAny: "warn"` and `css.parser.tailwindDirectives` enabled.
+> Upgrade notes (August 2026): frontend uses `@openfort/react@2.0.1` + `wagmi@^3`; backend uses `@openfort/openfort-node@0.11.0`. Frontend `biome.json` is on the 2.4 schema with `noExplicitAny: "warn"` and `css.parser.tailwindDirectives` enabled.
 
 ## Critical Rules
 

@@ -85,6 +85,7 @@ credited and is unrecoverable (5 USDC minimum too, same rule).
   upgrade.
 - `components/ui/` holds the shared design system (theme tokens, `PillButton`, `Keypad`, `Sparkline`,
   `SuccessCheck`, `Card`) for the Cash App-style dark UI.
+- `@openfort/react-native` is pinned to `2.0.0`.
 
 ## PR instructions
 - Title format: `[hyperliquid] <summary>`.

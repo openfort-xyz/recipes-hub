@@ -14,6 +14,8 @@ export const metadata: Metadata = {
     "An Openfort embedded wallet experience powered by NEAR Intents' 1Click API. Swap tokens across chains with a single deposit and real-time settlement tracking.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: {

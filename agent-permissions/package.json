@@ -11,15 +11,19 @@
     "format": "biome format --write ."
   },
   "dependencies": {
-    "@openfort/openfort-node": "^0.10.5",
-    "@openfort/react": "^1.0.16",
-    "@tanstack/react-query": ">=5.45.1",
+    "@openfort/openfort-node": "0.11.0",
+    "@openfort/react": "2.0.1",
+    "@solana-program/compute-budget": "0.13.0",
+    "@solana-program/token": "0.12.0",
+    "@solana/kit": "6.10.0",
+    "@solana/kora": "0.2.1",
+    "@tanstack/react-query": "^5.101.1",
     "@upstash/redis": "^1.38.0",
     "next": "^15.5.19",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "viem": "2.52.2",
-    "wagmi": "^2.19.5"
+    "viem": "^2.52.2",
+    "wagmi": "^3.6.20"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",

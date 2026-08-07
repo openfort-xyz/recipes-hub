@@ -1,18 +1,18 @@
 'use client'
 
 import { AccountTypeEnum, AuthProvider, OpenfortProvider, RecoveryMethod } from '@openfort/react'
-import { getDefaultConfig, OpenfortWagmiBridge } from '@openfort/react/wagmi'
+import { embeddedWalletConnector, OpenfortWagmiBridge } from '@openfort/react/wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 import { baseSepolia } from 'viem/chains'
-import { createConfig, WagmiProvider } from 'wagmi'
+import { createConfig, http, WagmiProvider } from 'wagmi'
 
-const config = createConfig(
-  getDefaultConfig({
-    appName: 'Openfort Next.js demo',
-    chains: [baseSepolia], // The chains you want to support
-  })
-)
+const config = createConfig({
+  chains: [baseSepolia],
+  connectors: [embeddedWalletConnector()],
+  ssr: true,
+  transports: { [baseSepolia.id]: http() },
+})
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())

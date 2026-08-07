@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.51.0",
-    "@openfort/openfort-node": "^0.10.5",
+    "@openfort/openfort-node": "0.11.0",
+    "@solana/kit": "6.10.0",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
@@ -29,5 +30,6 @@
     "backend"
   ],
   "author": "Openfort",
-  "license": "MIT"
+  "license": "MIT",
+  "packageManager": "pnpm@10.30.3+sha512.c961d1e0a2d8e354ecaa5166b822516668b7f44cb5bd95122d590dd81922f606f5473b6d23ec4a5be05e7fcd18e8488d47d978bbe981872f1145d06e9a740017"
 }

@@ -14,13 +14,18 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "@openfort/react": "^1.1.1",
-    "@tanstack/react-query": ">=5.45.1",
+    "@openfort/react": "2.0.1",
+    "@solana-program/compute-budget": "0.13.0",
+    "@solana-program/token": "0.12.0",
+    "@solana/kit": "6.10.0",
+    "@solana/kora": "0.2.1",
+    "@tanstack/react-query": "^5.101.1",
+    "@walletconnect/ethereum-provider": "2.23.10",
     "dotenv": "^17.2.3",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "viem": "^2.52.2",
-    "wagmi": "^3.6.16"
+    "wagmi": "^3.6.20"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",

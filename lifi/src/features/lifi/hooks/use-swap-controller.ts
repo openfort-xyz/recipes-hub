@@ -12,6 +12,7 @@ import {
 import { getLiFiClient } from "../services/lifi-config";
 import { formatUnits, parseUnits } from "viem";
 import { useOpenfortWallet } from "@/features/openfort/hooks/use-openfort-wallet";
+import { isWagmiChainId } from "@/features/openfort/config/wagmi-config";
 import { DEFAULT_SWAP_AMOUNT } from "../constants";
 import {
   fetchSwapRoutes,
@@ -220,7 +221,9 @@ export const useSwapController = (): SwapController => {
 
     const fetchChains = async () => {
       try {
-        const availableChains = await getChains(getLiFiClient());
+        const availableChains = (await getChains(getLiFiClient())).filter(
+          (chain) => isWagmiChainId(chain.id),
+        );
         setChains(availableChains);
 
         const preferredChain = getPreferredChain(availableChains, walletChainId);

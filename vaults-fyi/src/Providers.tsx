@@ -1,20 +1,22 @@
 import { OpenfortProvider } from '@openfort/react'
-import { getDefaultConfig, OpenfortWagmiBridge } from '@openfort/react/wagmi'
+import { embeddedWalletConnector, OpenfortWagmiBridge } from '@openfort/react/wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { base } from 'viem/chains'
-import { createConfig, WagmiProvider } from 'wagmi'
+import { createConfig, http, WagmiProvider } from 'wagmi'
+import { injected, walletConnect } from 'wagmi/connectors'
 
 const queryClient = new QueryClient()
 
-const wagmiConfig = createConfig(
-  getDefaultConfig({
-    appName: 'Openfort × vaults.fyi',
-    walletConnectProjectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || 'demo',
-    chains: [base],
-    ssr: false,
-  })
-)
+const walletConnectProjectId = import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID
+const connectors = [embeddedWalletConnector(), injected()]
+if (walletConnectProjectId) connectors.push(walletConnect({ projectId: walletConnectProjectId }))
+
+const wagmiConfig = createConfig({
+  chains: [base],
+  connectors,
+  transports: { [base.id]: http() },
+})
 
 export function Providers({ children }: { children: ReactNode }) {
   return (

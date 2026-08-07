@@ -18,7 +18,7 @@
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
     "@nktkas/hyperliquid": "^0.33.1",
-    "@openfort/react-native": "^1.1.7",
+    "@openfort/react-native": "2.0.0",
     "@peculiar/webcrypto": "^1.7.1",
     "@react-navigation/bottom-tabs": "^7.18.8",
     "@react-navigation/elements": "^2.9.30",
@@ -68,5 +68,6 @@
     "eslint-config-expo": "~57.0.0",
     "typescript": "~6.0.3"
   },
-  "private": true
+  "private": true,
+  "packageManager": "pnpm@10.30.3+sha512.c961d1e0a2d8e354ecaa5166b822516668b7f44cb5bd95122d590dd81922f606f5473b6d23ec4a5be05e7fcd18e8488d47d978bbe981872f1145d06e9a740017"
 }

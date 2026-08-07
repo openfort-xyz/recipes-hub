@@ -11,3 +11,6 @@ auditConfig:
   ignoreCves:
     # No patched elliptic release; signing is delegated to the embedded wallet.
     - CVE-2025-14505
+  ignoreGhsas:
+    # js-yaml 4.3.1 clears the cooldown at 2026-08-07 17:40 UTC.
+    - GHSA-5p4m-2wfm-xmqj

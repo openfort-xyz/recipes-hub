@@ -37,7 +37,9 @@ export function UserOperation() {
 
   useEffect(() => {
     if (wallets.length > 0 && !activeWallet) {
-      setActive({ address: wallets[0].address }).catch(() => {})
+      void setActive({ address: wallets[0].address }).then((result) => {
+        if (result.error) setError(result.error.shortMessage)
+      })
     }
   }, [wallets.length, activeWallet, setActive, wallets[0]?.address])
 
@@ -117,11 +119,14 @@ export function UserOperation() {
       })
 
       // Sign EIP-7702 authorization using Openfort's hook
-      const authorization = await signAuthorization({
+      const authorizationResult = await signAuthorization({
         contractAddress: SIMPLE_7702_ADDRESS,
         chainId: baseSepolia.id,
         nonce: await publicClient.getTransactionCount({ address: eoa }),
       })
+      if (authorizationResult.status === 'error') {
+        throw new Error(authorizationResult.error.shortMessage)
+      }
 
       const txnHash = await bundlerClient.sendUserOperation({
         calls: [
@@ -131,7 +136,7 @@ export function UserOperation() {
             value: BigInt(0),
           },
         ],
-        authorization,
+        authorization: authorizationResult.authorization,
         paymasterContext: {
           policyId: process.env.NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID,
         },

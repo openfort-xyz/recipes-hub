@@ -26,8 +26,9 @@
 
 ## Upgrade notes (July 2026)
 - Targets **Expo SDK 57 / React Native 0.86**. Realign the `expo-*`/RN matrix with `pnpm expo install --fix`, not by hand.
+- Uses `@openfort/react-native@2.0.0`.
 - `@openfort/react-native` walletConfig key is **`feeSponsorshipId`** (renamed from `ethereumProviderPolicyId`); value still read from `OPENFORT_ETHEREUM_PROVIDER_POLICY_ID`.
-- Typecheck passes (`pnpm exec tsc --noEmit`); native build/run is unverified here — launch on a device/simulator before merge.
+- Typecheck and an iOS simulator build/login render pass; funded faucet and transfer flows still require manual credentials and testnet funds.
 
 ## PR instructions
 - Title format: `[usdc] <summary>`.
