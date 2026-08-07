@@ -63,6 +63,10 @@ export const requestQuote = async (
     refundType: "ORIGIN_CHAIN",
     recipientType: "DESTINATION_CHAIN",
     depositMode: "SIMPLE",
+    // Foreign-to-foreign confidential swaps keep the standard ORIGIN_CHAIN
+    // deposit flow — only the `confidentiality` level changes. `basic` and
+    // `advanced` require an authenticated, confidential-enabled JWT.
+    confidentiality: params.confidentiality ?? "public",
     originAsset: params.originAsset,
     destinationAsset: params.destinationAsset,
     amount: params.amount,

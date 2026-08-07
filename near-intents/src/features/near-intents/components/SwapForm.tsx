@@ -1,15 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowDown, ChevronDown } from "lucide-react";
+import { ArrowDown, ChevronDown, Eye, Lock } from "lucide-react";
 import { erc20Abi, formatUnits } from "viem";
 import { useBalance, useReadContract } from "wagmi";
 import { isWagmiChainId } from "@/features/openfort/config/wagmi-config";
 import {
   chainLabel,
+  CONFIDENTIAL_SWAPS_ENABLED,
   isOriginBlockchain,
+  PRIVATE_CONFIDENTIALITY,
 } from "@/features/near-intents/constants";
-import type { Quote, SwapAsset } from "@/features/near-intents/types";
+import type {
+  Confidentiality,
+  Quote,
+  SwapAsset,
+} from "@/features/near-intents/types";
 import AssetIcon from "./AssetIcon";
 import AssetPicker from "./AssetPicker";
 import FundWallet from "./FundWallet";
@@ -21,6 +27,7 @@ interface SwapFormProps {
   toAsset: SwapAsset | null;
   amount: string;
   recipient: string;
+  confidentiality: Confidentiality;
   liveQuote: Quote | null;
   estimateError: string | null;
   isLoadingEstimate: boolean;
@@ -29,6 +36,7 @@ interface SwapFormProps {
   onToAssetChange: (asset: SwapAsset) => void;
   onAmountChange: (amount: string) => void;
   onRecipientChange: (recipient: string) => void;
+  onConfidentialityChange: (value: Confidentiality) => void;
   onFlip: () => void;
 }
 
@@ -39,6 +47,7 @@ export default function SwapForm({
   toAsset,
   amount,
   recipient,
+  confidentiality,
   liveQuote,
   estimateError,
   isLoadingEstimate,
@@ -47,6 +56,7 @@ export default function SwapForm({
   onToAssetChange,
   onAmountChange,
   onRecipientChange,
+  onConfidentialityChange,
   onFlip,
 }: SwapFormProps) {
   const [pickerField, setPickerField] = useState<"from" | "to" | null>(null);
@@ -69,6 +79,13 @@ export default function SwapForm({
           <h2 className="text-lg font-semibold">Swap</h2>
           {walletAddress && <FundWallet walletAddress={walletAddress} />}
         </div>
+
+        {CONFIDENTIAL_SWAPS_ENABLED && (
+          <PrivacyToggle
+            confidentiality={confidentiality}
+            onChange={onConfidentialityChange}
+          />
+        )}
 
         <AssetField
           label="You send"
@@ -172,6 +189,72 @@ export default function SwapForm({
         onSelect={handleSelect}
       />
     </div>
+  );
+}
+
+// Public / Private segmented control. "Private" routes the swap through NEAR
+// Confidential Intents (confidentiality: "basic") so the trade isn't broadcast
+// publicly; "Public" is a normal on-chain swap.
+function PrivacyToggle({
+  confidentiality,
+  onChange,
+}: {
+  confidentiality: Confidentiality;
+  onChange: (value: Confidentiality) => void;
+}) {
+  const isPrivate = confidentiality !== "public";
+
+  return (
+    <div className="mb-4">
+      <div className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-muted/40 p-1">
+        <PrivacyOption
+          active={!isPrivate}
+          onClick={() => onChange("public")}
+          icon={<Eye className="h-4 w-4" />}
+          label="Public"
+        />
+        <PrivacyOption
+          active={isPrivate}
+          onClick={() => onChange(PRIVATE_CONFIDENTIALITY)}
+          icon={<Lock className="h-4 w-4" />}
+          label="Private"
+        />
+      </div>
+      {isPrivate && (
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          Routed through NEAR Confidential Intents — the swap isn&apos;t broadcast
+          publicly. Deposit still comes from your Openfort wallet.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function PrivacyOption({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+        active
+          ? "bg-background text-foreground shadow-sm"
+          : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
 

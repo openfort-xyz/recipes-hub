@@ -9,8 +9,15 @@ if (!globalThis.CustomEvent) {
     };
 }
 
-if (!AbortSignal.timeout) {
-    AbortSignal.timeout = function (delay) {
+// Hermes exposes AbortController but not always the AbortSignal global — referencing the bare
+// identifier throws at bundle init, so recover the class from a controller instance instead.
+const g = globalThis as any;
+if (!g.AbortSignal && g.AbortController) {
+    g.AbortSignal = new g.AbortController().signal.constructor;
+}
+
+if (g.AbortSignal && !g.AbortSignal.timeout) {
+    g.AbortSignal.timeout = function (delay: number) {
         const controller = new AbortController();
         setTimeout(() => controller.abort(), delay);
         return controller.signal;
