@@ -27,9 +27,10 @@
 
 ## Upgrade notes (Expo SDK 56 / @nktkas/hyperliquid 0.32)
 - Targets **Expo SDK 56 / React Native 0.85**. Realign the `expo-*`/RN matrix with `pnpm expo install --fix` — do not hand-bump those versions.
+- Uses `@openfort/react-native@2.0.0`.
 - `@openfort/react-native` walletConfig key is **`feeSponsorshipId`** (renamed from `ethereumProviderPolicyId`); the value is still read from `OPENFORT_ETHEREUM_PROVIDER_POLICY_ID`.
 - `@nktkas/hyperliquid` is on **0.32**: `actionSorter` was removed — the order action is built as a plain object in Hyperliquid's canonical field order (`a, b, p, s, r, t`) because `createL1ActionHash` hashes over key order. Types `Book`→`L2BookResponse`, `FrontendOrder`→`FrontendOpenOrdersResponse[number]` now come from `@nktkas/hyperliquid/api/info`.
-- Typecheck passes (`pnpm exec tsc --noEmit`), but native build and a live testnet buy/sell are **unverified** here — test on a device/simulator, paying attention to order signing.
+- Typecheck and an iOS simulator build/login render pass; a live testnet buy/sell remains unverified because it requires a funded wallet.
 
 ## PR instructions
 - Title format: `[hyperliquid] <summary>`.

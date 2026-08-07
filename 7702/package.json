@@ -11,10 +11,13 @@
     "format": "biome format --write ."
   },
   "dependencies": {
-    "@openfort/openfort-node": "^0.10.5",
-    "@openfort/react": "^1.1.1",
+    "@openfort/react": "2.0.1",
+    "@solana-program/compute-budget": "0.13.0",
+    "@solana-program/token": "0.12.0",
+    "@solana/kit": "6.10.0",
+    "@solana/kora": "0.2.1",
     "@radix-ui/react-slot": "^1.2.5",
-    "@tanstack/react-query": "^5.101.0",
+    "@tanstack/react-query": "^5.101.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.17.0",
@@ -23,7 +26,7 @@
     "react-dom": "^19.2.7",
     "tailwind-merge": "^3.3.1",
     "viem": "^2.52.2",
-    "wagmi": "^3.6.16"
+    "wagmi": "^3.6.20"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",

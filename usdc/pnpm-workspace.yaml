@@ -1,0 +1,18 @@
+auditConfig:
+  ignoreCves:
+    - CVE-2025-14505
+  ignoreGhsas:
+    - GHSA-5p4m-2wfm-xmqj
+
+minimumReleaseAge: 10080
+
+minimumReleaseAgeExclude:
+  - '@openfort/*'
+
+overrides:
+  axios@<1.18.0: '>=1.18.0'
+  uuid@<11.1.1: '>=11.1.1'
+  ws@<8.21.1: '>=8.21.1'
+
+patchedDependencies:
+  expo-modules-jsi@57.0.4: patches/expo-modules-jsi@57.0.4.patch

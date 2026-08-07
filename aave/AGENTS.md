@@ -32,6 +32,7 @@
 - Discover reserves with `useReserves({ query: { chainIds: [chainId(n)] }, user })`; the underlying token is at `reserve.asset.underlying.info.symbol` / `.address`, the market supply APY at `reserve.asset.summary.supplyApy.value`, and the supply gate at `reserve.canSupply`.
 - Supply/withdraw key off `reserve.id` (no market/currency/chainId) and run through an execution-plan handler passed to `useSupply`/`useWithdraw` (cases `TransactionRequest` / `Erc20Approval` with `.bySignature`|`.byTransaction` / `PreContractActionRequired`), sending each step via `useSendTransaction`/`useSignTypedData` from `@aave/react/viem`.
 - User positions come from the declarative `useUserSupplies` hook (it auto-refreshes; there is no manual refetch). Balance/token at `position.balance.amount.value` / `position.balance.token.info.symbol`.
+- The wallet integration uses `@openfort/react@2.0.1` with `wagmi@^3`.
 - The supply/withdraw flow compiles but should be re-verified at runtime against a funded testnet wallet.
 
 ## PR instructions

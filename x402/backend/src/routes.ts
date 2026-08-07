@@ -56,11 +56,17 @@ export async function handleHealth(_req: Request, res: Response): Promise<void> 
  * @see https://github.com/openfort-xyz/openfort-backend-quickstart
  */
 export async function handleShieldSession(
-  _req: Request,
+  req: Request,
   res: Response,
   openfortClient: Openfort | null,
   shieldConfig: Config["openfort"]["shield"]
 ): Promise<void> {
+  const accessToken = req.get("authorization")?.match(/^Bearer (.+)$/i)?.[1];
+  if (!accessToken) {
+    res.status(401).json({ error: "A valid Openfort bearer token is required." });
+    return;
+  }
+
   const hasShieldConfig = Boolean(
     shieldConfig.publishableKey &&
     shieldConfig.secretKey &&
@@ -71,6 +77,13 @@ export async function handleShieldSession(
     res.status(500).json({
       error: "Openfort Shield configuration is missing.",
     });
+    return;
+  }
+
+  try {
+    await openfortClient.iam.getSession({ accessToken });
+  } catch {
+    res.status(401).json({ error: "A valid Openfort bearer token is required." });
     return;
   }
 

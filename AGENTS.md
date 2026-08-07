@@ -22,12 +22,12 @@
 
 ## Dependency constraints (read before bumping anything)
 These are non-obvious and will break samples if ignored:
-- **Match the `wagmi` major to the `@openfort/react` version.** `@openfort/react` `>=1.1.1` peer-requires `wagmi: 3.x` (`@wagmi/connectors: 8.x`); `<=1.1.0` requires `wagmi: 2.x` (`@wagmi/connectors: 5.x`). Keep `viem` on `^2.x` either way. All web samples that use `@openfort/react` (`7702`, `aave`, `lifi`, `morpho`, `near-intents`, `vaults-fyi`, `x402`) now run `@openfort/react@^1.1.1` + `wagmi@^3`.
+- **Match the `wagmi` major to the `@openfort/react` version.** All web samples that use `@openfort/react` (`7702`, `aave`, `agent-permissions`, `lifi`, `morpho`, `near-intents`, `vaults-fyi`, `x402`) run `@openfort/react@2.0.1` + `wagmi@^3`; keep `viem` on `^2.x`.
 - **wagmi 3 gotchas (already applied):** (1) `@wagmi/connectors@8` pulls optional connector peers loaded via a guarded `import('accounts').catch()`; webpack (Next.js) hard-fails resolving them at build, so the Next samples stub `accounts` / `porto` / `@base-org/account` / `@metamask/connect-evm` to `false` in `next.config` (`resolve.fallback` or `resolve.alias`). Vite tolerates them without config. (2) `useBalance` is native-only in wagmi 3 (no `token` option) and its `data` has no `.formatted` — fetch ERC-20 balances with `useReadContract`(`balanceOf`) and format with `formatUnits(data, decimals)`; `useBalance` native data is `{ value, decimals, symbol }`.
 - **`@openfort/react` provider needs a publishable key at render time.** In Next.js samples, the App Router will throw during static prerender without it — every Next sample sets `export const dynamic = 'force-dynamic'` in `app/layout.tsx`. Its `walletConfig` nests `accountType` / `ethereumFeeSponsorshipId` under `ethereum: { … }`. The React Native SDK config key is `feeSponsorshipId` (not `ethereumProviderPolicyId`).
 - **Next.js stays on 15 for the wallet samples.** Next 16 forces Turbopack and rejects the webpack walletconnect shims (`pino-pretty` external, `@react-native-async-storage/async-storage: false`). Only `mpp` (no wagmi/walletconnect) runs on Next 16.
 - **Biome 2.4 config:** use `files.includes` with `!!` excludes (not the deprecated `experimentalScannerIgnores`) and enable `css.parser.tailwindDirectives: true` so `@apply`/`@theme` parse.
-- React Native samples target **Expo SDK 56 / RN 0.85**; always realign the matrix with `pnpm expo install --fix` rather than hand-editing `expo-*` versions.
+- React Native samples use `@openfort/react-native@2.0.0`: Hyperliquid targets **Expo 56 / RN 0.85**, while USDC targets **Expo 57 / RN 0.86**. Realign each matrix with `pnpm expo install --fix` rather than hand-editing `expo-*` versions.
 
 ## PR instructions
 - Title format: `[sample-name] <summary>` (for example, `[aave] Update Shield policy ID`).

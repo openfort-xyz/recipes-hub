@@ -1,5 +1,6 @@
-import { getDefaultConfig } from "@openfort/react/wagmi";
-import { createConfig } from "wagmi";
+import { embeddedWalletConnector } from "@openfort/react/wagmi";
+import { createConfig, http } from "wagmi";
+import { injected, walletConnect } from "wagmi/connectors";
 import {
   arbitrum,
   avalanche,
@@ -12,20 +13,32 @@ import {
 // NEAR Intents has no testnet — this recipe runs on mainnet chains only.
 const chains = [base, arbitrum, optimism, polygon, mainnet, avalanche] as const;
 
+export type WagmiChainId = (typeof chains)[number]["id"];
+export const isWagmiChainId = (chainId: number): chainId is WagmiChainId =>
+  chains.some((chain) => chain.id === chainId);
+
 // Required for external-wallet ("Connect Wallet") sign-in. Without it Openfort
 // drops the WALLET auth provider and only email sign-in is shown.
 const walletConnectProjectId =
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
 
+const connectors = [embeddedWalletConnector(), injected()];
+if (walletConnectProjectId) {
+  connectors.push(walletConnect({ projectId: walletConnectProjectId }));
+}
+
 export const wagmiConfig = createConfig({
-  ...getDefaultConfig({
-    appName: "Openfort NEAR Intents Demo",
-    chains,
-    walletConnectProjectId,
-  }),
-  // Defer browser-only storage (indexedDB) hydration to the client so server
-  // rendering doesn't touch it.
+  chains,
+  connectors,
   ssr: true,
+  transports: {
+    [base.id]: http(),
+    [arbitrum.id]: http(),
+    [optimism.id]: http(),
+    [polygon.id]: http(),
+    [mainnet.id]: http(),
+    [avalanche.id]: http(),
+  },
 });
 
 export type WagmiConfigType = typeof wagmiConfig;

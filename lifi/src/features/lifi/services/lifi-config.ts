@@ -12,7 +12,7 @@ let client: SDKClient | null = null;
  */
 export const initializeLiFiConfig = (wagmiConfig: Config): SDKClient => {
   client = createClient({
-    integrator: process.env.NEXT_PUBLIC_LIFI_INTEGRATOR as string,
+    integrator: process.env.NEXT_PUBLIC_LIFI_INTEGRATOR ?? "OpenfortRecipe",
     apiKey: process.env.NEXT_PUBLIC_LIFI_API_KEY as string,
     providers: [
       EthereumProvider({

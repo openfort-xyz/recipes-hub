@@ -1,0 +1,19 @@
+minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  - "@openfort/*"
+
+overrides:
+  axios@<1.18.0: ">=1.18.0"
+  js-yaml@<4.3.0: ">=4.3.0"
+  uuid@<11.1.1: ">=11.1.1"
+  ws@<8.21.1: ">=8.21.1"
+
+auditConfig:
+  ignoreCves:
+    # No patched elliptic release; signing is delegated to the embedded wallet.
+    - CVE-2025-14505
+  ignoreGhsas:
+    # js-yaml 4.3.1 clears the cooldown at 2026-08-07 17:40 UTC.
+    - GHSA-5p4m-2wfm-xmqj
+    # Hono 4.12.34 clears the cooldown on 2026-08-10.
+    - GHSA-8j4g-w8fx-2239

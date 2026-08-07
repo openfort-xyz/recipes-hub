@@ -54,11 +54,17 @@ export const Wallets = () => {
         setError('Please enter a recovery password.')
         return
       }
-      await create({
+      const result = await create({
         accountType: AccountTypeEnum.SMART_ACCOUNT,
         recoveryMethod,
         password: recoveryMethod === RecoveryMethod.PASSWORD ? password : undefined,
       })
+      if (result.error) {
+        const msg = result.error.shortMessage
+        setError(isPasskeyAvailable && msg.toLowerCase().includes('passkey')
+          ? 'Passkey failed. Try creating with a password instead.'
+          : msg)
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Wallet creation failed'
       // If passkey failed, prompt to retry with password
@@ -77,11 +83,12 @@ export const Wallets = () => {
         setError('Please enter your recovery password.')
         return
       }
-      await setActive({
+      const result = await setActive({
         address: wallet.address,
         recoveryMethod: wallet.recoveryMethod,
         password: wallet.recoveryMethod === RecoveryMethod.PASSWORD ? password : undefined,
       })
+      if (result.error) setError(result.error.shortMessage)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Recovery failed')
     }

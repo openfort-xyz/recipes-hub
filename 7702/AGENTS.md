@@ -1,12 +1,12 @@
 # 7702 Sample - Agent Guide
 
 ## Project Overview
-Next.js 15 + TypeScript sample demonstrating EIP-7702 authorization using Openfort embedded wallets with Permissionless and Pimlico for gasless transactions.
+Next.js 15 + TypeScript sample demonstrating EIP-7702 authorization using Openfort embedded wallets and viem for gasless transactions.
 
 ## Setup Commands
 
 ### Prerequisites
-- Node.js 18+ (check with `node -v`)
+- Node.js 22+ (check with `node -v`)
 - pnpm 10.16.1+ (managed via packageManager field)
 
 ### Install Dependencies
@@ -25,23 +25,10 @@ Required variables:
 ```
 # Openfort Project Keys
 NEXT_PUBLIC_OPENFORT_PUBLISHABLE_KEY=your_openfort_key
-OPENFORT_SECRET_KEY=your_secret_key
 NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID=your_policy_id
 
-# Openfort Shield Keys
+# Openfort Shield Key
 NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY=your_shield_key
-OPENFORT_SHIELD_SECRET_KEY=your_shield_secret_key
-OPENFORT_SHIELD_ENCRYPTION_KEY=your_encryption_share
-
-# Encrypted Session Endpoint
-NEXT_PUBLIC_CREATE_ENCRYPTED_SESSION_ENDPOINT=your_session_endpoint
-
-# Pimlico Configuration
-NEXT_PUBLIC_PIMLICO_API_KEY=your_pimlico_key
-NEXT_PUBLIC_SPONSORSHIP_POLICY_ID=your_sponsorship_policy_id
-
-# Network Configuration
-NEXT_PUBLIC_SEPOLIA_RPC_URL=your_sepolia_rpc_url
 ```
 
 ### Development
@@ -98,9 +85,6 @@ pnpm format
 7702/
 ├── src/
 │   ├── app/              # Next.js App Router
-│   │   ├── api/
-│   │   │   └── shield-session/
-│   │   │       └── route.ts  # Shield session API route
 │   │   ├── globals.css   # Global styles
 │   │   ├── layout.tsx    # Root layout
 │   │   └── page.tsx      # Main application page
@@ -131,7 +115,7 @@ pnpm format
 
 ## Upgrade notes (June 2026)
 - Next.js stays on **15** (wagmi/walletconnect needs the webpack shim in `next.config.js`, which Next 16's Turbopack rejects). `app/layout.tsx` sets `export const dynamic = 'force-dynamic'` because `@openfort/react` throws if it renders without a publishable key at static prerender.
-- Keep `wagmi` on `^2` / `@wagmi/connectors` on `^5` — `@openfort/react` peer-caps wagmi at 2.x.
+- Keep `@openfort/react` on `2.0.1` and `wagmi` on `^3`.
 - The old node polyfill deps (`crypto-browserify`, `stream-browserify`, etc.) plus `dotenv` and `valtio` were removed as unused; `next.config.js` only keeps `fs/net/tls: false` and the `@react-native-async-storage/async-storage`/`pino-pretty` shims.
 - Biome 2.4: config uses `files.includes` (not `experimentalScannerIgnores`) and `css.parser.tailwindDirectives`.
 
@@ -141,4 +125,3 @@ pnpm format
 - Document any environment variable changes in README.md and this file
 - Run `pnpm check` before committing to ensure code style compliance
 - Test the EIP-7702 flow end-to-end before requesting review
-

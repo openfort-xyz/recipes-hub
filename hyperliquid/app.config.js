@@ -6,6 +6,43 @@ export default {
     name: "@openfort/openfort-hyperliquid",
     slug: "openfort-hyperliquid",
     version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/images/icon.png",
+    scheme: "openfort.hyperliquid",
+    userInterfaceStyle: "automatic",
+    ios: {
+      usesAppleSignIn: true,
+      supportsTablet: true,
+      bundleIdentifier: "com.openfort.hyperliquid",
+    },
+    android: {
+      package: "com.openfort.hyperliquid",
+      scheme: "openfort.hyperliquid",
+      adaptiveIcon: {
+        foregroundImage: "./assets/images/adaptive-icon.png",
+        backgroundColor: "#ffffff",
+      },
+    },
+    web: {
+      bundler: "metro",
+      output: "static",
+      favicon: "./assets/images/favicon.png",
+    },
+    plugins: [
+      "expo-router",
+      "expo-secure-store",
+      "expo-apple-authentication",
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/images/splash.png",
+          imageWidth: 200,
+          resizeMode: "contain",
+          backgroundColor: "#ffffff",
+        },
+      ],
+    ],
+    experiments: { typedRoutes: true },
     extra: {
       openfortPublishableKey: process.env.OPENFORT_PUBLISHABLE_KEY || "YOUR_PROJECT_PUBLISHABLE_KEY",
       openfortShieldPublishableKey: process.env.OPENFORT_SHIELD_PUBLISHABLE_KEY || "YOUR_SHIELD_PUBLISHABLE_KEY",

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowDown, ChevronDown } from "lucide-react";
 import { erc20Abi, formatUnits } from "viem";
 import { useBalance, useReadContract } from "wagmi";
+import { isWagmiChainId } from "@/features/openfort/config/wagmi-config";
 import {
   chainLabel,
   isOriginBlockchain,
@@ -247,18 +248,19 @@ function useTokenBalance({
   enabled: boolean;
 }): { formatted: string; isFetching: boolean } {
   const isNative = !token;
+  const wagmiChainId = chainId && isWagmiChainId(chainId) ? chainId : undefined;
   const native = useBalance({
     address,
-    chainId,
-    query: { enabled: enabled && isNative },
+    chainId: wagmiChainId,
+    query: { enabled: enabled && isNative && Boolean(wagmiChainId) },
   });
   const erc20 = useReadContract({
     abi: erc20Abi,
     address: token,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    chainId,
-    query: { enabled: enabled && !isNative && Boolean(address) },
+    chainId: wagmiChainId,
+    query: { enabled: enabled && !isNative && Boolean(address) && Boolean(wagmiChainId) },
   });
   if (isNative) {
     return {

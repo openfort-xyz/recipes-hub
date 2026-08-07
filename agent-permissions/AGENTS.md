@@ -152,7 +152,7 @@ agent-permissions/
 ## Upgrade notes (June 2026)
 - `@openfort/react` `walletConfig` nests the account type under `ethereum: { accountType: AccountTypeEnum.EOA, ethereumFeeSponsorshipId }` (it is no longer a top-level field). `Providers.tsx` was migrated accordingly.
 - Stays on Next.js **15** (the webpack walletconnect shim is incompatible with Next 16 Turbopack). `app/layout.tsx` keeps `force-dynamic`.
-- Keep `wagmi` on `^2` — `@openfort/react` peer-caps it at 2.x. Biome 2.4 config uses `files.includes` + `css.parser.tailwindDirectives`.
+- Keep `@openfort/react` on `2.0.1`, `@openfort/openfort-node` on `0.11.0`, and `wagmi` on `^3`. Biome 2.4 config uses `files.includes` + `css.parser.tailwindDirectives`.
 
 ## PR Instructions
 - Title format: `[agent-permissions] <summary>`

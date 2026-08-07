@@ -15,19 +15,19 @@ export interface OpenfortWalletState {
 export const useOpenfortWallet = (): OpenfortWalletState => {
   const wallet = useEthereumEmbeddedWallet();
   const { user, isAuthenticated } = useUser();
-  const { address } = useAccount();
+  const { address, status: accountStatus } = useAccount();
   const chainId = useChainId();
 
   const walletAddress = address ?? "";
-  const isConnected = wallet.status === "connected" && isAuthenticated;
-  const isReady = !wallet.isLoading && isConnected && !!walletAddress;
+  const isConnected = accountStatus === "connected" && isAuthenticated;
+  const isReady = isConnected && !!walletAddress;
 
   return {
     address: walletAddress,
     chainId,
     isReady,
     isConnected,
-    isStatusLoading: wallet.isLoading,
+    isStatusLoading: wallet.isLoading && !isConnected,
     isAuthenticated,
     playerName:
       user?.name ||

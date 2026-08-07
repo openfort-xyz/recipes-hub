@@ -66,7 +66,6 @@ Open [http://localhost:3000](http://localhost:3000).
 7702/
 ├── src/
 │   ├── app/
-│   │   ├── api/shield-session/route.ts  # Optional: encryption session for automatic recovery
 │   │   ├── layout.tsx                   # Root layout with metadata
 │   │   └── page.tsx                     # Main page
 │   ├── components/
@@ -79,9 +78,6 @@ Open [http://localhost:3000](http://localhost:3000).
 ├── next.config.js                       # Next.js + webpack polyfills
 └── package.json                         # Dependencies and scripts
 ```
-
-> The `api/shield-session` route is only used if you switch from passkey to
-> AUTOMATIC wallet recovery. See `.env.example` for the optional variables it needs.
 
 ## Resources
 

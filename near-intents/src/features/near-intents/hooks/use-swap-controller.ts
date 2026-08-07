@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { erc20Abi, formatUnits, parseUnits } from "viem";
 import { useSendTransaction, useSwitchChain, useWriteContract } from "wagmi";
 import { useOpenfortWallet } from "@/features/openfort/hooks/use-openfort-wallet";
+import { isWagmiChainId } from "@/features/openfort/config/wagmi-config";
 import {
   chainLabel,
   DEFAULT_SWAP_AMOUNT,
@@ -328,8 +329,12 @@ export const useSwapController = (): SwapController => {
     setState((prev) => ({ ...prev, isDepositing: true, error: null }));
 
     try {
-      if (walletChainId !== fromAsset.chainId) {
-        await switchChainAsync({ chainId: fromAsset.chainId });
+      const chainId = fromAsset.chainId;
+      if (!isWagmiChainId(chainId)) {
+        throw new Error(`Unsupported origin chain: ${chainId}`);
+      }
+      if (walletChainId !== chainId) {
+        await switchChainAsync({ chainId });
       }
 
       const amountIn = BigInt(quote.quote.amountIn);
@@ -337,7 +342,7 @@ export const useSwapController = (): SwapController => {
 
       if (fromAsset.isNative) {
         txHash = await sendTransactionAsync({
-          chainId: fromAsset.chainId,
+          chainId,
           to: depositAddress,
           value: amountIn,
         });
@@ -346,7 +351,7 @@ export const useSwapController = (): SwapController => {
           throw new Error("Missing token contract address for the origin asset.");
         }
         txHash = await writeContractAsync({
-          chainId: fromAsset.chainId,
+          chainId,
           address: fromAsset.contractAddress,
           abi: erc20Abi,
           functionName: "transfer",
