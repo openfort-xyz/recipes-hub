@@ -17,9 +17,9 @@ function LogoutIcon() {
  * Deliberately does not use Openfort's built-in "Connected" panel - that panel
  * hardcodes a Send/Deposit action row with no config flag to hide Deposit, and
  * this recipe doesn't want a funding entry point in the app at all (Openfort's
- * funding rail doesn't support Monad Testnet, and Monad mainnet support isn't
- * confirmed - see README "Known limitations"). This renders only what the
- * recipe actually needs: the address (opens a Send/Receive modal) and sign-out.
+ * funding rail has no Monad support - see README "Known limitations"). This
+ * renders only what the recipe actually needs: the address (opens a
+ * Send/Receive modal) and sign-out.
  */
 export function WalletChip({
   address,

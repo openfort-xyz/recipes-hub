@@ -2,16 +2,16 @@ import { OpenfortProvider } from '@openfort/react'
 import { embeddedWalletConnector, OpenfortWagmiBridge } from '@openfort/react/wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import { monadTestnet } from 'viem/chains'
+import { monad } from 'viem/chains'
 import { createConfig, http, WagmiProvider } from 'wagmi'
 
 const queryClient = new QueryClient()
 
 const wagmiConfig = createConfig({
-  chains: [monadTestnet],
+  chains: [monad],
   connectors: [embeddedWalletConnector()],
   transports: {
-    [monadTestnet.id]: http(),
+    [monad.id]: http(),
   },
 })
 

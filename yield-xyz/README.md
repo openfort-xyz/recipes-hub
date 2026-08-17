@@ -1,14 +1,21 @@
-# Openfort × Yield.xyz - MON Native Staking on Monad
+# Openfort × Yield.xyz - Staking and Vaults on Monad
 
-[Yield.xyz](https://www.yield.xyz) is one API for 2,900+ yield opportunities across 80+ networks. This recipe combines an Openfort embedded wallet with Yield.xyz's StakeKit product to discover, enter, track, and exit **native MON staking on Monad Testnet** - entirely non-custodial.
+[Yield.xyz](https://www.yield.xyz) is one API for 2,900+ yield opportunities across 80+ networks. This recipe combines an Openfort embedded wallet with Yield.xyz's StakeKit product to discover, enter, track, and exit **native MON staking and ERC-4626 vaults on Monad mainnet** - entirely non-custodial.
 
 Yield.xyz never signs or holds funds: every `enter`/`exit` call returns an ordered list of **unsigned** transactions, and this recipe signs and broadcasts each one with the user's own Openfort wallet.
 
-You'll build a single-page app where users authenticate with Openfort, review validator commission and live APR from the Yield.xyz API, and stake, track, and exit their MON position through one unified interface.
+You'll build a single-page app where users authenticate with Openfort, review validator commission and live APR from the Yield.xyz API, and stake, deposit, track, and exit their positions through one unified interface.
+
+> **This runs on mainnet and moves real funds.** Monad Testnet lists exactly one Yield.xyz opportunity (native staking) and no vaults at all, so both panels target `monad`. Read "Running against testnet" below before pointing this at anyone's wallet.
 
 ## What this recipe demonstrates
 
-`monad-testnet-mon-native-staking` - a free-faucet, single-step StakeKit flow: `DELEGATE` to enter, `UNDELEGATE` to exit, with validator selection.
+Two `mechanics.type` values behind one execution path:
+
+- `monad-mon-native-staking` (`staking`) - `DELEGATE` to enter, `UNDELEGATE` to exit, across 209 validators with real commission rates.
+- The highest-APY `vault` opportunities on Monad (Euler EVK, Morpho V2, Upshift) - a 2-step `APPROVAL` + `SUPPLY` enter, no validator, vault shares instead.
+
+Both run through the same `POST /v1/actions/enter` → sign → `submit-hash` loop in `src/hooks/useExecuteAction.ts`.
 
 ## 1. Setup
 
@@ -40,7 +47,7 @@ From your [Openfort dashboard](https://dashboard.openfort.io):
 
 1. **Publishable Key**: Developers → API Keys
 2. **Shield Publishable Key**: Developers → API Keys
-3. **Fee Sponsorship ID** (optional): Policies → select or create a fee sponsorship policy for Monad Testnet
+3. **Fee Sponsorship ID** (optional): Policies → select or create a fee sponsorship policy for Monad
 
 ## 4. Get a Yield.xyz API key
 
@@ -75,7 +82,7 @@ pnpm install
 pnpm dev
 ```
 
-Open `http://localhost:5173`. Sign in with Openfort, fund the wallet with testnet MON from [testnet.monad.xyz](https://testnet.monad.xyz/), and enter the position.
+Open `http://localhost:5173`. Sign in with Openfort, then fund the wallet: mainnet has no faucet, so send real MON to the address (the `fund wallet` link copies it to your clipboard). Then stake or deposit.
 
 ## How the integration works
 
@@ -84,7 +91,7 @@ Open `http://localhost:5173`. Sign in with Openfort, fund the wallet with testne
 | 1. Inspect | `GET /v1/yields/{yieldId}` | Full mechanics + the argument schema (amount, validator, min entry, warmup/cooldown) |
 | 2. Validators | `GET /v1/yields/{yieldId}/validators` | Validator list with commission and APR |
 | 3. Enter | `POST /v1/actions/enter` | An ordered `transactions[]` array, each with an `unsignedTransaction` ready to sign |
-| 4. Sign & broadcast | - | This recipe switches the wallet to Monad Testnet if needed, signs each step via wagmi, waits for the receipt, then reports the hash back with `PUT /v1/transactions/{id}/submit-hash` |
+| 4. Sign & broadcast | - | This recipe switches the wallet to Monad if needed, signs each step via wagmi, waits for the receipt, then reports the hash back with `PUT /v1/transactions/{id}/submit-hash` |
 | 5. Track | `GET /v1/yields/{yieldId}/balances?address=` | The user's current position |
 | 6. Exit | `POST /v1/actions/exit` | Same shape as enter - same signer, same execution loop |
 
@@ -92,76 +99,40 @@ Open `http://localhost:5173`. Sign in with Openfort, fund the wallet with testne
 
 For the full API reference, see [docs.yield.xyz](https://docs.yield.xyz/docs/getting-started).
 
-## Going to mainnet
+## Running against testnet
 
-This recipe runs on Monad Testnet by default so you can test it for free. Moving to Monad mainnet is three edits - nothing else in the codebase is testnet-specific, since every component keys off the single `DEMO` config object.
+Monad Testnet has exactly one Yield.xyz opportunity - `monad-testnet-mon-native-staking`, with a single validator and a 0% reported APR - and **no vaults**, so the Vaults panel comes up empty there. If you want to rehearse the staking flow for free, point `src/config/demos.ts` and `src/Providers.tsx` at testnet:
 
-**Prerequisites:**
-- Your own Yield.xyz API key (see [step 4](#4-get-a-yield-xyz-api-key)) - the shared demo key works for mainnet reads too, but don't rely on it for anything real. No separate/paid plan is required specifically to *access* mainnet - see the plans note above - but size your plan to your real traffic.
-- An Openfort fee-sponsorship policy scoped to Monad mainnet, if you're sponsoring gas (or a funded wallet that pays its own gas in real MON).
-- Real MON to stake. There is no mainnet faucet.
-
-**What changes, at a glance:**
-
-| File | Setting | Testnet (default) | Mainnet |
+| File | Setting | Mainnet (default) | Testnet |
 | --- | --- | --- | --- |
-| `src/config/demos.ts` | `network` | `monad-testnet` | `monad` |
-| `src/config/demos.ts` | `chainId` | `10_143` | `143` |
-| `src/config/demos.ts` | `yieldId` | `monad-testnet-mon-native-staking` | `monad-mon-native-staking` |
-| `src/config/demos.ts` | `explorerUrl` | `https://testnet.monadexplorer.com` | `https://monadscan.com` |
-| `src/config/demos.ts` | `faucetUrl` | `https://testnet.monad.xyz/` | `''` (none - no mainnet faucet) |
-| `src/Providers.tsx` | `viem/chains` import | `monadTestnet` | `monad` |
+| `src/config/demos.ts` | `network` | `monad` | `monad-testnet` |
+| `src/config/demos.ts` | `chainId` | `143` | `10_143` |
+| `src/config/demos.ts` | `yieldId` | `monad-mon-native-staking` | `monad-testnet-mon-native-staking` |
+| `src/config/demos.ts` | `explorerUrl` | `https://monadscan.com` | `https://testnet.monadexplorer.com` |
+| `src/Providers.tsx` | `viem/chains` import | `monad` | `monadTestnet` |
 
-**1. `src/config/demos.ts`** - swap the whole config:
+Get testnet MON from [testnet.monad.xyz](https://testnet.monad.xyz/) - the faucet is behind a bot check and X/Discord gates, has no public claim API, and ignores address query params, so the app can't claim for you.
 
-```ts
-export const DEMO: DemoConfig = {
-  key: 'monad-staking',
-  label: 'MON Native Staking',
-  protocol: 'StakeKit',
-  network: 'monad',                              // was 'monad-testnet'
-  chainId: 143,                                  // was 10_143
-  yieldId: 'monad-mon-native-staking',            // was 'monad-testnet-mon-native-staking'
-  tokenSymbol: 'MON',
-  tokenDecimals: 18,
-  explorerUrl: 'https://monadscan.com',           // was https://testnet.monadexplorer.com
-  faucetUrl: '',                                  // no mainnet faucet - remove the "need test funds?" link, or repurpose it
-  requiresValidator: true,
-  defaultAmount: '2',
-}
-```
-
-**2. `src/Providers.tsx`** - swap the chain import and wagmi config:
-
-```ts
-import { monad } from 'viem/chains'   // was monadTestnet
-// ...
-const wagmiConfig = createConfig({
-  chains: [monad],
-  connectors: [embeddedWalletConnector()],
-  transports: { [monad.id]: http() },
-})
-```
-
-**3. `.env`** - point `VITE_OPENFORT_FEE_SPONSORSHIP_ID` (if used) at a mainnet-scoped policy, and confirm your `YIELD_XYZ_API_KEY` has enough headroom for real traffic.
-
-**What changes in practice:** mainnet has 209 registered validators for this yield (vs. testnet's 1) with real commission rates to compare, and a live floating APR (~14.8% at the time of writing - check current rates, this moves). The `unsignedTransaction` shape, the discover → enter → track → exit flow, and the chain-switch behavior are identical between testnet and mainnet - only the network parameters change.
+Nothing else is network-specific: every component keys off the single `DEMO` config object, and the `unsignedTransaction` shape, the discover → enter → track → exit flow, and the chain-switch behaviour are identical on both networks.
 
 ## Known limitations
 
-- **This recipe deliberately doesn't use Openfort's built-in wallet funding ("Add funds").** Confirmed directly in the running app: it returns "Funding isn't available on this network" on Monad Testnet. Whether it supports Monad mainnet wasn't verified - Openfort's docs don't publish an explicit supported-chain list, so check your dashboard or ask Openfort directly if you want to add it back for mainnet. Because of this, the app doesn't use Openfort's built-in `OpenfortButton` "Connected" panel at all once signed in (that panel hardcodes a Deposit button with no way to hide just that one action) - `src/components/WalletChip.tsx` is a small custom account chip (address, Send, Receive, sign out) instead. Fund wallets via the testnet faucet (or, on mainnet, a real transfer).
+- **Both panels move real funds.** There is no testnet equivalent for the vault flow, so the Deposit button spends real tokens. Each card carries a `Mainnet · real funds` badge for that reason.
+- **This recipe deliberately doesn't use Openfort's built-in wallet funding ("Add funds").** Confirmed directly in the running app: it returns "Funding isn't available on this network" on Monad Testnet, and Openfort's docs publish no supported-chain list to confirm mainnet - check your dashboard if you want it back. Because of this, the app doesn't use Openfort's built-in `OpenfortButton` "Connected" panel at all once signed in (that panel hardcodes a Deposit button with no way to hide just that one action) - `src/components/WalletChip.tsx` is a small custom account chip (address, Send, Receive, sign out) instead. Fund wallets with a real transfer to the address.
+- **The vault list is whatever Yield.xyz reports.** The panel shows the top 8 `mechanics.type === 'vault'` opportunities with a non-zero rate, sorted by APY, so the default selection changes as rates move. Opportunities not enabled for your Yield.xyz project fail at `POST /actions/enter` with a 400, surfaced under the card.
 
 ## Files
 
 - `src/lib/yieldXyz.ts` - typed REST client, proxied through Vite so the API key stays server-side.
-- `src/config/demos.ts` - the Monad staking config (network, chain id, yieldId, faucet).
-- `src/hooks/useYieldQueries.ts` - React Query hooks: `useYieldDetail`, `useValidators`, `useBalances`.
+- `src/config/demos.ts` - the single Monad config (network, chain id, yieldId, explorer) that every panel keys off.
+- `src/hooks/useYieldQueries.ts` - React Query hooks: `useYieldDetail`, `useYields`, `useValidators`, `useBalances`.
 - `src/hooks/useExecuteAction.ts` - switches chain if needed, then sequentially signs via wagmi's `useSendTransaction`, awaits each receipt, reports the hash back to Yield.xyz.
-- `src/components/StakePanel.tsx` - yield details + enter form with validator picker.
-- `src/components/PositionsPanel.tsx` - current position + exit.
+- `src/components/StakePanel.tsx` - staking details + enter form with validator picker.
+- `src/components/VaultsPanel.tsx` - vault picker (top 8 by APY) + deposit form, same enter/exit endpoints, no validator.
+- `src/components/PositionsPanel.tsx` - one position (staking or vault) + exit; rendered twice from `App.tsx`.
 - `src/components/WalletChip.tsx` - custom account chip (replaces Openfort's built-in "Connected" panel - see "Known limitations"): address with a Send/Receive dropdown, and an icon-only sign-out button.
-- `src/components/SendPanel.tsx` - plain address-to-address MON transfer, opened from the Send option in `WalletChip`.
-- `src/components/WalletBalance.tsx` - native MON balance; refetches automatically after any stake/exit/send via the `onSettled` callback threaded down from `App.tsx`.
+- `src/components/SendForm.tsx` - plain address-to-address MON transfer, opened from the Send option in `WalletChip`.
+- `src/components/WalletBalance.tsx` - native MON balance and a copy-address `fund wallet` action; refetches automatically after any stake/deposit/exit/send via the `onSettled` callback threaded down from `App.tsx`.
 - `vite.config.ts` - dev proxy that injects the Yield.xyz API key server-side.
 
 ## Deploying

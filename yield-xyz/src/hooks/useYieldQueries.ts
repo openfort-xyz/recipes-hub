@@ -8,6 +8,15 @@ export function useYieldDetail(yieldId: string) {
   })
 }
 
+/** Every opportunity on a network, newest data first. Used for the read-only vault list. */
+export function useYields(network: string) {
+  return useQuery({
+    queryKey: ['yields', network],
+    queryFn: () => yieldXyz.listYields({ network, limit: 100 }),
+    select: (data) => data.items,
+  })
+}
+
 export function useValidators(yieldId: string, enabled: boolean) {
   return useQuery({
     queryKey: ['validators', yieldId],

@@ -65,6 +65,7 @@ export function StakePanel({
     <Card
       title={detail?.metadata.name ?? demo.label}
       subtitle={detail ? `${demo.protocol} · ${apy}${min ? ` · min ${min} ${demo.tokenSymbol}` : ''}` : undefined}
+      badge="Mainnet · real funds"
     >
       {isLoading && <p className="text-sm text-neutral-500">Loading yield details…</p>}
       {error && <p className="text-sm text-red-400">{(error as Error).message}</p>}
@@ -72,6 +73,7 @@ export function StakePanel({
       {detail && (
         <>
           <p className="text-sm text-neutral-400">{detail.metadata.description}</p>
+          <p className="text-xs text-amber-500/80 mt-1">Mainnet: staking here delegates real {demo.tokenSymbol}.</p>
           {(warmup || cooldown) && (
             <p className="text-xs text-neutral-500 mt-1">
               {warmup && `Warmup ${warmup}`}
@@ -140,12 +142,6 @@ export function StakePanel({
         </ul>
       )}
       {(prepareError || execError) && <p className="mt-3 text-sm text-red-400">{prepareError ?? execError}</p>}
-      <p className="mt-4 text-xs text-neutral-600">
-        Need test funds?{' '}
-        <a href={demo.faucetUrl} target="_blank" rel="noreferrer" className="underline hover:text-neutral-400">
-          {demo.faucetUrl.replace('https://', '')}
-        </a>
-      </p>
     </Card>
   )
 }

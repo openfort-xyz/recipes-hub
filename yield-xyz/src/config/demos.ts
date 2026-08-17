@@ -8,23 +8,21 @@ export interface DemoConfig {
   tokenSymbol: string
   tokenDecimals: number
   explorerUrl: string
-  faucetUrl: string
   requiresValidator: boolean
   defaultAmount: string
 }
 
-/** MON native staking on Monad Testnet - free faucet, single-step delegate tx, validator picker. */
+/** MON native staking on Monad mainnet - single-step delegate tx, 209 validators. */
 export const DEMO: DemoConfig = {
   key: 'monad-staking',
   label: 'MON Native Staking',
   protocol: 'StakeKit',
-  network: 'monad-testnet',
-  chainId: 10_143,
-  yieldId: 'monad-testnet-mon-native-staking',
+  network: 'monad',
+  chainId: 143,
+  yieldId: 'monad-mon-native-staking',
   tokenSymbol: 'MON',
   tokenDecimals: 18,
-  explorerUrl: 'https://testnet.monadexplorer.com',
-  faucetUrl: 'https://testnet.monad.xyz/',
+  explorerUrl: 'https://monadscan.com',
   requiresValidator: true,
   defaultAmount: '2',
 }
