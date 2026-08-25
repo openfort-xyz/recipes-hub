@@ -19,13 +19,17 @@ type Step = 'loading' | 'auth' | 'wallet' | 'dashboard'
 function useStep(): Step {
   const { isLoading } = useOpenfort()
   const { isAuthenticated } = useUser()
-  const { isConnected } = useAccount()
+  const { isConnected, status } = useAccount()
   const wallet = useEthereumEmbeddedWallet()
   const busy = wallet.status === 'fetching-wallets' || wallet.isConnecting
 
   if (isLoading) return 'loading'
   if (isAuthenticated && busy) return 'loading'
   if (!isAuthenticated) return 'auth'
+  // `getDefaultConfig` sets wagmi's `ssr: true`, so the first render reports
+  // `reconnecting` with `isConnected` false. Routing on that would flash the
+  // unlock screen over a wallet that is one tick from connecting.
+  if (status === 'reconnecting') return 'loading'
   if (!isConnected || wallet.activeWallet?.accountType !== ACCOUNT_TYPE) return 'wallet'
   return 'dashboard'
 }

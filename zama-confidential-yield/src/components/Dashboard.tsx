@@ -1,15 +1,13 @@
 import { useSignOut } from '@openfort/react'
-import { useEthereumEmbeddedWallet } from '@openfort/react/ethereum'
 import { type CSSProperties, useCallback, useEffect, useMemo, useState } from 'react'
-import { type EIP1193Provider, formatUnits } from 'viem'
+import { formatUnits } from 'viem'
+import { usePublicClient, useWalletClient } from 'wagmi'
 import { ADDRESSES, DECIMALS, FAUCET_URL, NETWORK } from '../contracts/addresses'
 import {
   type BatchKind,
   decryptHandles,
   type HandleRef,
-  makeClients,
   mintTestUsdc,
-  type Runtime,
   readEncryptedHandle,
   readUsdcBalance,
   shield,
@@ -18,6 +16,7 @@ import {
   vaultRedeem,
   vaultValueUsdc,
 } from '../zama/confidential'
+import { makeRuntime, type Runtime } from '../zama/sdk'
 import { BatchStatus } from './BatchStatus'
 import { chip, fontStack, ghostBtn, iosCard, monoStack, sectionLabel } from './styles'
 import { AmountAction, Spinner } from './ui'
@@ -35,14 +34,16 @@ type Pending = { key: string; kind: BatchKind; batchId: bigint; state: number }
 const STATE_LABEL = ['Open', 'Dispatched', 'Ready'] as const
 
 export function Dashboard() {
-  const wallet = useEthereumEmbeddedWallet()
   const { signOut } = useSignOut()
-  const account = wallet.activeWallet?.address as Hex | undefined
-  const provider =
-    'provider' in wallet ? (wallet.provider as EIP1193Provider | undefined) : undefined
+  // Both clients come from the wagmi config the Openfort connector lives in, so
+  // the wallet client is the embedded wallet and the public client reads from
+  // the same RPC. Zama's SDK takes plain viem clients — no provider plumbing.
+  const publicClient = usePublicClient()
+  const { data: walletClient } = useWalletClient()
+  const account = walletClient?.account.address
   const rt = useMemo<Runtime | null>(
-    () => (provider && account ? makeClients(provider, account) : null),
-    [provider, account]
+    () => (publicClient && walletClient ? makeRuntime(publicClient, walletClient) : null),
+    [publicClient, walletClient]
   )
 
   const [usdc, setUsdc] = useState<bigint | null>(null)

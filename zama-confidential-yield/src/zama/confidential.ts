@@ -1,17 +1,12 @@
-import { decodeEventLog, type EIP1193Provider, type Log, maxUint256, parseUnits } from 'viem'
+import { decodeEventLog, type Log, maxUint256, parseUnits } from 'viem'
 import { batcherAbi, confidentialWrapperAbi, erc20Abi, erc4626Abi } from '../contracts/abis'
 import { ADDRESSES, DECIMALS } from '../contracts/addresses'
-import { makeRuntime, type Runtime } from './sdk'
+import type { Runtime } from './sdk'
 
 type Hex = `0x${string}`
 
 /** csteakcUSDC wraps the 18-decimal clear vault share as 6 decimals → rate 10^12. */
 const SHARE_RATE = 10n ** 12n
-
-export type { Runtime }
-export function makeClients(provider: EIP1193Provider, account: Hex): Runtime {
-  return makeRuntime(provider, account)
-}
 
 // ── perf audit: log how long each phase takes, split by side ──────────────────
 // [perf] openfort.send:* = userOp submit + paymaster sponsorship (Openfort/4337)

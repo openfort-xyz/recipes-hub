@@ -70,13 +70,33 @@ Deposits/redeems are **batched**: your encrypted amount joins the current batch,
 operator settles it off-chain (`Open → Dispatched → Finalized`), then you `claim`. The UI
 surfaces each batch's status so you can claim when it's ready.
 
+### Headless Openfort
+
+The phone UI is this app's own — Openfort's modal never opens. `OpenfortProvider` takes a
+`walletConfig` and no `uiConfig`, and every step is a hook, following the
+[headless quickstart](https://github.com/openfort-xyz/openfort-react/tree/main/examples/quickstarts/headless):
+
+| Step | Hook | File |
+| ---- | ---- | ---- |
+| Sign in | `useEmailOtpAuth` | `screens/Auth.tsx` |
+| Create / unlock a wallet | `useEthereumEmbeddedWallet` → `create` / `setActive` | `screens/Wallets.tsx` |
+| Read + write the chain | `usePublicClient` / `useWalletClient` (wagmi) | `components/Dashboard.tsx` |
+
+`connectOnLogin: false` keeps the SDK from picking a wallet behind the login, so the
+passkey prompt only ever fires from the button that asks for it. Wallet actions resolve
+with `{ error }` rather than rejecting — branch on the result, don't wrap them in `try`.
+
+`OpenfortWagmiBridge` connects the embedded wallet as a wagmi connector, so the Zama SDK
+gets ordinary viem clients (`makeRuntime` in `zama/sdk.ts`) and nothing in the app handles
+an EIP-1193 provider directly.
+
 ## Project layout
 
 ```
 src/
-  openfort/   Providers.tsx (EOA/passkey + sponsorship), wagmi.ts
-  zama/       sdk.ts (ZamaSDK ← Openfort viem clients), confidential.ts (shield/unshield/deposit/redeem/claim/decrypt)
-  contracts/  addresses.ts (Sepolia + mainnet), abis.ts
+  openfort/   Providers.tsx (headless config: delegated account + sponsorship), wagmi.ts
+  zama/       sdk.ts (ZamaSDK ← wagmi's viem clients), confidential.ts (shield/unshield/deposit/redeem/claim/decrypt)
+  contracts/  addresses.ts (Sepolia + mainnet, RPC), abis.ts
   components/ PhoneFrame.tsx, Dashboard.tsx, BatchStatus.tsx, ui.tsx, styles.ts
   screens/    Auth.tsx (email OTP), Wallets.tsx (create/recover w/ passkey)
 ```

@@ -1,7 +1,6 @@
 import { RecoveryMethod, useUser } from '@openfort/react'
 import { useEthereumEmbeddedWallet } from '@openfort/react/ethereum'
 import { useMemo, useState } from 'react'
-import { useAccount } from 'wagmi'
 import { fontStack, ghostBtn, monoStack, primaryBtn } from '../components/styles'
 import { ACCOUNT_TYPE } from '../openfort/Providers'
 
@@ -20,29 +19,30 @@ export function Wallets() {
   const isConnecting = embedded.isConnecting
   const walletError = embedded.status === 'error' ? embedded.error : null
   const { user, isAuthenticated } = useUser()
-  const { isConnected } = useAccount()
   const [error, setError] = useState<string | null>(null)
 
   if (!activeWallet && isConnecting) return <p style={muted}>Recovering wallet with passkey…</p>
   if (embedded.status === 'fetching-wallets' || (!user && isAuthenticated))
     return <p style={muted}>Loading wallets…</p>
 
+  // Embedded-wallet actions resolve with `{ error }` instead of rejecting, so a
+  // declined passkey prompt lands here rather than in a catch block.
   const create = async () => {
     setError(null)
-    try {
-      await embedded.create({ accountType: ACCOUNT_TYPE, recoveryMethod: RecoveryMethod.PASSKEY })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Wallet creation failed')
-    }
+    const { error: failure } = await embedded.create({
+      accountType: ACCOUNT_TYPE,
+      recoveryMethod: RecoveryMethod.PASSKEY,
+    })
+    if (failure) setError(failure.shortMessage)
   }
 
   const recover = async (wallet: WalletEntry) => {
     setError(null)
-    try {
-      await embedded.setActive({ address: wallet.address, recoveryMethod: RecoveryMethod.PASSKEY })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Recovery failed')
-    }
+    const { error: failure } = await embedded.setActive({
+      address: wallet.address,
+      recoveryMethod: RecoveryMethod.PASSKEY,
+    })
+    if (failure) setError(failure.shortMessage)
   }
 
   const createBtn = (
@@ -70,51 +70,47 @@ export function Wallets() {
     )
   }
 
-  if (!isConnected || activeWallet?.accountType !== ACCOUNT_TYPE) {
-    return (
-      <div style={col}>
-        <h1 style={heading}>Unlock wallet</h1>
-        <p style={body}>Recover your wallet with its passkey.</p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {usable.map((wallet) => (
-            <div key={wallet.id + wallet.address} style={row}>
-              <div>
-                <p
-                  style={{ margin: 0, fontWeight: 600, fontFamily: monoStack, fontSize: '0.9rem' }}
-                >
-                  {truncate(wallet.address)}
-                </p>
-                <p
-                  style={{
-                    margin: '4px 0 0',
-                    fontSize: '0.74rem',
-                    color: 'var(--pd-ink-500)',
-                    fontFamily: fontStack,
-                  }}
-                >
-                  Passkey-secured
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={isConnecting}
-                onClick={() => recover(wallet)}
-                style={{ ...primaryBtn, fontSize: '0.85rem', opacity: isConnecting ? 0.6 : 1 }}
+  // App routes here only while no delegated wallet is connected, so this is the
+  // unlock list — the connected case never reaches this component.
+  return (
+    <div style={col}>
+      <h1 style={heading}>Unlock wallet</h1>
+      <p style={body}>Recover your wallet with its passkey.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {usable.map((wallet) => (
+          <div key={wallet.id + wallet.address} style={row}>
+            <div>
+              <p style={{ margin: 0, fontWeight: 600, fontFamily: monoStack, fontSize: '0.9rem' }}>
+                {truncate(wallet.address)}
+              </p>
+              <p
+                style={{
+                  margin: '4px 0 0',
+                  fontSize: '0.74rem',
+                  color: 'var(--pd-ink-500)',
+                  fontFamily: fontStack,
+                }}
               >
-                {wallet.isConnecting ? 'Unlocking…' : 'Unlock'}
-              </button>
+                Passkey-secured
+              </p>
             </div>
-          ))}
-        </div>
-        {(error || walletError) && <p style={errText}>{error || walletError}</p>}
-        <button type="button" disabled={isCreating} onClick={create} style={ghostBtn}>
-          Create a new wallet instead
-        </button>
+            <button
+              type="button"
+              disabled={isConnecting}
+              onClick={() => recover(wallet)}
+              style={{ ...primaryBtn, fontSize: '0.85rem', opacity: isConnecting ? 0.6 : 1 }}
+            >
+              {wallet.isConnecting ? 'Unlocking…' : 'Unlock'}
+            </button>
+          </div>
+        ))}
       </div>
-    )
-  }
-
-  return null
+      {(error || walletError) && <p style={errText}>{error || walletError}</p>}
+      <button type="button" disabled={isCreating} onClick={create} style={ghostBtn}>
+        Create a new wallet instead
+      </button>
+    </div>
+  )
 }
 
 const col = {
