@@ -162,6 +162,16 @@ export async function toCaliburSmartAccount({
   })
 }
 
+/** `maxPriorityFeePerGas must be at least 20501760 (current …)` → the figure and the field. */
+function requiredFee(error: unknown): { field: string; value: bigint } | null {
+  const message = error instanceof Error ? `${error.message}\n${error.cause ?? ''}` : String(error)
+  const match = message.match(/(maxPriorityFeePerGas|maxFeePerGas) must be at least (\d+)/)
+  return match?.[1] && match[2] ? { field: match[1], value: BigInt(match[2]) } : null
+}
+
+/** The floor tracks the base fee, so it can move again before the retry lands. */
+const withHeadroom = (value: bigint) => (value * 13n) / 10n
+
 export type SponsoredSender = ReturnType<typeof createSponsoredSender>
 
 export function createSponsoredSender({
@@ -196,18 +206,35 @@ export function createSponsoredSender({
      * EIP-7702 authorization the first time (before that the account has no code).
      */
     async send(calls: Call[], authorization?: unknown): Promise<Hex> {
-      // The bundler's floor sits above the chain's own suggestion, and the
-      // `pimlico_getUserOperationGasPrice` it points at isn't proxied. Overshoot.
       const fees = await client.estimateFeesPerGas()
-      const maxPriorityFeePerGas = fees.maxPriorityFeePerGas * 20n
-      const maxFeePerGas = fees.maxFeePerGas * 2n + maxPriorityFeePerGas
+      let maxPriorityFeePerGas = fees.maxPriorityFeePerGas * 20n
+      let maxFeePerGas = fees.maxFeePerGas * 2n + maxPriorityFeePerGas
 
-      const hash = await bundlerClient.sendUserOperation({
-        calls,
-        maxFeePerGas,
-        maxPriorityFeePerGas,
-        ...(authorization ? { authorization } : {}),
-      } as Parameters<typeof bundlerClient.sendUserOperation>[0])
+      // The bundler enforces a floor above the chain's own suggestion, moves it
+      // with the base fee, and points at a `pimlico_` method it doesn't proxy.
+      // It does name the figure it wants, so take it and retry — one round per
+      // field, plus headroom for the floor drifting between attempts.
+      let hash: Hex | undefined
+      for (let attempt = 0; attempt < 4 && !hash; attempt++) {
+        try {
+          hash = await bundlerClient.sendUserOperation({
+            calls,
+            maxFeePerGas,
+            maxPriorityFeePerGas,
+            ...(authorization ? { authorization } : {}),
+          } as Parameters<typeof bundlerClient.sendUserOperation>[0])
+        } catch (error) {
+          const required = requiredFee(error)
+          if (!required) throw error
+          if (required.field === 'maxPriorityFeePerGas') {
+            maxPriorityFeePerGas = withHeadroom(required.value)
+            if (maxFeePerGas < maxPriorityFeePerGas) maxFeePerGas = maxPriorityFeePerGas
+          } else {
+            maxFeePerGas = withHeadroom(required.value)
+          }
+        }
+      }
+      if (!hash) throw new Error('The bundler kept rejecting the gas price. Try again.')
 
       const receipt = await bundlerClient.waitForUserOperationReceipt({ hash })
       if (!receipt.success) throw new Error(`UserOperation reverted: ${hash}`)

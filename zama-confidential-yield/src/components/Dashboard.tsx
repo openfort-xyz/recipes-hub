@@ -1,8 +1,9 @@
 import { useSignOut } from '@openfort/react'
 import { type CSSProperties, useCallback, useEffect, useMemo, useState } from 'react'
 import { formatUnits } from 'viem'
-import { usePublicClient, useWalletClient } from 'wagmi'
+import { usePublicClient } from 'wagmi'
 import { ADDRESSES, DECIMALS, FAUCET_URL, GAS_FAUCET_URL, NETWORK } from '../contracts/addresses'
+import { useEmbeddedWalletClient } from '../openfort/useEmbeddedWalletClient'
 import { useSponsoredSender } from '../openfort/useSponsoredSender'
 import {
   type BatchKind,
@@ -46,7 +47,9 @@ export function Dashboard() {
   // the wallet client is the embedded wallet and the public client reads from
   // the same RPC. Zama's SDK takes plain viem clients — no provider plumbing.
   const publicClient = usePublicClient()
-  const { data: walletClient } = useWalletClient()
+  // The wallet client rides the active wallet's own provider, so the address it
+  // is pinned to always matches the one operations are built for.
+  const walletClient = useEmbeddedWalletClient()
   const account = walletClient?.account.address
   // Writes go out as sponsored UserOperations through Openfort's bundler, not
   // through the wallet client — see openfort/calibur.ts.
