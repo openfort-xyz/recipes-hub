@@ -264,6 +264,22 @@ export function claimBatch(rt: Runtime, kind: BatchKind, batchId: bigint) {
 
 export type BatchInfo = { batchId: bigint; state: number }
 
+/**
+ * 0 and 1 are Open and Dispatched. Everything from 2 up is settled and
+ * claimable — the batcher returns 3 for most settled batches on Sepolia, so the
+ * "0=Open 1=Dispatched 2=Finalized" comment in the integration reference is not
+ * the whole enum. Don't label a state we haven't seen; say what it is.
+ */
+export function batchStateLabel(state: number): string {
+  if (state === 0) return 'Open'
+  if (state === 1) return 'Dispatched'
+  if (state >= 2) return 'Ready to claim'
+  return `State ${state}`
+}
+
+/** Settled far enough that `claim` will pay out. */
+export const isBatchClaimable = (state: number) => state >= 2
+
 /** 0=Open, 1=Dispatched, 2=Finalized. */
 export async function batchInfo(rt: Runtime, kind: BatchKind, batchId: bigint): Promise<BatchInfo> {
   const state = await rt.publicClient.readContract({

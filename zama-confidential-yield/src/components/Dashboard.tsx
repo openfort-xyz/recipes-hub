@@ -1,13 +1,17 @@
 import { useSignOut } from '@openfort/react'
 import { type CSSProperties, useCallback, useEffect, useMemo, useState } from 'react'
 import { formatUnits } from 'viem'
-import { usePublicClient, useWalletClient } from 'wagmi'
+import { usePublicClient } from 'wagmi'
 import { ADDRESSES, DECIMALS, FAUCET_URL, GAS_FAUCET_URL, NETWORK } from '../contracts/addresses'
+import { useEmbeddedWalletClient } from '../openfort/useEmbeddedWalletClient'
 import { useSponsoredSender } from '../openfort/useSponsoredSender'
 import {
   type BatchKind,
+  batchInfo,
+  batchStateLabel,
   decryptHandles,
   type HandleRef,
+  isBatchClaimable,
   mintTestUsdc,
   readEncryptedHandle,
   readUsdcBalance,
@@ -32,7 +36,6 @@ const fmt = (v: bigint) =>
   })
 
 type Pending = { key: string; kind: BatchKind; batchId: bigint; state: number }
-const STATE_LABEL = ['Open', 'Dispatched', 'Ready'] as const
 
 const TABS = [
   { id: 'balance', icon: '💵', label: 'Balance' },
@@ -46,11 +49,13 @@ export function Dashboard() {
   // the wallet client is the embedded wallet and the public client reads from
   // the same RPC. Zama's SDK takes plain viem clients — no provider plumbing.
   const publicClient = usePublicClient()
-  const { data: walletClient } = useWalletClient()
+  // The wallet client rides the active wallet's own provider, so the address it
+  // is pinned to always matches the one operations are built for.
+  const walletClient = useEmbeddedWalletClient()
   const account = walletClient?.account.address
   // Writes go out as sponsored UserOperations through Openfort's bundler, not
   // through the wallet client — see openfort/calibur.ts.
-  const send = useSponsoredSender(publicClient, account)
+  const send = useSponsoredSender(publicClient)
   const rt = useMemo<Runtime | null>(
     () => (publicClient && walletClient ? makeRuntime(publicClient, walletClient, send) : null),
     [publicClient, walletClient, send]
@@ -101,6 +106,34 @@ export function Dashboard() {
     const id = setInterval(() => void refreshUsdc(), 10_000)
     return () => clearInterval(id)
   }, [refreshUsdc])
+
+  // An off-chain operator settles each batch, so the only way to notice is to
+  // ask. Without this a finished batch sits there reading "Open" until tapped.
+  // Keyed on the batch ids, not on `pending` itself, or writing a state back
+  // would restart the interval and poll in a loop.
+  const pendingKey = pending.map((b) => `${b.kind}:${b.batchId}`).join(',')
+  useEffect(() => {
+    if (!rt || !pendingKey) return
+    const batches = pendingKey.split(',').map((entry) => {
+      const [kind, id] = entry.split(':')
+      return { kind: kind as BatchKind, batchId: BigInt(id as string) }
+    })
+    const poll = async () => {
+      const states = await Promise.all(
+        batches.map((b) => batchInfo(rt, b.kind, b.batchId).catch(() => null))
+      )
+      setPending((rows) =>
+        rows.map((row) => {
+          const i = batches.findIndex((b) => b.kind === row.kind && b.batchId === row.batchId)
+          const state = i === -1 ? null : states[i]?.state
+          return state === undefined || state === null ? row : { ...row, state }
+        })
+      )
+    }
+    void poll()
+    const id = setInterval(() => void poll(), 30_000)
+    return () => clearInterval(id)
+  }, [rt, pendingKey])
 
   const getUsdc = async () => {
     if (!rt) return
@@ -404,11 +437,13 @@ export function Dashboard() {
                           margin: '2px 0 0',
                           fontFamily: fontStack,
                           fontSize: '0.72rem',
-                          color: b.state >= 2 ? 'var(--pd-success)' : 'var(--pd-ink-400)',
+                          color: isBatchClaimable(b.state)
+                            ? 'var(--pd-success)'
+                            : 'var(--pd-ink-400)',
                         }}
                       >
-                        {STATE_LABEL[b.state] ?? 'Open'}
-                        {b.state >= 2 ? ' · tap to claim' : ' · tap for status'}
+                        {batchStateLabel(b.state)}
+                        {isBatchClaimable(b.state) ? ' · tap to claim' : ' · tap for status'}
                       </p>
                     </div>
                     <span style={{ color: 'var(--pd-ink-400)', fontSize: '1.2rem' }}>›</span>
