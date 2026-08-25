@@ -292,10 +292,9 @@ export function Dashboard() {
           <section>
             <p style={sectionLabel}>Shielded</p>
             <div style={iosCard}>
-              <Row
-                label="cUSDC"
-                sub="confidential"
-                value={revealed ? `$${fmt(revealed.cusdc)}` : '••••'}
+              <BalancePair
+                publicValue={`$${fmt(usdc)}`}
+                shieldedValue={revealed ? `$${fmt(revealed.cusdc)}` : '••••'}
                 locked={!revealed}
               />
               <Divider />
@@ -334,6 +333,12 @@ export function Dashboard() {
           <section>
             <p style={sectionLabel}>Earn · private yield</p>
             <div style={iosCard}>
+              <BalancePair
+                publicValue={`$${fmt(usdc)}`}
+                shieldedValue={revealed ? `$${fmt(revealed.cusdc)}` : '••••'}
+                locked={!revealed}
+              />
+              <Divider />
               <Row
                 label="In vault"
                 sub="cUSDC + yield"
@@ -464,6 +469,33 @@ function TabBar({
   )
 }
 
+/** Public and shielded side by side, so neither section hides half the picture. */
+function BalancePair({
+  publicValue,
+  shieldedValue,
+  locked,
+}: {
+  publicValue: string
+  shieldedValue: string
+  locked?: boolean
+}) {
+  return (
+    <div style={pairRow}>
+      <div style={pairCell}>
+        <p style={pairLabel}>USDC · public</p>
+        <span style={pairValue}>{publicValue}</span>
+      </div>
+      <div style={pairSplit} />
+      <div style={pairCell}>
+        <p style={pairLabel}>cUSDC · shielded</p>
+        <span style={{ ...pairValue, color: locked ? 'var(--pd-ink-400)' : 'var(--pd-private)' }}>
+          {locked ? `🔒 ${shieldedValue}` : shieldedValue}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 function Row({
   label,
   sub,
@@ -574,6 +606,27 @@ const tabBadge: CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
+}
+const pairRow: CSSProperties = {
+  display: 'flex',
+  alignItems: 'stretch',
+  gap: 12,
+  paddingBottom: 4,
+}
+const pairCell: CSSProperties = { flex: 1, minWidth: 0 }
+const pairSplit: CSSProperties = { width: 1, background: 'var(--demo-border)' }
+const pairLabel: CSSProperties = {
+  margin: '0 0 3px',
+  fontFamily: fontStack,
+  fontSize: '0.7rem',
+  fontWeight: 600,
+  color: 'var(--pd-ink-400)',
+}
+const pairValue: CSSProperties = {
+  fontFamily: monoStack,
+  fontWeight: 700,
+  fontSize: '1.1rem',
+  letterSpacing: '-0.01em',
 }
 const hero: CSSProperties = {
   borderRadius: 22,
