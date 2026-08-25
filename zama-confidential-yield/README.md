@@ -2,8 +2,26 @@
 
 Shield USDC into Zama's confidential token (**cUSDC**) and earn private yield in the
 **Steakhouse Confidential** Morpho vault, from an Openfort embedded wallet. Balances,
-deposits and yield stay **encrypted** on-chain. The wallet is an **EOA + passkey**,
-EIP-7702-delegated so an Openfort **paymaster** sponsors every transaction.
+deposits and yield stay **encrypted** on-chain.
+
+The wallet is an **EOA + passkey**. It has to be an EOA: Zama's relayer `ecrecover`s the
+decryption permit against your address, so a 4337 smart account would decrypt nothing.
+Set `VITE_OPENFORT_FEE_SPONSORSHIP_ID` and that same EOA is EIP-7702-delegated so an
+Openfort **paymaster** sponsors every transaction; leave it empty and the EOA pays its
+own gas from a Sepolia faucet.
+
+Writes are submitted as **sponsored UserOperations** through Openfort's bundler and
+paymaster (`api.openfort.io/rpc/<chainId>`) rather than through `POST /v1/transaction_intents`.
+The delegated account's first write has to carry an EIP-7702 authorization, and building
+that server-side takes ~30s while the edge cuts the request at 15s — so the account never
+delegates and every sponsored write fails as `Transaction creation failed … Network Error`.
+Built client-side it takes ~1.4s, and the delegation rides along in the same operation.
+
+It delegates to **Calibur**, the implementation Openfort uses natively, so once the first
+operation lands the SDK's own delegation check passes and its normal send path works too.
+See [`src/openfort/calibur.ts`](src/openfort/calibur.ts) — EntryPoint v0.9, callData is
+`executeUserOp` ++ `abi.encode(BatchedCall)`, and the signature is wrapped as
+`abi.encode(ROOT_KEY_HASH, signature, hookData)`.
 
 Runs on **Ethereum Sepolia** by default (works with Openfort test keys); set
 `VITE_NETWORK=mainnet` to point at the live mainnet deployment.
@@ -39,7 +57,7 @@ Copy `.env.example` to `.env` and fill it in:
 VITE_NETWORK=sepolia
 VITE_OPENFORT_PUBLISHABLE_KEY=pk_test_...
 VITE_OPENFORT_SHIELD_KEY=...
-VITE_OPENFORT_FEE_SPONSORSHIP_ID=pol_...   # Sepolia policy → sponsored (gasless) txs
+VITE_OPENFORT_FEE_SPONSORSHIP_ID=          # empty → self-paid EOA; pol_… → gasless 7702
 VITE_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
 ```
 
@@ -70,13 +88,34 @@ Deposits/redeems are **batched**: your encrypted amount joins the current batch,
 operator settles it off-chain (`Open → Dispatched → Finalized`), then you `claim`. The UI
 surfaces each batch's status so you can claim when it's ready.
 
+### Headless Openfort
+
+The phone UI is this app's own — Openfort's modal never opens. `OpenfortProvider` takes a
+`walletConfig` and no `uiConfig`, and every step is a hook, following the
+[headless quickstart](https://github.com/openfort-xyz/openfort-react/tree/main/examples/quickstarts/headless):
+
+| Step | Hook | File |
+| ---- | ---- | ---- |
+| Sign in | `useEmailOtpAuth` | `screens/Auth.tsx` |
+| Create / unlock a wallet | `useEthereumEmbeddedWallet` → `create` / `setActive` | `screens/Wallets.tsx` |
+| Read the chain | `usePublicClient` (wagmi) | `components/Dashboard.tsx` |
+| Write the chain, sponsored | `use7702Authorization` + viem `bundlerClient` | `openfort/calibur.ts` |
+
+`connectOnLogin: false` keeps the SDK from picking a wallet behind the login, so the
+passkey prompt only ever fires from the button that asks for it. Wallet actions resolve
+with `{ error }` rather than rejecting — branch on the result, don't wrap them in `try`.
+
+`OpenfortWagmiBridge` connects the embedded wallet as a wagmi connector, so the Zama SDK
+gets ordinary viem clients (`makeRuntime` in `zama/sdk.ts`) and nothing in the app handles
+an EIP-1193 provider directly.
+
 ## Project layout
 
 ```
 src/
-  openfort/   Providers.tsx (EOA/passkey + sponsorship), wagmi.ts
-  zama/       sdk.ts (ZamaSDK ← Openfort viem clients), confidential.ts (shield/unshield/deposit/redeem/claim/decrypt)
-  contracts/  addresses.ts (Sepolia + mainnet), abis.ts
+  openfort/   Providers.tsx (headless config: delegated account + sponsorship), wagmi.ts
+  zama/       sdk.ts (ZamaSDK ← wagmi's viem clients), confidential.ts (shield/unshield/deposit/redeem/claim/decrypt)
+  contracts/  addresses.ts (Sepolia + mainnet, RPC), abis.ts
   components/ PhoneFrame.tsx, Dashboard.tsx, BatchStatus.tsx, ui.tsx, styles.ts
   screens/    Auth.tsx (email OTP), Wallets.tsx (create/recover w/ passkey)
 ```

@@ -9,3 +9,7 @@ dist-ssr
 *.log
 .vite
 .gstack/
+
+# one-off local ops scripts (not part of the recipe)
+*.local.mjs
+relayer.key

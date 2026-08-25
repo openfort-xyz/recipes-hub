@@ -1,18 +1,17 @@
 import { getDefaultConfig } from '@openfort/react/wagmi'
 import { createConfig, http } from 'wagmi'
-import { CHAIN } from '../contracts/addresses'
+import { CHAIN, RPC_URL } from '../contracts/addresses'
 
-const RPC_URL = import.meta.env.VITE_RPC_URL
-
+/**
+ * `getDefaultConfig` registers Openfort's embedded-wallet connector, which is the
+ * only connector this app uses — `OpenfortWagmiBridge` connects it after the
+ * wallet is unlocked, and every read/write below goes through wagmi's viem
+ * clients. No WalletConnect project id: there is no connector picker to show it in.
+ */
 export const wagmiConfig = createConfig(
   getDefaultConfig({
     appName: 'Openfort · Confidential USDC',
     chains: [CHAIN],
-    walletConnectProjectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID,
-    transports: {
-      // Falls back to the chain's default RPC if VITE_RPC_URL is unset, but the
-      // Zama relayer SDK is flaky on public RPCs — set your own.
-      [CHAIN.id]: http(RPC_URL),
-    },
+    transports: { [CHAIN.id]: http(RPC_URL) },
   })
 )

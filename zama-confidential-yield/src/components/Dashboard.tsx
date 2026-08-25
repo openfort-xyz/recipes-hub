@@ -1,15 +1,14 @@
 import { useSignOut } from '@openfort/react'
-import { useEthereumEmbeddedWallet } from '@openfort/react/ethereum'
 import { type CSSProperties, useCallback, useEffect, useMemo, useState } from 'react'
-import { type EIP1193Provider, formatUnits } from 'viem'
-import { ADDRESSES, DECIMALS, FAUCET_URL, NETWORK } from '../contracts/addresses'
+import { formatUnits } from 'viem'
+import { usePublicClient, useWalletClient } from 'wagmi'
+import { ADDRESSES, DECIMALS, FAUCET_URL, GAS_FAUCET_URL, NETWORK } from '../contracts/addresses'
+import { useSponsoredSender } from '../openfort/useSponsoredSender'
 import {
   type BatchKind,
   decryptHandles,
   type HandleRef,
-  makeClients,
   mintTestUsdc,
-  type Runtime,
   readEncryptedHandle,
   readUsdcBalance,
   shield,
@@ -18,6 +17,7 @@ import {
   vaultRedeem,
   vaultValueUsdc,
 } from '../zama/confidential'
+import { makeRuntime, type Runtime } from '../zama/sdk'
 import { BatchStatus } from './BatchStatus'
 import { chip, fontStack, ghostBtn, iosCard, monoStack, sectionLabel } from './styles'
 import { AmountAction, Spinner } from './ui'
@@ -34,15 +34,26 @@ const fmt = (v: bigint) =>
 type Pending = { key: string; kind: BatchKind; batchId: bigint; state: number }
 const STATE_LABEL = ['Open', 'Dispatched', 'Ready'] as const
 
+const TABS = [
+  { id: 'balance', icon: '💵', label: 'Balance' },
+  { id: 'earn', icon: '📈', label: 'Earn' },
+] as const
+type TabId = (typeof TABS)[number]['id']
+
 export function Dashboard() {
-  const wallet = useEthereumEmbeddedWallet()
   const { signOut } = useSignOut()
-  const account = wallet.activeWallet?.address as Hex | undefined
-  const provider =
-    'provider' in wallet ? (wallet.provider as EIP1193Provider | undefined) : undefined
+  // Both clients come from the wagmi config the Openfort connector lives in, so
+  // the wallet client is the embedded wallet and the public client reads from
+  // the same RPC. Zama's SDK takes plain viem clients — no provider plumbing.
+  const publicClient = usePublicClient()
+  const { data: walletClient } = useWalletClient()
+  const account = walletClient?.account.address
+  // Writes go out as sponsored UserOperations through Openfort's bundler, not
+  // through the wallet client — see openfort/calibur.ts.
+  const send = useSponsoredSender(publicClient, account)
   const rt = useMemo<Runtime | null>(
-    () => (provider && account ? makeClients(provider, account) : null),
-    [provider, account]
+    () => (publicClient && walletClient ? makeRuntime(publicClient, walletClient, send) : null),
+    [publicClient, walletClient, send]
   )
 
   const [usdc, setUsdc] = useState<bigint | null>(null)
@@ -54,6 +65,7 @@ export function Dashboard() {
   const [copied, setCopied] = useState(false)
   const [minting, setMinting] = useState(false)
   const [viewKey, setViewKey] = useState<string | null>(null)
+  const [tab, setTab] = useState<TabId>('balance')
 
   const copyAddress = async () => {
     if (!account) return
@@ -133,6 +145,25 @@ export function Dashboard() {
 
   if (!rt || usdc === null) return <Spinner label="Loading balances…" />
 
+  // Both tabs mask values behind the same decryption, so both get the toggle.
+  const revealBlock = (
+    <>
+      <button
+        type="button"
+        onClick={revealed ? () => setRevealed(null) : reveal}
+        disabled={revealing}
+        style={{ ...revealBtn, opacity: revealing ? 0.6 : 1 }}
+      >
+        {revealing
+          ? 'Decrypting…'
+          : revealed
+            ? '🙈  Hide private balances'
+            : '🔓  Reveal private balances'}
+      </button>
+      {err && <p style={errStyle}>{err}</p>}
+    </>
+  )
+
   const viewed = viewKey ? (pending.find((p) => p.key === viewKey) ?? null) : null
   if (viewed) {
     return (
@@ -153,7 +184,7 @@ export function Dashboard() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18, paddingBottom: 74 }}>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h1
           style={{
@@ -183,184 +214,210 @@ export function Dashboard() {
         </div>
       </header>
 
-      {/* Hero — public USDC */}
-      <div style={hero}>
-        <span style={{ fontFamily: fontStack, fontSize: '0.78rem', opacity: 0.7 }}>
-          USDC · Available
-        </span>
-        <div
-          style={{
-            fontFamily: fontStack,
-            fontWeight: 800,
-            fontSize: '2.6rem',
-            letterSpacing: '-0.03em',
-            lineHeight: 1.1,
-          }}
-        >
-          ${fmt(usdc)}
-        </div>
-        <div style={heroActions}>
-          <button type="button" onClick={copyAddress} style={heroPill} title="Copy wallet address">
-            {copied ? (
-              '✓ Copied'
-            ) : (
-              <>
-                <span style={{ fontFamily: monoStack }}>
-                  {account?.slice(0, 6)}…{account?.slice(-4)}
-                </span>
-                <span aria-hidden>⧉</span>
-              </>
-            )}
-          </button>
-          {NETWORK === 'sepolia' ? (
-            <button
-              type="button"
-              onClick={getUsdc}
-              disabled={minting}
-              style={{ ...heroPill, opacity: minting ? 0.6 : 1 }}
-              title="Mint 100 test USDC to this wallet"
+      {tab === 'balance' && (
+        <>
+          {/* Hero — public USDC */}
+          <div style={hero}>
+            <span style={{ fontFamily: fontStack, fontSize: '0.78rem', opacity: 0.7 }}>
+              USDC · Available
+            </span>
+            <div
+              style={{
+                fontFamily: fontStack,
+                fontWeight: 800,
+                fontSize: '2.6rem',
+                letterSpacing: '-0.03em',
+                lineHeight: 1.1,
+              }}
             >
-              {minting ? 'Minting…' : '＋ Get test USDC'}
-            </button>
-          ) : (
-            <a
-              href={FAUCET_URL}
-              target="_blank"
-              rel="noreferrer"
-              style={heroPill}
-              title="Circle USDC faucet"
-            >
-              Get USDC ↗
-            </a>
-          )}
-        </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={revealed ? () => setRevealed(null) : reveal}
-        disabled={revealing}
-        style={{ ...revealBtn, opacity: revealing ? 0.6 : 1 }}
-      >
-        {revealing
-          ? 'Decrypting…'
-          : revealed
-            ? '🙈  Hide private balances'
-            : '🔓  Reveal private balances'}
-      </button>
-      {err && <p style={errStyle}>{err}</p>}
-
-      {/* Shielded cUSDC */}
-      <section>
-        <p style={sectionLabel}>Shielded</p>
-        <div style={iosCard}>
-          <Row
-            label="cUSDC"
-            sub="confidential"
-            value={revealed ? `$${fmt(revealed.cusdc)}` : '••••'}
-            locked={!revealed}
-          />
-          <Divider />
-          <p style={hint}>
-            Wrap public USDC into encrypted cUSDC and back. The shield amount is visible; balances
-            stay private.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <AmountAction
-              buttonText="Shield"
-              unit="USDC"
-              onSubmit={async (a) => {
-                await shield(rt, a)
-                return after('Shielded into cUSDC.')()
-              }}
-            />
-            <AmountAction
-              buttonText="Unshield"
-              unit="cUSDC"
-              onSubmit={async (a) => {
-                await unshield(rt, a)
-                return after('Unshielded to USDC.')()
-              }}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Earn — confidential vault */}
-      <section>
-        <p style={sectionLabel}>Earn · private yield</p>
-        <div style={iosCard}>
-          <Row
-            label="In vault"
-            sub="cUSDC + yield"
-            value={revealed ? `$${fmt(revealed.vaultUsdc)}` : '••••'}
-            locked={!revealed}
-            badge="~4% APY"
-          />
-          <Divider />
-          <p style={hint}>
-            Deposit cUSDC to earn ~4% privately; your position shows in cUSDC and grows as the vault
-            earns. (Internally it's an ERC-4626 vault that issues appreciating{' '}
-            <strong>shares</strong> — the value above already converts them back to cUSDC.) Deposits
-            join a <strong>batch</strong>; tap a pending batch below to claim once it settles.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <AmountAction
-              buttonText="Deposit"
-              unit="cUSDC"
-              onSubmit={async (a) => {
-                const id = await vaultDeposit(rt, a)
-                addBatch('deposit', id)
-                return after(`Joined deposit batch #${id}.`)()
-              }}
-            />
-            <AmountAction
-              buttonText="Redeem"
-              unit="shares"
-              onSubmit={async (a) => {
-                const id = await vaultRedeem(rt, a)
-                addBatch('redeem', id)
-                return after(`Joined redeem batch #${id}.`)()
-              }}
-            />
-          </div>
-        </div>
-      </section>
-
-      {pending.length > 0 && (
-        <section>
-          <p style={sectionLabel}>Pending batches</p>
-          <div style={{ ...iosCard, padding: 6 }}>
-            {pending.map((b) => (
-              <button key={b.key} type="button" onClick={() => setViewKey(b.key)} style={batchRow}>
-                <div style={{ textAlign: 'left' }}>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontFamily: fontStack,
-                      fontWeight: 600,
-                      fontSize: '0.85rem',
-                    }}
-                  >
-                    {b.kind === 'deposit' ? 'Deposit' : 'Redeem'} batch #{b.batchId.toString()}
-                  </p>
-                  <p
-                    style={{
-                      margin: '2px 0 0',
-                      fontFamily: fontStack,
-                      fontSize: '0.72rem',
-                      color: b.state >= 2 ? 'var(--pd-success)' : 'var(--pd-ink-400)',
-                    }}
-                  >
-                    {STATE_LABEL[b.state] ?? 'Open'}
-                    {b.state >= 2 ? ' · tap to claim' : ' · tap for status'}
-                  </p>
-                </div>
-                <span style={{ color: 'var(--pd-ink-400)', fontSize: '1.2rem' }}>›</span>
+              ${fmt(usdc)}
+            </div>
+            <div style={heroActions}>
+              <button
+                type="button"
+                onClick={copyAddress}
+                style={heroPill}
+                title="Copy wallet address"
+              >
+                {copied ? (
+                  '✓ Copied'
+                ) : (
+                  <>
+                    <span style={{ fontFamily: monoStack }}>
+                      {account?.slice(0, 6)}…{account?.slice(-4)}
+                    </span>
+                    <span aria-hidden>⧉</span>
+                  </>
+                )}
               </button>
-            ))}
+              {NETWORK === 'sepolia' ? (
+                <button
+                  type="button"
+                  onClick={getUsdc}
+                  disabled={minting}
+                  style={{ ...heroPill, opacity: minting ? 0.6 : 1 }}
+                  title="Mint 100 test USDC to this wallet"
+                >
+                  {minting ? 'Minting…' : '＋ Get test USDC'}
+                </button>
+              ) : (
+                <a
+                  href={FAUCET_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={heroPill}
+                  title="Circle USDC faucet"
+                >
+                  Get USDC ↗
+                </a>
+              )}
+              {/* Unsponsored: every action costs gas, so surface the ETH faucet. */}
+              {!GASLESS && NETWORK === 'sepolia' && (
+                <a
+                  href={GAS_FAUCET_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={heroPill}
+                  title="Sepolia ETH for gas"
+                >
+                  ⛽ Get ETH ↗
+                </a>
+              )}
+            </div>
           </div>
-        </section>
+
+          {revealBlock}
+
+          {/* Shielded cUSDC */}
+          <section>
+            <p style={sectionLabel}>Shielded</p>
+            <div style={iosCard}>
+              <BalancePair
+                publicValue={`$${fmt(usdc)}`}
+                shieldedValue={revealed ? `$${fmt(revealed.cusdc)}` : '••••'}
+                locked={!revealed}
+              />
+              <Divider />
+              <p style={hint}>
+                Wrap public USDC into encrypted cUSDC and back. The shield amount is visible;
+                balances stay private.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <AmountAction
+                  buttonText="Shield"
+                  unit="USDC"
+                  onSubmit={async (a) => {
+                    await shield(rt, a)
+                    return after('Shielded into cUSDC.')()
+                  }}
+                />
+                <AmountAction
+                  buttonText="Unshield"
+                  unit="cUSDC"
+                  onSubmit={async (a) => {
+                    await unshield(rt, a)
+                    return after('Unshielded to USDC.')()
+                  }}
+                />
+              </div>
+            </div>
+          </section>
+        </>
+      )}
+
+      {tab === 'earn' && (
+        <>
+          {revealBlock}
+
+          {/* Earn — confidential vault */}
+          <section>
+            <p style={sectionLabel}>Earn · private yield</p>
+            <div style={iosCard}>
+              <BalancePair
+                publicValue={`$${fmt(usdc)}`}
+                shieldedValue={revealed ? `$${fmt(revealed.cusdc)}` : '••••'}
+                locked={!revealed}
+              />
+              <Divider />
+              <Row
+                label="In vault"
+                sub="cUSDC + yield"
+                value={revealed ? `$${fmt(revealed.vaultUsdc)}` : '••••'}
+                locked={!revealed}
+                badge="~4% APY"
+              />
+              <Divider />
+              <p style={hint}>
+                Deposit cUSDC to earn ~4% privately; your position shows in cUSDC and grows as the
+                vault earns. (Internally it's an ERC-4626 vault that issues appreciating{' '}
+                <strong>shares</strong> — the value above already converts them back to cUSDC.)
+                Deposits join a <strong>batch</strong>; tap a pending batch below to claim once it
+                settles.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <AmountAction
+                  buttonText="Deposit"
+                  unit="cUSDC"
+                  onSubmit={async (a) => {
+                    const id = await vaultDeposit(rt, a)
+                    addBatch('deposit', id)
+                    return after(`Joined deposit batch #${id}.`)()
+                  }}
+                />
+                <AmountAction
+                  buttonText="Redeem"
+                  unit="shares"
+                  onSubmit={async (a) => {
+                    const id = await vaultRedeem(rt, a)
+                    addBatch('redeem', id)
+                    return after(`Joined redeem batch #${id}.`)()
+                  }}
+                />
+              </div>
+            </div>
+          </section>
+
+          {pending.length > 0 && (
+            <section>
+              <p style={sectionLabel}>Pending batches</p>
+              <div style={{ ...iosCard, padding: 6 }}>
+                {pending.map((b) => (
+                  <button
+                    key={b.key}
+                    type="button"
+                    onClick={() => setViewKey(b.key)}
+                    style={batchRow}
+                  >
+                    <div style={{ textAlign: 'left' }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontFamily: fontStack,
+                          fontWeight: 600,
+                          fontSize: '0.85rem',
+                        }}
+                      >
+                        {b.kind === 'deposit' ? 'Deposit' : 'Redeem'} batch #{b.batchId.toString()}
+                      </p>
+                      <p
+                        style={{
+                          margin: '2px 0 0',
+                          fontFamily: fontStack,
+                          fontSize: '0.72rem',
+                          color: b.state >= 2 ? 'var(--pd-success)' : 'var(--pd-ink-400)',
+                        }}
+                      >
+                        {STATE_LABEL[b.state] ?? 'Open'}
+                        {b.state >= 2 ? ' · tap to claim' : ' · tap for status'}
+                      </p>
+                    </div>
+                    <span style={{ color: 'var(--pd-ink-400)', fontSize: '1.2rem' }}>›</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+        </>
       )}
 
       <footer style={{ textAlign: 'center', padding: '4px 0 8px' }}>
@@ -368,6 +425,73 @@ export function Dashboard() {
           Openfort wallet · Zama cUSDC · Ethereum {NETWORK === 'mainnet' ? 'mainnet' : 'Sepolia'}
         </span>
       </footer>
+
+      <TabBar tab={tab} onTab={setTab} pending={pending.length} />
+    </div>
+  )
+}
+
+/**
+ * Floating iOS-style tab bar. `PhoneFrame`'s screen is the nearest positioned
+ * ancestor and the scroll container is inside it, so `position: absolute` pins
+ * the bar to the phone's bottom edge instead of scrolling away with the content.
+ */
+function TabBar({
+  tab,
+  onTab,
+  pending,
+}: {
+  tab: TabId
+  onTab: (tab: TabId) => void
+  pending: number
+}) {
+  return (
+    <nav style={tabBar}>
+      {TABS.map(({ id, icon, label }) => {
+        const active = tab === id
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onTab(id)}
+            style={{ ...tabItem, ...(active ? tabItemActive : null) }}
+            aria-current={active ? 'page' : undefined}
+          >
+            <span style={{ fontSize: '1.05rem', lineHeight: 1 }} aria-hidden>
+              {icon}
+            </span>
+            <span>{label}</span>
+            {id === 'earn' && pending > 0 && <span style={tabBadge}>{pending}</span>}
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
+
+/** Public and shielded side by side, so neither section hides half the picture. */
+function BalancePair({
+  publicValue,
+  shieldedValue,
+  locked,
+}: {
+  publicValue: string
+  shieldedValue: string
+  locked?: boolean
+}) {
+  return (
+    <div style={pairRow}>
+      <div style={pairCell}>
+        <p style={pairLabel}>USDC · public</p>
+        <span style={pairValue}>{publicValue}</span>
+      </div>
+      <div style={pairSplit} />
+      <div style={pairCell}>
+        <p style={pairLabel}>cUSDC · shielded</p>
+        <span style={{ ...pairValue, color: locked ? 'var(--pd-ink-400)' : 'var(--pd-private)' }}>
+          {locked ? `🔒 ${shieldedValue}` : shieldedValue}
+        </span>
+      </div>
     </div>
   )
 }
@@ -430,6 +554,80 @@ const Divider = () => (
   <div style={{ height: 1, background: 'var(--demo-border)', margin: '12px 0' }} />
 )
 
+const tabBar: CSSProperties = {
+  position: 'absolute',
+  left: 16,
+  right: 16,
+  bottom: 14,
+  zIndex: 15,
+  display: 'grid',
+  gridAutoFlow: 'column',
+  gridAutoColumns: '1fr',
+  gap: 4,
+  padding: 5,
+  borderRadius: 999,
+  background: 'color-mix(in srgb, var(--pd-surface) 82%, transparent)',
+  backdropFilter: 'blur(20px) saturate(180%)',
+  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+  border: '1px solid var(--demo-border)',
+  boxShadow: '0 10px 28px rgba(15,23,42,.16)',
+}
+const tabItem: CSSProperties = {
+  position: 'relative',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 7,
+  padding: '9px 12px',
+  borderRadius: 999,
+  border: 'none',
+  background: 'none',
+  color: 'var(--pd-ink-500)',
+  fontFamily: fontStack,
+  fontSize: '0.82rem',
+  fontWeight: 600,
+  cursor: 'pointer',
+  transition: 'background .18s ease, color .18s ease',
+}
+const tabItemActive: CSSProperties = {
+  background: 'var(--pd-surface-muted)',
+  color: 'var(--pd-ink-900)',
+}
+const tabBadge: CSSProperties = {
+  minWidth: 17,
+  height: 17,
+  padding: '0 5px',
+  borderRadius: 999,
+  background: 'var(--pd-brand)',
+  color: '#fff',
+  fontFamily: fontStack,
+  fontSize: '0.64rem',
+  fontWeight: 700,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+}
+const pairRow: CSSProperties = {
+  display: 'flex',
+  alignItems: 'stretch',
+  gap: 12,
+  paddingBottom: 4,
+}
+const pairCell: CSSProperties = { flex: 1, minWidth: 0 }
+const pairSplit: CSSProperties = { width: 1, background: 'var(--demo-border)' }
+const pairLabel: CSSProperties = {
+  margin: '0 0 3px',
+  fontFamily: fontStack,
+  fontSize: '0.7rem',
+  fontWeight: 600,
+  color: 'var(--pd-ink-400)',
+}
+const pairValue: CSSProperties = {
+  fontFamily: monoStack,
+  fontWeight: 700,
+  fontSize: '1.1rem',
+  letterSpacing: '-0.01em',
+}
 const hero: CSSProperties = {
   borderRadius: 22,
   padding: '20px 22px',

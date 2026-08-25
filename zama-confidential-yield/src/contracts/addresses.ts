@@ -48,5 +48,19 @@ export const CHAIN = ACTIVE.viemChain
 export const CHAIN_ID = ACTIVE.viemChain.id
 export const ADDRESSES = ACTIVE.addresses
 export const DECIMALS = 6
+
+/**
+ * One RPC endpoint for the whole app: wagmi's transport, the Openfort embedded
+ * provider (`walletConfig.ethereum.rpcUrls`) and the Zama SDK's FHE chain all
+ * read it, so a write and the read that confirms it never hit different nodes.
+ * The chain's public default is a fallback — set `VITE_RPC_URL` for anything
+ * real, the Zama relayer is flaky behind rate-limited public RPCs.
+ */
+export const RPC_URL: string =
+  import.meta.env.VITE_RPC_URL || ACTIVE.viemChain.rpcUrls.default.http[0]
+
 /** Circle's testnet USDC faucet (Sepolia); harmless on mainnet. */
 export const FAUCET_URL = 'https://faucet.circle.com'
+
+/** Sepolia ETH for gas — only needed when transactions aren't sponsored. */
+export const GAS_FAUCET_URL = 'https://cloud.google.com/application/web3/faucet/ethereum/sepolia'

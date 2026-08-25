@@ -6,9 +6,9 @@ import {
   batchInfo,
   claimBatch,
   decryptHandles,
-  type Runtime,
   readBatchPosition,
 } from '../zama/confidential'
+import type { Runtime } from '../zama/sdk'
 import { fontStack, ghostBtn, monoStack, primaryBtn } from './styles'
 
 type Batch = { kind: BatchKind; batchId: bigint; state: number }
