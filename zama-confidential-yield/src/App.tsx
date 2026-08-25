@@ -19,7 +19,7 @@ type Step = 'loading' | 'auth' | 'wallet' | 'dashboard'
 function useStep(): Step {
   const { isLoading } = useOpenfort()
   const { isAuthenticated } = useUser()
-  const { isConnected, status } = useAccount()
+  const { address, isConnected, status } = useAccount()
   const wallet = useEthereumEmbeddedWallet()
   const busy = wallet.status === 'fetching-wallets' || wallet.isConnecting
 
@@ -31,6 +31,14 @@ function useStep(): Step {
   // unlock screen over a wallet that is one tick from connecting.
   if (status === 'reconnecting') return 'loading'
   if (!isConnected || wallet.activeWallet?.accountType !== ACCOUNT_TYPE) return 'wallet'
+  // The embedded provider pins itself to one address and rejects every request
+  // once the active wallet moves on ("The active wallet changed before the
+  // operation could run"). Send them back to pick a wallet rather than letting
+  // that surface from inside a decryption.
+  const signerAddress = wallet.status === 'connected' ? wallet.address : undefined
+  if (address && signerAddress && address.toLowerCase() !== signerAddress.toLowerCase()) {
+    return 'wallet'
+  }
   return 'dashboard'
 }
 

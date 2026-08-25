@@ -50,7 +50,7 @@ export function Dashboard() {
   const account = walletClient?.account.address
   // Writes go out as sponsored UserOperations through Openfort's bundler, not
   // through the wallet client — see openfort/calibur.ts.
-  const send = useSponsoredSender(publicClient, account)
+  const send = useSponsoredSender(publicClient)
   const rt = useMemo<Runtime | null>(
     () => (publicClient && walletClient ? makeRuntime(publicClient, walletClient, send) : null),
     [publicClient, walletClient, send]
