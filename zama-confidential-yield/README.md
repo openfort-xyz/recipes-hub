@@ -2,8 +2,18 @@
 
 Shield USDC into Zama's confidential token (**cUSDC**) and earn private yield in the
 **Steakhouse Confidential** Morpho vault, from an Openfort embedded wallet. Balances,
-deposits and yield stay **encrypted** on-chain. The wallet is an **EOA + passkey**,
-EIP-7702-delegated so an Openfort **paymaster** sponsors every transaction.
+deposits and yield stay **encrypted** on-chain.
+
+The wallet is an **EOA + passkey**. It has to be an EOA: Zama's relayer `ecrecover`s the
+decryption permit against your address, so a 4337 smart account would decrypt nothing.
+Set `VITE_OPENFORT_FEE_SPONSORSHIP_ID` and that same EOA is EIP-7702-delegated so an
+Openfort **paymaster** sponsors every transaction; leave it empty and the EOA pays its
+own gas from a Sepolia faucet.
+
+> **Known Openfort-side issue.** The first write from an undelegated 7702 account takes
+> ~30s to build server-side, and the edge cuts the request at 15s — it surfaces as viem's
+> `Transaction creation failed … Details: Network Error`, and the account never delegates.
+> Until that is fixed, leave the sponsorship id empty and run self-paid.
 
 Runs on **Ethereum Sepolia** by default (works with Openfort test keys); set
 `VITE_NETWORK=mainnet` to point at the live mainnet deployment.
@@ -39,7 +49,7 @@ Copy `.env.example` to `.env` and fill it in:
 VITE_NETWORK=sepolia
 VITE_OPENFORT_PUBLISHABLE_KEY=pk_test_...
 VITE_OPENFORT_SHIELD_KEY=...
-VITE_OPENFORT_FEE_SPONSORSHIP_ID=pol_...   # Sepolia policy → sponsored (gasless) txs
+VITE_OPENFORT_FEE_SPONSORSHIP_ID=          # empty → self-paid EOA; pol_… → gasless 7702
 VITE_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
 ```
 

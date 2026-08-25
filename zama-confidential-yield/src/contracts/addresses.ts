@@ -61,3 +61,6 @@ export const RPC_URL: string =
 
 /** Circle's testnet USDC faucet (Sepolia); harmless on mainnet. */
 export const FAUCET_URL = 'https://faucet.circle.com'
+
+/** Sepolia ETH for gas — only needed when transactions aren't sponsored. */
+export const GAS_FAUCET_URL = 'https://cloud.google.com/application/web3/faucet/ethereum/sepolia'
