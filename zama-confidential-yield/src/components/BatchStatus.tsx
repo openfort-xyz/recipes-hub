@@ -1,4 +1,4 @@
-import { type CSSProperties, useState } from 'react'
+import { type CSSProperties, useEffect, useState } from 'react'
 import { formatUnits } from 'viem'
 import { DECIMALS } from '../contracts/addresses'
 import {
@@ -6,6 +6,7 @@ import {
   batchInfo,
   claimBatch,
   decryptHandles,
+  isBatchClaimable,
   readBatchPosition,
 } from '../zama/confidential'
 import type { Runtime } from '../zama/sdk'
@@ -16,7 +17,7 @@ type Batch = { kind: BatchKind; batchId: bigint; state: number }
 const STEPS = [
   { title: 'Open', body: 'Your deposit is pooling with others in the current batch.' },
   { title: 'Dispatched', body: 'The batch closed and was sent to settle off-chain.' },
-  { title: 'Finalized', body: 'Settled — claim to receive your confidential shares.' },
+  { title: 'Ready to claim', body: 'Settled — claim to receive your confidential shares.' },
 ] as const
 
 /** Full in-phone "page" showing one batch's lifecycle + claim. */
@@ -36,8 +37,20 @@ export function BatchStatus({
   const [busy, setBusy] = useState<null | 'refresh' | 'claim' | 'reveal'>(null)
   const [pending, setPending] = useState<bigint | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
-  const ready = batch.state >= 2
+  const ready = isBatchClaimable(batch.state)
   const unit = batch.kind === 'deposit' ? 'cUSDC' : 'shares'
+
+  // The operator settles off-chain with no event to watch, so poll while this
+  // page is open rather than making the user tap Refresh to find out.
+  useEffect(() => {
+    if (ready) return
+    const id = setInterval(() => {
+      batchInfo(rt, batch.kind, batch.batchId)
+        .then((info) => onState(info.state))
+        .catch(() => {})
+    }, 15_000)
+    return () => clearInterval(id)
+  }, [rt, batch.kind, batch.batchId, ready, onState])
 
   const refresh = async () => {
     setBusy('refresh')
