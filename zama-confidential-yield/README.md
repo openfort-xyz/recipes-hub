@@ -10,10 +10,18 @@ Set `VITE_OPENFORT_FEE_SPONSORSHIP_ID` and that same EOA is EIP-7702-delegated s
 Openfort **paymaster** sponsors every transaction; leave it empty and the EOA pays its
 own gas from a Sepolia faucet.
 
-> **Known Openfort-side issue.** The first write from an undelegated 7702 account takes
-> ~30s to build server-side, and the edge cuts the request at 15s — it surfaces as viem's
-> `Transaction creation failed … Details: Network Error`, and the account never delegates.
-> Until that is fixed, leave the sponsorship id empty and run self-paid.
+Writes are submitted as **sponsored UserOperations** through Openfort's bundler and
+paymaster (`api.openfort.io/rpc/<chainId>`) rather than through `POST /v1/transaction_intents`.
+The delegated account's first write has to carry an EIP-7702 authorization, and building
+that server-side takes ~30s while the edge cuts the request at 15s — so the account never
+delegates and every sponsored write fails as `Transaction creation failed … Network Error`.
+Built client-side it takes ~1.4s, and the delegation rides along in the same operation.
+
+It delegates to **Calibur**, the implementation Openfort uses natively, so once the first
+operation lands the SDK's own delegation check passes and its normal send path works too.
+See [`src/openfort/calibur.ts`](src/openfort/calibur.ts) — EntryPoint v0.9, callData is
+`executeUserOp` ++ `abi.encode(BatchedCall)`, and the signature is wrapped as
+`abi.encode(ROOT_KEY_HASH, signature, hookData)`.
 
 Runs on **Ethereum Sepolia** by default (works with Openfort test keys); set
 `VITE_NETWORK=mainnet` to point at the live mainnet deployment.
@@ -90,7 +98,8 @@ The phone UI is this app's own — Openfort's modal never opens. `OpenfortProvid
 | ---- | ---- | ---- |
 | Sign in | `useEmailOtpAuth` | `screens/Auth.tsx` |
 | Create / unlock a wallet | `useEthereumEmbeddedWallet` → `create` / `setActive` | `screens/Wallets.tsx` |
-| Read + write the chain | `usePublicClient` / `useWalletClient` (wagmi) | `components/Dashboard.tsx` |
+| Read the chain | `usePublicClient` (wagmi) | `components/Dashboard.tsx` |
+| Write the chain, sponsored | `use7702Authorization` + viem `bundlerClient` | `openfort/calibur.ts` |
 
 `connectOnLogin: false` keeps the SDK from picking a wallet behind the login, so the
 passkey prompt only ever fires from the button that asks for it. Wallet actions resolve

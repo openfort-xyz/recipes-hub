@@ -3,6 +3,7 @@ import { type CSSProperties, useCallback, useEffect, useMemo, useState } from 'r
 import { formatUnits } from 'viem'
 import { usePublicClient, useWalletClient } from 'wagmi'
 import { ADDRESSES, DECIMALS, FAUCET_URL, GAS_FAUCET_URL, NETWORK } from '../contracts/addresses'
+import { useSponsoredSender } from '../openfort/useSponsoredSender'
 import {
   type BatchKind,
   decryptHandles,
@@ -47,9 +48,12 @@ export function Dashboard() {
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
   const account = walletClient?.account.address
+  // Writes go out as sponsored UserOperations through Openfort's bundler, not
+  // through the wallet client — see openfort/calibur.ts.
+  const send = useSponsoredSender(publicClient, account)
   const rt = useMemo<Runtime | null>(
-    () => (publicClient && walletClient ? makeRuntime(publicClient, walletClient) : null),
-    [publicClient, walletClient]
+    () => (publicClient && walletClient ? makeRuntime(publicClient, walletClient, send) : null),
+    [publicClient, walletClient, send]
   )
 
   const [usdc, setUsdc] = useState<bigint | null>(null)

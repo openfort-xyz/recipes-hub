@@ -121,7 +121,7 @@ function findUnwrapRequestId(logs: readonly Log[]): Hex {
 export function mintTestUsdc(rt: Runtime, human = '100') {
   const amount = parseUnits(human, DECIMALS)
   return exec(rt, 'mint', () =>
-    rt.walletClient.writeContract({
+    rt.write({
       address: ADDRESSES.usdc,
       abi: erc20Abi,
       functionName: 'mint',
@@ -140,25 +140,28 @@ export async function shield(rt: Runtime, human: string) {
     functionName: 'allowance',
     args: [rt.account, ADDRESSES.cusdc],
   })
-  // Approve max once so repeat shields skip the extra sponsored userOp.
+  const wrap = {
+    address: ADDRESSES.cusdc,
+    abi: confidentialWrapperAbi,
+    functionName: 'wrap',
+    args: [rt.account, amount],
+  }
+  // Approve max once. A UserOperation batches atomically, so a first-time shield
+  // is approve+wrap in a single sponsored operation rather than two.
   if (allowance < amount) {
-    await exec(rt, 'approve', () =>
-      rt.walletClient.writeContract({
-        address: ADDRESSES.usdc,
-        abi: erc20Abi,
-        functionName: 'approve',
-        args: [ADDRESSES.cusdc, maxUint256],
-      })
+    return exec(rt, 'approve+wrap', () =>
+      rt.writeBatch([
+        {
+          address: ADDRESSES.usdc,
+          abi: erc20Abi,
+          functionName: 'approve',
+          args: [ADDRESSES.cusdc, maxUint256],
+        },
+        wrap,
+      ])
     )
   }
-  return exec(rt, 'wrap', () =>
-    rt.walletClient.writeContract({
-      address: ADDRESSES.cusdc,
-      abi: confidentialWrapperAbi,
-      functionName: 'wrap',
-      args: [rt.account, amount],
-    })
-  )
+  return exec(rt, 'wrap', () => rt.write(wrap))
 }
 
 // ── unshield: cUSDC → USDC (encrypt → unwrap → public-decrypt → finalize) ──────
@@ -167,7 +170,7 @@ export async function unshield(rt: Runtime, human: string) {
   const units = parseUnits(human, DECIMALS)
   const { handle, inputProof } = await encrypt(rt, ADDRESSES.cusdc, units)
   const unwrapHash = await exec(rt, 'unwrap', () =>
-    rt.walletClient.writeContract({
+    rt.write({
       address: ADDRESSES.cusdc,
       abi: confidentialWrapperAbi,
       functionName: 'unwrap',
@@ -184,7 +187,7 @@ export async function unshield(rt: Runtime, human: string) {
   const cleartext = typeof raw === 'bigint' ? raw : BigInt(raw ?? 0)
 
   return exec(rt, 'finalizeUnwrap', () =>
-    rt.walletClient.writeContract({
+    rt.write({
       address: ADDRESSES.cusdc,
       abi: confidentialWrapperAbi,
       functionName: 'finalizeUnwrap',
@@ -200,7 +203,7 @@ export async function vaultDeposit(rt: Runtime, human: string): Promise<bigint> 
   const units = parseUnits(human, DECIMALS)
   const { handle, inputProof } = await encrypt(rt, ADDRESSES.cusdc, units)
   await exec(rt, 'deposit', () =>
-    rt.walletClient.writeContract({
+    rt.write({
       address: ADDRESSES.cusdc,
       abi: confidentialWrapperAbi,
       functionName: 'confidentialTransferAndCall',
@@ -215,7 +218,7 @@ export async function vaultRedeem(rt: Runtime, human: string): Promise<bigint> {
   const units = parseUnits(human, DECIMALS)
   const { handle, inputProof } = await encrypt(rt, ADDRESSES.confidentialShare, units)
   await exec(rt, 'redeem', () =>
-    rt.walletClient.writeContract({
+    rt.write({
       address: ADDRESSES.confidentialShare,
       abi: confidentialWrapperAbi,
       functionName: 'confidentialTransferAndCall',
@@ -250,7 +253,7 @@ export async function readBatchPosition(
 /** Claim your output once a batch is Finalized (state 2). */
 export function claimBatch(rt: Runtime, kind: BatchKind, batchId: bigint) {
   return exec(rt, `claim:${kind}`, () =>
-    rt.walletClient.writeContract({
+    rt.write({
       address: batcherAddress(kind),
       abi: batcherAbi,
       functionName: 'claim',

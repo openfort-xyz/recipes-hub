@@ -24,7 +24,7 @@ const queryClient = new QueryClient()
  * the account never gets delegated. Until that is fixed, unset the sponsorship
  * id to run self-paid (fund the wallet with Sepolia ETH).
  */
-const FEE_SPONSORSHIP_ID = import.meta.env.VITE_OPENFORT_FEE_SPONSORSHIP_ID || undefined
+export const FEE_SPONSORSHIP_ID = import.meta.env.VITE_OPENFORT_FEE_SPONSORSHIP_ID || undefined
 
 export const ACCOUNT_TYPE = FEE_SPONSORSHIP_ID
   ? AccountTypeEnum.DELEGATED_ACCOUNT
