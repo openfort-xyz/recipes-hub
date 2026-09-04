@@ -37,6 +37,12 @@ recipe uses:
 - `CreateAuthToken(deadline, apiKeyIndex, accountIndex)` — signs a bearer token for authenticated
   read endpoints.
 
+Every `Sign*` binding takes a `skipNonce` flag ahead of `nonce`. This recipe always passes `0`,
+which keeps Lighter's default `new_nonce = old_nonce + 1` rule and so one `GET /api/v1/nextNonce`
+per signature. Passing `1` sets the `SkipNonce` L2 tx attribute instead: any strictly increasing
+nonce below 2^47 - 1 is accepted, so a latency-sensitive signer can keep its own counter locally
+and drop that round-trip (see https://apidocs.lighter.xyz/docs/api-keys).
+
 All signing happens entirely inside the WASM sandbox; private key material never leaves the Go
 runtime's memory as a JS value except as the hex string returned by `GenerateAPIKey`.
 
