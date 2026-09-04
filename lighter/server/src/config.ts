@@ -84,7 +84,10 @@ export function loadConfig(): Config {
       chainId: toNumber(process.env["LIGHTER_CHAIN_ID"], 300),
       accountIndex: toNullableNumber(process.env["LIGHTER_ACCOUNT_INDEX"]),
       apiKeyPrivateKey: process.env["LIGHTER_API_KEY_PRIVATE_KEY"]?.trim() || null,
-      apiKeyIndex: toNumber(process.env["LIGHTER_API_KEY_INDEX"], 2), // 0/1 are commonly used by the web UI
+      // Lighter reserves API key indices 0-3 for its own desktop/mobile interfaces, so start at 4:
+      // registering into that range collides with the user's front-end session, and re-authorizing on
+      // Lighter's front-end resets those slots. https://apidocs.lighter.xyz/docs/api-keys
+      apiKeyIndex: toNumber(process.env["LIGHTER_API_KEY_INDEX"], 4),
     },
   };
 }
