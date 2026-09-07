@@ -78,6 +78,11 @@ first.
 Same as mainnet steps B4-B6 below, just with testnet play-money — go do them now, then come back
 here. Everything after onboarding is network-agnostic (same signer, same server routes).
 
+**Expect a short asset list.** Lighter's testnet lists ~176 active markets but only the handful
+with a live two-sided book (usually ETH, BTC, SOL) are offered; the rest are hidden because an
+order there is rejected with "order book is empty". A count of what was hidden appears under the
+list. If the list is ever empty, no market has a book at that moment — wait and it repopulates.
+
 ---
 
 ## Path B — Mainnet (real funds, do this once testnet works)
