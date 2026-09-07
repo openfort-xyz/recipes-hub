@@ -1,0 +1,39 @@
+{
+  "name": "openfort-virtual-accounts-backend",
+  "version": "1.0.0",
+  "description": "Backend that issues Noah virtual bank accounts (USD ACH / EUR SEPA) against an Openfort embedded wallet",
+  "main": "dist/server.js",
+  "type": "module",
+  "packageManager": "pnpm@10.30.3",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsc && node --watch dist/server.js",
+    "check": "biome check --write .",
+    "lint": "biome lint .",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "@openfort/openfort-node": "^0.10.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "jose": "^6.1.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.16",
+    "@types/express": "^5.0.4",
+    "@types/node": "^22.19.20",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "openfort",
+    "noah",
+    "virtual-accounts",
+    "iban",
+    "ach",
+    "onramp"
+  ],
+  "author": "Openfort",
+  "license": "MIT"
+}

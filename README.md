@@ -18,6 +18,7 @@ This repository contains comprehensive samples demonstrating how to integrate Op
 | **[Earn private yield with Zama](./zama-confidential-yield/)** | Shield USDC into confidential cUSDC and earn private yield in Zama's Steakhouse Confidential Morpho vault. Balances stay encrypted; gasless embedded EOA (passkey, EIP-7702 delegated) on Ethereum Sepolia. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/zama-confidential-yield openfort-zama-yield && cd openfort-zama-yield` |
 | **[Telegram wallet bot](./telegram-bot/)**                  | Telegram bot where every user gets their own server-side wallet, keyed by Telegram user ID. Chat commands create wallets, check balances, and send USDC with sponsored gas on Base Sepolia. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/telegram-bot openfort-telegram-bot && cd openfort-telegram-bot` |
 | **[Trade on Lighter](./lighter/)**                            | Mainnet perps trading on the Lighter zk L2 DEX. Embedded wallet authorizes account registration and deposits; a backend holds the Lighter API key and signs orders via a vendored WASM build of lighter-go. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/lighter openfort-lighter && cd openfort-lighter`             |
+| **[Virtual bank accounts](./virtual-accounts/)**              | Issue each user a US account number (ACH/wire) or a European IBAN (SEPA) with Noah. Deposits auto-convert to USDC and settle to their embedded wallet on Polygon. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/virtual-accounts openfort-virtual-accounts && cd openfort-virtual-accounts` |
 
 ## Getting Started
 
@@ -38,4 +39,5 @@ Each sample is completely self-contained with its own setup instructions, enviro
 | **Zama Yield**          | React + Vite | -          | Ethereum Sepolia  | `@zama-fhe/sdk`, `@openfort/react`, `wagmi`, `viem`  |
 | **Telegram bot**        | -            | Node.js    | Base Sepolia      | `grammy`, `@openfort/openfort-node`, `viem`          |
 | **Lighter**             | React Native | Node.js    | Ethereum mainnet  | `@openfort/react-native`, vendored `lighter-go` WASM |
+| **Virtual accounts**    | React + Vite | Express.js | Polygon Amoy      | Noah API, `@openfort/react`, `wagmi`, `viem`         |
 
