@@ -13,8 +13,6 @@ export interface VirtualAccount {
   /** BIC when `rail` is `sepa`. */
   bankCode: string
   bankName: string
-  bankCity?: string
-  bankCountry?: string
   paymentMethodId: string
 }
 

@@ -12,10 +12,7 @@ import type { Config } from './config.js'
 // ── Noah wire types (PascalCase, as the API returns them) ───────────────────
 
 interface NoahCustomer {
-  CustomerID: string
   Verifications?: { Status: 'Pending' | 'Approved' | 'Declined' }
-  FullName?: { FirstName: string; LastName: string }
-  Country?: string
 }
 
 interface NoahVirtualAccount {
@@ -25,7 +22,6 @@ interface NoahVirtualAccount {
   /** Routing number on ACH, BIC on SEPA. */
   BankCode: string
   BankName: string
-  BankAddress?: { City?: string; Country?: string; State?: string; Street?: string }
   PaymentMethodID: string
   PaymentMethodType: 'BankAch' | 'BankSepa' | string
   VirtualAccountID?: string
@@ -46,8 +42,6 @@ export interface VirtualAccount {
   /** BIC when `rail` is `sepa`. */
   bankCode: string
   bankName: string
-  bankCity?: string
-  bankCountry?: string
   /** Used by the sandbox deposit simulation. */
   paymentMethodId: string
 }
@@ -134,27 +128,18 @@ export function createNoahClient(config: Config) {
       accountNumber: va.AccountNumber,
       bankCode: va.BankCode,
       bankName: va.BankName,
-      bankCity: va.BankAddress?.City,
-      bankCountry: va.BankAddress?.Country,
       paymentMethodId: va.PaymentMethodID,
     }
   }
 
   return {
-    /** Current KYC state, or `null` when Noah has never seen this customer. */
-    async getCustomer(customerId: string) {
+    /** Current KYC status, or `null` when Noah has never seen this customer. */
+    async getCustomer(customerId: string): Promise<KycStatus | null> {
       try {
         const customer = await request<NoahCustomer>(
           `/v1/customers/${encodeURIComponent(customerId)}`
         )
-        return {
-          id: customer.CustomerID,
-          status: mapStatus(customer.Verifications?.Status),
-          fullName: customer.FullName
-            ? `${customer.FullName.FirstName} ${customer.FullName.LastName}`.trim()
-            : undefined,
-          country: customer.Country,
-        }
+        return mapStatus(customer.Verifications?.Status)
       } catch (error) {
         if (error instanceof NoahError && error.status === 404) return null
         throw error

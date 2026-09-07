@@ -8,10 +8,11 @@ export const IS_SANDBOX = (import.meta.env.VITE_NOAH_ENVIRONMENT ?? 'sandbox') !
 export const chain = IS_SANDBOX ? polygonAmoy : polygon
 
 /** The token Noah delivers: its USDC_TEST on Amoy, canonical USDC on Polygon. */
-export const USDC_ADDRESS = (import.meta.env.VITE_USDC_ADDRESS ||
-  (IS_SANDBOX
+export const USDC_ADDRESS = (
+  IS_SANDBOX
     ? '0xae1d7d8b36e9aba7d95a75c69d50b38e7e02a9dd'
-    : '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359')) as `0x${string}`
+    : '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359'
+) as `0x${string}`
 
 export const USDC_DECIMALS = 6
 

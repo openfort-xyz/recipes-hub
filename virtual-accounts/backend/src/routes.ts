@@ -36,8 +36,7 @@ export function createRoutes(config: Config, openfort: OpenfortClient, noah: Noa
     /** Current KYC status. `not_started` means Noah has never seen this user. */
     getCustomer: withUser(async (_req, res, customerId) => {
       try {
-        const customer = await noah.getCustomer(customerId)
-        res.json({ status: customer?.status ?? 'not_started', customer })
+        res.json({ status: (await noah.getCustomer(customerId)) ?? 'not_started' })
       } catch (error) {
         fail(res, error, 'Failed to read customer')
       }
@@ -48,7 +47,7 @@ export function createRoutes(config: Config, openfort: OpenfortClient, noah: Noa
       try {
         const existing = await noah.getCustomer(customerId)
         if (existing) {
-          res.json({ status: existing.status })
+          res.json({ status: existing })
           return
         }
         const { hostedUrl } = await noah.startOnboarding(
@@ -78,8 +77,7 @@ export function createRoutes(config: Config, openfort: OpenfortClient, noah: Noa
       }
 
       try {
-        const customer = await noah.getCustomer(customerId)
-        if (customer?.status !== 'approved') {
+        if ((await noah.getCustomer(customerId)) !== 'approved') {
           res.status(403).json({ error: 'Identity verification is not approved yet' })
           return
         }
