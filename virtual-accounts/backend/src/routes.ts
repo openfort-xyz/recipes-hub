@@ -134,8 +134,22 @@ export function createRoutes(config: Config, openfort: OpenfortClient, noah: Noa
         return
       }
 
+      // Act on `event.Data` here — credit a ledger, notify the user, and so on.
+      // Only literals are logged: the body is attacker-shaped until it is used.
       const event = JSON.parse(rawBody) as { EventType?: string; Data?: Record<string, unknown> }
-      console.log(`[noah webhook] ${event.EventType}`, event.Data)
+      switch (event.EventType) {
+        case 'Customer':
+          console.log('[noah webhook] KYC status changed')
+          break
+        case 'FiatDeposit':
+          console.log('[noah webhook] fiat deposit')
+          break
+        case 'Transaction':
+          console.log('[noah webhook] on-chain transaction')
+          break
+        default:
+          console.log('[noah webhook] unhandled event type')
+      }
       res.json({ received: true })
     },
   }
