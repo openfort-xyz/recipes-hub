@@ -133,6 +133,7 @@ export interface LighterOrderBookDetail {
   supported_quote_decimals: number;
   mark_price?: string;
   last_trade_price?: number;
+  open_interest?: number;
 }
 
 /**

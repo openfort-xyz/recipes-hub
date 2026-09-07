@@ -49,7 +49,21 @@ Openfort or any other keychain-dependent SDK.
   `OPENFORT_ETHEREUM_PROVIDER_POLICY_ID` value, new field name. See `app/_layout.tsx`.
 - Testnet onboarding needs zero wallet signatures for funding — `POST /api/lighter/faucet`
   (server-gated to testnet only) creates AND credits the Lighter account in one call. Mainnet
-  keeps the real `approve` + `deposit` flow in `services/depositFlow.ts` untouched.
+  keeps the real `approve` + `deposit` flow in `services/depositFlow.ts` untouched. The call
+  returns before the credit lands, so `OnboardingStatusScreen` holds a spinner until the poll
+  advances the step — don't "simplify" that back into the button's own `loading` prop.
+- **App-side env changes require a native rebuild.** `Constants.expoConfig.extra` is read from
+  `EXConstants.bundle/app.config`, a snapshot generated into the `.app` at build time — the Metro
+  manifest is ignored for `extra`. Editing `lighter/.env.local` and restarting Metro silently
+  leaves the app on the old values (this cost a full debug cycle chasing a Shield 401 that was
+  really a stale publishable key). Rebuild + reinstall. `server/.env.local` needs only a restart.
+- A market being `status: "active"` does NOT mean it can be traded. Testnet lists 176 active
+  markets and ~3 have a two-sided book; the rest reject orders with "order book is empty".
+  `server/src/markets.ts` resolves this into a `hasLiquidity` flag and the app lists only those.
+  Note what does NOT work as a shortcut: `daily_quote_token_volume` is 0 for every testnet market
+  (so there is nothing to rank by), and `last_trade_price > 0` over-selects — LIT and ZORA both
+  report a last trade yet hold no resting orders. Only the order book itself is authoritative, so
+  the cheap fields are used purely to prefilter which books are worth probing.
 - Login is explicit-only, no cold-launch auto-restore: `app/index.tsx` signs out any session the
   SDK silently restored from storage before ever rendering (see `hooks/authGate.ts`'s
   `deriveAuthScreen`), so every launch lands on `LoginScreen`. Guest is ephemeral (a fresh

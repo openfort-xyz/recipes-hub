@@ -120,8 +120,12 @@ faucet to real deposit automatically — no app-side config needed.
 - Testnet: one-call faucet funding. Mainnet: real USDC deposit flow (ERC-20 approve + Lighter
   contract deposit), config-switchable, no code changes
 - ChangePubKey API key registration via `personal_sign`
-- Asset selector across every active market (perp + spot — 5 on testnet today, discovered live,
-  never hardcoded) with a mini portfolio card (balance + open positions)
+- Asset selector over the markets that can actually be traded, discovered live and never
+  hardcoded. "Active" is not the same as tradeable: Lighter lists 176 active markets on testnet
+  and typically only three of them (ETH, BTC, SOL) have a two-sided order book at any given
+  moment — an order on any of the rest comes back "order book is empty". The server checks the
+  book and the app hides the dead ones. Perps and spot get separate sections when both are
+  present; testnet is perps-only today. Mini portfolio card alongside (balance + open positions)
 - Cash App-style buy/sell flow per asset with a live order book, IOC marketable-limit orders, and
   an order confirmation screen showing the actual matched size/price — the server polls Lighter's
   own trade record before responding, since `sendTx` itself reports no fill status
@@ -139,8 +143,19 @@ faucet to real deposit automatically — no app-side config needed.
   only shows up if the server's key genuinely doesn't match what's on-chain (a hand-edited
   `server/.env.local`, a second server instance, or an adoption lost to a restart before it could
   persist). Tap **Re-authorize** — the server adopts the fresh key automatically, no manual step.
+- **Changed a key in `.env.local` but the app still uses the old one** — the app's half of the
+  config is baked into the native binary at build time (`EXConstants.bundle/app.config`), so
+  editing `.env.local` and restarting Metro changes nothing: `Constants.expoConfig.extra` is read
+  from that snapshot, not from the Metro manifest. Rebuild and reinstall (`pnpm run ios`) — once a
+  first build exists the incremental one takes seconds. `server/.env.local` is the opposite: a
+  plain server restart is enough.
+- **Only two or three assets in the list** — expected on testnet. Every other listed market has an
+  empty order book and is hidden rather than offered, since an order there can't fill. The count
+  of hidden markets is shown under the list.
 - **Funds don't show up** — both the faucet (seconds) and a real deposit (minutes) take a moment
-  to land; pull to refresh on the onboarding screen.
+  to land; the onboarding screen polls every 2s and advances on its own. After tapping "Get
+  testnet funds" the card shows a spinner until the credit lands — the faucet call returns before
+  Lighter has actually credited the account.
 - **Order fails with a stale-key error** — tap **Re-authorize** from the alert; the server adopts
   the fresh key immediately, no restart needed.
 

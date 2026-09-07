@@ -108,9 +108,15 @@ export interface Market {
   minBaseAmount: string;
   minQuoteAmount: string;
   price: string;
+  /** Has resting orders on both sides right now — see the server's markets.ts for why "active" isn't enough. */
+  hasLiquidity: boolean;
 }
 
-/** All currently active markets (perp + spot), with live prices — discovered fresh each call. */
+/**
+ * All currently active markets (perp + spot) with live prices, discovered fresh each call. Each
+ * carries `hasLiquidity` — active is not the same as tradeable, so callers offering a market to
+ * the user should filter on it.
+ */
 export function fetchMarkets(): Promise<{ markets: Market[] }> {
   return request("/api/lighter/markets");
 }
