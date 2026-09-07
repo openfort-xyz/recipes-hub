@@ -54,6 +54,8 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
   const { step, account, serverConfig, accountMismatch, isLoading, error, refresh } = onboarding;
   const isTestnet = serverConfig?.network === "testnet";
   const [isFauceting, setIsFauceting] = useState(false);
+  // Faucet call accepted, funds not yet visible — see handleFaucet.
+  const [hasRequestedFaucet, setHasRequestedFaucet] = useState(false);
 
   // Adjusting state during render (React's recommended pattern for "reset when an input
   // changes") rather than in an effect — any step transition proves the poll caught up to
@@ -62,6 +64,7 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
   if (step !== prevStep) {
     setPrevStep(step);
     setHasSignedThisSession(false);
+    setHasRequestedFaucet(false);
   }
 
   // ChangePubKey submit makes the server adopt the fresh key immediately (see
@@ -78,12 +81,17 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
     setIsFauceting(true);
     try {
       await requestFaucet(walletAddress);
-      // No success alert — the 2s poll advances the step automatically the moment it lands.
+      // The request returning is not the funds arriving — Lighter credits the account
+      // asynchronously, seconds later. Without this the button would snap back to its idle label
+      // with nothing on screen having changed, which reads as "the tap did nothing". Cleared by
+      // the step-change reset below, once the 2s poll sees the balance.
+      setHasRequestedFaucet(true);
     } catch {
       // The server already retried a few times — Lighter's testnet faucet is intermittently
       // flaky. Refresh immediately in case an earlier retry actually
       // succeeded upstream despite this final attempt reporting failure.
       await refresh();
+      setHasRequestedFaucet(false);
       Alert.alert("Faucet unavailable", "Try again — Lighter's testnet faucet is a bit flaky.");
     } finally {
       setIsFauceting(false);
@@ -177,8 +185,16 @@ export function OnboardingStatusScreen({ walletAddress, provider, onboarding, ke
       {step === "deposit" && serverConfig && isTestnet && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Get testnet funds</Text>
-          <Text style={styles.cardBody}>One tap. No signature, no real money.</Text>
-          <PillButton title="Get testnet funds" onPress={handleFaucet} loading={isFauceting} />
+          <Text style={styles.cardBody}>
+            {hasRequestedFaucet
+              ? "Requested. Lighter credits the account a few seconds later — this advances on its own the moment the funds land."
+              : "One tap. No signature, no real money."}
+          </Text>
+          {hasRequestedFaucet ? (
+            <ActivityIndicator color={COLORS.accent} />
+          ) : (
+            <PillButton title="Get testnet funds" onPress={handleFaucet} loading={isFauceting} />
+          )}
         </View>
       )}
 
