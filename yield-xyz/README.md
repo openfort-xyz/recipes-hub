@@ -95,7 +95,7 @@ Open `http://localhost:5173`. Sign in with Openfort, then fund the wallet: mainn
 | 5. Track | `GET /v1/yields/{yieldId}/balances?address=` | The user's current position |
 | 6. Exit | `POST /v1/actions/exit` | Same shape as enter - same signer, same execution loop |
 
-`unsignedTransaction` is a JSON-stringified plain transaction object (`to`, `data`, `value`, `chainId`, plus gas/nonce fields that this recipe deliberately ignores in favor of fresh estimation at send time - see `src/hooks/useExecuteAction.ts`). The wallet's active chain has to be switched to the target chain explicitly before signing - Openfort's embedded connector does not do this implicitly per-transaction.
+`unsignedTransaction` is a JSON-stringified plain transaction object (`to`, `data`, `value`, `chainId`, `gasLimit`, plus nonce/fee fields that this recipe deliberately ignores in favor of fresh estimation at send time - see `src/hooks/useExecuteAction.ts`). `gasLimit` is the exception and is passed through: Yield.xyz sizes it for its own targets (300k for the Monad staking precompile), and a failed local estimate falls back to the 21000 bare-transfer floor, which the node rejects with a misleading "Gas limit too low". The wallet's active chain has to be switched to the target chain explicitly before signing - Openfort's embedded connector does not do this implicitly per-transaction.
 
 For the full API reference, see [docs.yield.xyz](https://docs.yield.xyz/docs/getting-started).
 

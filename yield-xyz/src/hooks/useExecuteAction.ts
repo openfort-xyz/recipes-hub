@@ -17,22 +17,34 @@ interface ParsedTx {
   to: `0x${string}`
   data?: `0x${string}`
   value?: bigint
+  gas?: bigint
   chainId: number
 }
 
 /**
  * Yield.xyz's `unsignedTransaction` is a JSON-stringified plain transaction
- * request (to/data/value/chainId/nonce/gas fields). Gas, nonce and fee
- * fields are dropped here and left to wagmi/viem to (re-)estimate at send
- * time - they can go stale between when Yield.xyz built the tx and when the
- * user actually signs it.
+ * request (to/data/value/chainId/nonce/gas fields). Nonce and fee fields are
+ * dropped here and left to wagmi/viem to (re-)estimate at send time - they go
+ * stale between when Yield.xyz built the tx and when the user actually signs.
+ *
+ * `gasLimit` is kept. It doesn't go stale, and Yield.xyz knows what its own
+ * targets cost: the Monad staking precompile needs ~300k, while a failed
+ * estimation falls back to the 21000 bare-transfer floor and the node rejects
+ * the tx with "Gas limit too low" instead of the real reason.
  */
 function parseUnsignedTransaction(raw: string): ParsedTx {
-  const tx = JSON.parse(raw) as { to: string; data?: string; value?: string; chainId: number }
+  const tx = JSON.parse(raw) as {
+    to: string
+    data?: string
+    value?: string
+    gasLimit?: string
+    chainId: number
+  }
   return {
     to: tx.to as `0x${string}`,
     data: tx.data as `0x${string}` | undefined,
     value: tx.value && tx.value !== '0' ? BigInt(tx.value) : undefined,
+    gas: tx.gasLimit ? BigInt(tx.gasLimit) : undefined,
     chainId: tx.chainId,
   }
 }

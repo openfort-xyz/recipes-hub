@@ -26,6 +26,11 @@ export function Providers({ children }: { children: ReactNode }) {
               shieldPublishableKey: import.meta.env.VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY,
               createEncryptedSessionEndpoint: `${import.meta.env.VITE_BACKEND_URL}/api/protected-create-encryption-session`,
               ethereum: {
+                // Monad isn't in the SDK's built-in chain table, and on the first
+                // connect (wallet creation) the wagmi-transport fallback hasn't
+                // landed yet - without this the embedded signer has no endpoint
+                // for 143 and the chain switch fails.
+                rpcUrls: { [monad.id]: monad.rpcUrls.default.http[0] },
                 ethereumFeeSponsorshipId: import.meta.env.VITE_OPENFORT_FEE_SPONSORSHIP_ID || undefined,
               },
             }}
