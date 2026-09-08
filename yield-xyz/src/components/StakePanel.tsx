@@ -5,6 +5,7 @@ import { useExecuteAction } from '../hooks/useExecuteAction'
 import { useValidators, useYieldDetail } from '../hooks/useYieldQueries'
 import { yieldXyz } from '../lib/yieldXyz'
 import { Card } from './Card'
+import { TxList } from './TxList'
 
 function formatSeconds(seconds?: number) {
   if (!seconds) return null
@@ -124,23 +125,7 @@ export function StakePanel({
         </>
       )}
 
-      {hashes.length > 0 && (
-        <ul className="mt-4 space-y-1 text-xs">
-          {hashes.map((h) => (
-            <li key={h.hash}>
-              <a
-                href={`${demo.explorerUrl}/tx/${h.hash}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-emerald-400 hover:underline"
-              >
-                {h.hash}
-              </a>{' '}
-              <span className="text-neutral-500">({h.title})</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      <TxList hashes={hashes} explorerUrl={demo.explorerUrl} />
       {(prepareError || execError) && <p className="mt-3 text-sm text-red-400">{prepareError ?? execError}</p>}
     </Card>
   )

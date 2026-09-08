@@ -146,8 +146,6 @@ export const yieldXyz = {
   exit: (args: EnterExitArgs) =>
     request<YieldAction>('/actions/exit', { method: 'POST', body: JSON.stringify(toActionBody(args)) }),
 
-  getAction: (actionId: string) => request<YieldAction>(`/actions/${actionId}`),
-
   submitHash: (transactionId: string, hash: string) =>
     request<YieldTransaction>(`/transactions/${transactionId}/submit-hash`, {
       method: 'PUT',

@@ -62,7 +62,8 @@ export function WalletModal({
   const [copied, setCopied] = useState(false)
 
   async function handleReceive() {
-    await navigator.clipboard.writeText(address)
+    // Clipboard can be denied (unfocused document, no permission) - don't let it reject unhandled.
+    await navigator.clipboard?.writeText(address).catch(() => {})
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }

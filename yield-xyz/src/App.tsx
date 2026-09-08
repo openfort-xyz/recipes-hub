@@ -60,22 +60,16 @@ function App() {
             <div className="grid gap-6 md:grid-cols-2 items-start">
               <PositionsPanel
                 userAddress={address}
+                demo={DEMO}
                 title="Staking position"
-                yieldId={DEMO.yieldId}
-                chainId={DEMO.chainId}
-                network={DEMO.network}
-                explorerUrl={DEMO.explorerUrl}
-                requiresValidator={DEMO.requiresValidator}
                 onSettled={() => balance.refetch()}
               />
               {vault && (
                 <PositionsPanel
                   userAddress={address}
+                  demo={DEMO}
                   title="Vault position"
                   yieldId={vault.id}
-                  chainId={DEMO.chainId}
-                  network={DEMO.network}
-                  explorerUrl={DEMO.explorerUrl}
                   requiresValidator={false}
                   onSettled={() => balance.refetch()}
                 />
