@@ -3,41 +3,42 @@ import { useState } from 'react'
 import { useExecuteAction } from '../hooks/useExecuteAction'
 import { useBalances } from '../hooks/useYieldQueries'
 import { yieldXyz } from '../lib/yieldXyz'
+import type { DemoConfig } from '../config/demos'
 import { Card } from './Card'
+import { TxList } from './TxList'
 
 /** One Yield.xyz position - staking or vault - with its exit button. */
 export function PositionsPanel({
   userAddress,
+  demo,
   title,
   yieldId,
-  chainId,
-  network,
-  explorerUrl,
   requiresValidator,
   onSettled,
 }: {
   userAddress: string
+  demo: DemoConfig
   title: string
-  yieldId: string
-  chainId: number
-  network: string
-  explorerUrl: string
-  requiresValidator: boolean
+  /** Defaults to the demo's staking opportunity; the vault card passes its own. */
+  yieldId?: string
+  requiresValidator?: boolean
   onSettled?: () => void
 }) {
+  const resolvedYieldId = yieldId ?? demo.yieldId
+  const needsValidator = requiresValidator ?? demo.requiresValidator
   const queryClient = useQueryClient()
-  const { data, isLoading, error, refetch } = useBalances(yieldId, userAddress)
-  const { running, step, hashes, error: execError, execute } = useExecuteAction(chainId)
+  const { data, isLoading, error, refetch } = useBalances(resolvedYieldId, userAddress)
+  const { running, step, hashes, error: execError, execute } = useExecuteAction(demo.chainId)
   const [exitingType, setExitingType] = useState<string | null>(null)
 
   async function handleExit(balance: { type: string; amount: string; validatorAddress?: string }) {
     setExitingType(balance.type)
     try {
       const action = await yieldXyz.exit({
-        yieldId,
+        yieldId: resolvedYieldId,
         address: userAddress,
         amount: balance.amount,
-        validatorAddress: requiresValidator ? balance.validatorAddress : undefined,
+        validatorAddress: needsValidator ? balance.validatorAddress : undefined,
       })
       await execute(action.transactions)
       await refetch()
@@ -52,7 +53,7 @@ export function PositionsPanel({
   return (
     <Card
       title={title}
-      subtitle={`Read directly from Yield.xyz for this wallet on ${network} - refreshes after every action.`}
+      subtitle={`Read directly from Yield.xyz for this wallet on ${demo.network} - refreshes after every action.`}
     >
       {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
       {error && <p className="text-sm text-red-400">{(error as Error).message}</p>}
@@ -81,26 +82,10 @@ export function PositionsPanel({
         ))}
       </div>
 
-      {hashes.length > 0 && (
-        <ul className="mt-4 space-y-1 text-xs">
-          {hashes.map((h) => (
-            <li key={h.hash}>
-              <a
-                href={`${explorerUrl}/tx/${h.hash}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-emerald-400 hover:underline"
-              >
-                {h.hash}
-              </a>{' '}
-              <span className="text-neutral-500">({h.title})</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      <TxList hashes={hashes} explorerUrl={demo.explorerUrl} />
       {execError && <p className="mt-3 text-sm text-red-400">{execError}</p>}
       <button
-        onClick={() => queryClient.invalidateQueries({ queryKey: ['balances', yieldId] })}
+        onClick={() => queryClient.invalidateQueries({ queryKey: ['balances', resolvedYieldId] })}
         className="mt-4 text-xs text-neutral-500 hover:text-neutral-300 underline"
       >
         Refresh
