@@ -5,7 +5,6 @@ import { PositionsPanel } from './components/PositionsPanel'
 import { StakePanel } from './components/StakePanel'
 import { VaultsPanel } from './components/VaultsPanel'
 import { WalletBalance } from './components/WalletBalance'
-import { WalletChip } from './components/WalletChip'
 import { DEMO } from './config/demos'
 import type { YieldOpportunity } from './lib/yieldXyz'
 
@@ -28,11 +27,7 @@ function App() {
         </header>
 
         <div className="flex justify-center">
-          {isAuthenticated && address ? (
-            <WalletChip address={address} demo={DEMO} onSettled={() => balance.refetch()} />
-          ) : (
-            <OpenfortButton />
-          )}
+          <OpenfortButton />
         </div>
 
         {isAuthenticated && address && (

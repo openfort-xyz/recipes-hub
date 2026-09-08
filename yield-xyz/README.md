@@ -118,7 +118,7 @@ Nothing else is network-specific: every component keys off the single `DEMO` con
 ## Known limitations
 
 - **Both panels move real funds.** There is no testnet equivalent for the vault flow, so the Deposit button spends real tokens. Each card carries a `Mainnet · real funds` badge for that reason.
-- **This recipe deliberately doesn't use Openfort's built-in wallet funding ("Add funds").** Confirmed directly in the running app: it returns "Funding isn't available on this network" on Monad Testnet, and Openfort's docs publish no supported-chain list to confirm mainnet - check your dashboard if you want it back. Because of this, the app doesn't use Openfort's built-in `OpenfortButton` "Connected" panel at all once signed in (that panel hardcodes a Deposit button with no way to hide just that one action) - `src/components/WalletChip.tsx` is a small custom account chip (address, Send, Receive, sign out) instead. Fund wallets with a real transfer to the address.
+- **Wallet management is Openfort's built-in `OpenfortButton` panel.** Address, copy, Send and Deposit all come from the SDK - the recipe adds no wallet UI of its own. On Monad mainnet Deposit offers Transfer from wallet, from address, and from Exchange; on Monad Testnet it reports "Funding isn't available on this network", so fund testnet wallets from the faucet instead.
 - **The vault list is whatever Yield.xyz reports.** The panel shows the top 8 `mechanics.type === 'vault'` opportunities with a non-zero rate, sorted by APY, so the default selection changes as rates move. Opportunities not enabled for your Yield.xyz project fail at `POST /actions/enter` with a 400, surfaced under the card.
 
 ## Files
@@ -130,8 +130,7 @@ Nothing else is network-specific: every component keys off the single `DEMO` con
 - `src/components/StakePanel.tsx` - staking details + enter form with validator picker.
 - `src/components/VaultsPanel.tsx` - vault picker (top 8 by APY) + deposit form, same enter/exit endpoints, no validator.
 - `src/components/PositionsPanel.tsx` - one position (staking or vault) + exit; rendered twice from `App.tsx`.
-- `src/components/WalletChip.tsx` - custom account chip (replaces Openfort's built-in "Connected" panel - see "Known limitations"): address with a Send/Receive dropdown, and an icon-only sign-out button.
-- `src/components/SendForm.tsx` - plain address-to-address MON transfer, opened from the Send option in `WalletChip`.
+- `src/components/TxList.tsx` - explorer links for the hashes an action produced; used by all three panels.
 - `src/components/WalletBalance.tsx` - native MON balance and a copy-address `fund wallet` action; refetches automatically after any stake/deposit/exit/send via the `onSettled` callback threaded down from `App.tsx`.
 - `vite.config.ts` - dev proxy that injects the Yield.xyz API key server-side.
 
