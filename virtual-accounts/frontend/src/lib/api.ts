@@ -3,16 +3,23 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3021
 export type KycStatus = 'not_started' | 'pending' | 'approved' | 'declined'
 export type FiatCurrency = 'USD' | 'EUR'
 
+export type Rail = 'ach' | 'fedwire' | 'swift' | 'sepa'
+
+/** One way to pay into the account. USD accounts come back with three. */
+export interface BankMethod {
+  rail: Rail
+  accountNumber: string
+  bankCode: string
+  feeBase?: string
+  feePct?: string
+}
+
 /** Rail-neutral account, as the backend maps it out of Noah's response. */
 export interface VirtualAccount {
-  rail: 'ach' | 'sepa'
   currency: FiatCurrency
   accountHolderName: string
-  /** IBAN when `rail` is `sepa`. */
-  accountNumber: string
-  /** BIC when `rail` is `sepa`. */
-  bankCode: string
   bankName: string
+  methods: BankMethod[]
   paymentMethodId: string
 }
 
@@ -65,9 +72,22 @@ export const api = {
     }),
 }
 
-/** What each field is called on the rail the account was issued on. */
-export function railLabels(account: VirtualAccount) {
-  return account.rail === 'sepa'
-    ? { number: 'IBAN', code: 'BIC', rail: 'SEPA credit transfer' }
-    : { number: 'Account number', code: 'Routing number', rail: 'ACH or domestic wire' }
+/**
+ * What each field is called on a given rail. `bankCode` is a routing number on
+ * ACH and Fedwire but a BIC on SWIFT and SEPA — labeling it wrong sends a
+ * payer's money nowhere.
+ */
+export const RAIL_LABELS: Record<Rail, { title: string; number: string; code: string }> = {
+  ach: { title: 'ACH', number: 'Account number', code: 'Routing number' },
+  fedwire: { title: 'Domestic wire (Fedwire)', number: 'Account number', code: 'Routing number' },
+  swift: { title: 'International wire (SWIFT)', number: 'Account number', code: 'SWIFT / BIC' },
+  sepa: { title: 'SEPA credit transfer', number: 'IBAN', code: 'BIC' },
+}
+
+/** "$2.19 + 0.15%" — the difference between a cheap ACH and a $25 wire. */
+export function formatFee(method: BankMethod, currency: FiatCurrency) {
+  if (!method.feeBase) return undefined
+  const symbol = currency === 'EUR' ? '€' : '$'
+  const pct = method.feePct && method.feePct !== '0' ? ` + ${method.feePct}%` : ''
+  return `${symbol}${method.feeBase}${pct}`
 }

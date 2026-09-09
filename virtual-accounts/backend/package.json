@@ -9,6 +9,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "tsc && node --watch dist/server.js",
+    "test": "tsc && node --test \"dist/**/*.test.js\"",
     "check": "biome check --write .",
     "lint": "biome lint .",
     "format": "biome format --write ."

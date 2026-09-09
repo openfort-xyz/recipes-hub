@@ -14,7 +14,7 @@ import {
   primaryBtn,
   secondaryBtn,
 } from '../components/styles'
-import { api, type FiatCurrency, railLabels, type VirtualAccount } from '../lib/api'
+import { api, type FiatCurrency, formatFee, RAIL_LABELS, type VirtualAccount } from '../lib/api'
 import { chain, EXPLORER_URL, IS_SANDBOX, USDC_ADDRESS, USDC_DECIMALS } from '../openfort/wagmi'
 
 const CURRENCIES: FiatCurrency[] = ['USD', 'EUR']
@@ -150,8 +150,8 @@ export function Dashboard() {
           <>
             <p style={{ ...muted, marginBottom: 12 }}>
               {currency === 'USD'
-                ? 'A US account number and routing number in your name.'
-                : 'A European IBAN and BIC in your name.'}
+                ? 'A US account in your name, payable by ACH, domestic wire, or SWIFT.'
+                : 'A European IBAN in your name, payable by SEPA credit transfer.'}
             </p>
             <button
               type="button"
@@ -174,15 +174,26 @@ export function Dashboard() {
 }
 
 function AccountDetails({ account }: { account: VirtualAccount }) {
-  const labels = railLabels(account)
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <CopyField label={labels.code} value={account.bankCode} />
-      <CopyField label={labels.number} value={account.accountNumber} />
-      <dl style={{ margin: '6px 0 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {account.methods.map((method) => {
+        const labels = RAIL_LABELS[method.rail]
+        const fee = formatFee(method, account.currency)
+        return (
+          <div key={method.rail} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+              <span style={label}>{labels.title}</span>
+              {fee && <span style={{ ...muted, fontSize: '0.75rem' }}>fee {fee}</span>}
+            </div>
+            <CopyField label={labels.code} value={method.bankCode} />
+            <CopyField label={labels.number} value={method.accountNumber} />
+          </div>
+        )
+      })}
+      <dl style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
         <Detail label="Account holder" value={account.accountHolderName} />
         <Detail label="Bank" value={account.bankName} />
-        <Detail label="Transfer type" value={`${labels.rail} · ${account.currency}`} />
+        <Detail label="Currency" value={account.currency} />
       </dl>
     </div>
   )

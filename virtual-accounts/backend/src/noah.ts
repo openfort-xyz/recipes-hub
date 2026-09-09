@@ -15,15 +15,32 @@ interface NoahCustomer {
   Verifications?: { Status: 'Pending' | 'Approved' | 'Declined' }
 }
 
+interface NoahFee {
+  FiatCurrencyCode: string
+  TotalFeeBase: string
+  TotalFeePct: string
+}
+
 interface NoahVirtualAccount {
   AccountHolderName: string
-  /** Account number on ACH, IBAN on SEPA. */
+  /** Account number on ACH/Fedwire/SWIFT, IBAN on SEPA. */
   AccountNumber: string
-  /** Routing number on ACH, BIC on SEPA. */
+  /** Routing number on ACH/Fedwire, BIC on SWIFT/SEPA. */
   BankCode: string
   BankName: string
   PaymentMethodID: string
-  PaymentMethodType: 'BankAch' | 'BankSepa' | string
+  PaymentMethodType: string
+  Fee?: NoahFee
+  /**
+   * Other ways to pay the same account. A USD account comes back as SWIFT with
+   * ACH and Fedwire in here — same account number, different bank code and fee.
+   */
+  RelatedPaymentMethods?: {
+    Details: { AccountNumber: string; BankCode: string }
+    Fee?: NoahFee
+    PaymentMethodID: string
+    PaymentMethodType: string
+  }[]
   VirtualAccountID?: string
 }
 
@@ -31,18 +48,25 @@ interface NoahVirtualAccount {
 
 export type KycStatus = 'not_started' | 'pending' | 'approved' | 'declined'
 export type FiatCurrency = 'USD' | 'EUR'
-export type Rail = 'ach' | 'sepa'
+export type Rail = 'ach' | 'fedwire' | 'swift' | 'sepa'
+
+/** One way to pay into the account. `bankCode` means something different on each rail. */
+export interface BankMethod {
+  rail: Rail
+  /** IBAN on `sepa`, account number everywhere else. */
+  accountNumber: string
+  /** Routing number on `ach`/`fedwire`, BIC on `swift`/`sepa`. */
+  bankCode: string
+  feeBase?: string
+  feePct?: string
+}
 
 export interface VirtualAccount {
-  rail: Rail
   currency: FiatCurrency
   accountHolderName: string
-  /** IBAN when `rail` is `sepa`. */
-  accountNumber: string
-  /** BIC when `rail` is `sepa`. */
-  bankCode: string
   bankName: string
-  /** Used by the sandbox deposit simulation. */
+  /** Primary method first — the one the sandbox deposit simulation uses. */
+  methods: BankMethod[]
   paymentMethodId: string
 }
 
@@ -54,6 +78,56 @@ export class NoahError extends Error {
   ) {
     super(message)
     this.name = 'NoahError'
+  }
+}
+
+function mapStatus(status?: string): KycStatus {
+  if (status === 'Approved') return 'approved'
+  if (status === 'Declined') return 'declined'
+  return 'pending'
+}
+
+/**
+ * `BankCode` is a routing number on ACH/Fedwire and a BIC on SWIFT/SEPA, so
+ * the type is what decides how a field may be labeled. Never infer it from
+ * the currency you asked for: USD comes back as SWIFT, not ACH.
+ */
+function mapRail(paymentMethodType: string): Rail {
+  switch (paymentMethodType) {
+    case 'BankSepa':
+      return 'sepa'
+    case 'BankAch':
+      return 'ach'
+    case 'BankFedwire':
+      return 'fedwire'
+    default:
+      return 'swift'
+  }
+}
+
+export function mapVirtualAccount(va: NoahVirtualAccount, currency: FiatCurrency): VirtualAccount {
+  const methods: BankMethod[] = [
+    {
+      rail: mapRail(va.PaymentMethodType),
+      accountNumber: va.AccountNumber,
+      bankCode: va.BankCode,
+      feeBase: va.Fee?.TotalFeeBase,
+      feePct: va.Fee?.TotalFeePct,
+    },
+    ...(va.RelatedPaymentMethods ?? []).map((m) => ({
+      rail: mapRail(m.PaymentMethodType),
+      accountNumber: m.Details.AccountNumber,
+      bankCode: m.Details.BankCode,
+      feeBase: m.Fee?.TotalFeeBase,
+      feePct: m.Fee?.TotalFeePct,
+    })),
+  ]
+  return {
+    currency,
+    accountHolderName: va.AccountHolderName,
+    bankName: va.BankName,
+    methods,
+    paymentMethodId: va.PaymentMethodID,
   }
 }
 
@@ -112,26 +186,6 @@ export function createNoahClient(config: Config) {
     return (text ? JSON.parse(text) : {}) as T
   }
 
-  function mapStatus(status?: string): KycStatus {
-    if (status === 'Approved') return 'approved'
-    if (status === 'Declined') return 'declined'
-    return 'pending'
-  }
-
-  function mapVirtualAccount(va: NoahVirtualAccount): VirtualAccount {
-    // The rail is the only thing that changes what the fields mean.
-    const rail: Rail = va.PaymentMethodType === 'BankSepa' ? 'sepa' : 'ach'
-    return {
-      rail,
-      currency: rail === 'sepa' ? 'EUR' : 'USD',
-      accountHolderName: va.AccountHolderName,
-      accountNumber: va.AccountNumber,
-      bankCode: va.BankCode,
-      bankName: va.BankName,
-      paymentMethodId: va.PaymentMethodID,
-    }
-  }
-
   return {
     /** Current KYC status, or `null` when Noah has never seen this customer. */
     async getCustomer(customerId: string): Promise<KycStatus | null> {
@@ -162,8 +216,8 @@ export function createNoahClient(config: Config) {
     },
 
     /**
-     * Bind a bank account to a wallet address. `USD` returns ACH details
-     * (routing + account number), `EUR` returns SEPA details (BIC + IBAN).
+     * Bind a bank account to a wallet address. `USD` comes back as a SWIFT
+     * method with ACH and Fedwire alongside it; `EUR` as a single SEPA IBAN.
      * Every deposit is converted to `cryptoCurrency` and sent to the address.
      */
     async createVirtualAccount(args: {
@@ -184,7 +238,7 @@ export function createNoahClient(config: Config) {
           },
         }
       )
-      return mapVirtualAccount(account)
+      return mapVirtualAccount(account, args.fiatCurrency)
     },
 
     /** Sandbox only: pretend a bank transfer arrived, so the rest of the flow runs. */
