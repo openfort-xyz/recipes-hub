@@ -20,7 +20,25 @@ export interface Config {
     /** Sandbox tokens carry a _TEST suffix. */
     cryptoCurrency: string
     network: string
+    /**
+     * Currencies hosted onboarding asks the customer to sign up for. Each one
+     * adds its entity's agreements to the flow — USD brings Noah's US banking
+     * partner — so onboarding a customer to an entity that cannot serve their
+     * country fails there, before any customer record exists.
+     */
+    fiatOptions: ('USD' | 'EUR')[]
   }
+}
+
+function parseFiatOptions(raw?: string): ('USD' | 'EUR')[] {
+  const parsed = (raw ?? 'USD,EUR')
+    .split(',')
+    .map((code) => code.trim().toUpperCase())
+    .filter((code): code is 'USD' | 'EUR' => code === 'USD' || code === 'EUR')
+  if (parsed.length === 0) {
+    throw new Error('NOAH_FIAT_OPTIONS must list at least one of USD, EUR.')
+  }
+  return parsed
 }
 
 function required(name: string): string {
@@ -72,6 +90,7 @@ export function loadConfig(): Config {
       webhookPublicKey: process.env.NOAH_WEBHOOK_PUBLIC_KEY?.replace(/\\n/g, '\n'),
       cryptoCurrency: isSandbox ? 'USDC_TEST' : 'USDC',
       network: isSandbox ? 'PolygonTestAmoy' : 'Polygon',
+      fiatOptions: parseFiatOptions(process.env.NOAH_FIAT_OPTIONS),
     },
   }
 }

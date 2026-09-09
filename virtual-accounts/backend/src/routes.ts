@@ -36,7 +36,12 @@ export function createRoutes(config: Config, openfort: OpenfortClient, noah: Noa
     /** Current KYC status. `not_started` means Noah has never seen this user. */
     getCustomer: withUser(async (_req, res, customerId) => {
       try {
-        res.json({ status: (await noah.getCustomer(customerId)) ?? 'not_started' })
+        // `fiatOptions` rides along so the UI only offers currencies this
+        // customer was actually onboarded for.
+        res.json({
+          status: (await noah.getCustomer(customerId)) ?? 'not_started',
+          fiatOptions: config.noah.fiatOptions,
+        })
       } catch (error) {
         fail(res, error, 'Failed to read customer')
       }

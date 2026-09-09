@@ -200,7 +200,11 @@ export function createNoahClient(config: Config) {
       }
     },
 
-    /** Hosted KYC. Request both fiat options so either rail can be issued later. */
+    /**
+     * Hosted KYC. Only ask for the currencies you can actually serve this
+     * customer: each one adds its entity's agreements to the flow, and an
+     * entity that cannot serve their country fails the session outright.
+     */
     async startOnboarding(customerId: string, returnUrl: string) {
       const session = await request<{ HostedURL: string }>(
         `/v1/onboarding/${encodeURIComponent(customerId)}`,
@@ -208,7 +212,7 @@ export function createNoahClient(config: Config) {
           method: 'POST',
           body: {
             ReturnURL: returnUrl,
-            FiatOptions: [{ FiatCurrencyCode: 'USD' }, { FiatCurrencyCode: 'EUR' }],
+            FiatOptions: config.noah.fiatOptions.map((code) => ({ FiatCurrencyCode: code })),
           },
         }
       )

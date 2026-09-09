@@ -46,7 +46,10 @@ async function call<T>(
 
 export const api = {
   getCustomer: (getAccessToken: GetAccessToken) =>
-    call<{ status: KycStatus }>('/api/banking/customer', getAccessToken),
+    call<{ status: KycStatus; fiatOptions: FiatCurrency[] }>(
+      '/api/banking/customer',
+      getAccessToken
+    ),
 
   startOnboarding: (getAccessToken: GetAccessToken) =>
     call<{ status: KycStatus; hostedUrl?: string }>('/api/banking/customer', getAccessToken, {

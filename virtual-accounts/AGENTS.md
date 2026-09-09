@@ -30,9 +30,13 @@ Hosted KYC needs an HTTPS `PUBLIC_APP_URL`, so run a tunnel to the frontend in l
 
 - **The Openfort user id is the Noah `CustomerID`.** No user table; changing that mapping orphans every
   issued account.
-- **`FiatCurrency` is the only rail switch.** Read `PaymentMethodType` from the response
-  (`BankAch` / `BankSepa`) to decide whether `AccountNumber` is an account number or an IBAN and whether
-  `BankCode` is a routing number or a BIC — never assume from the request.
+- **Never infer the rail from the currency you asked for.** A USD account comes back as `BankSwift`
+  with `BankAch` and `BankFedwire` in `RelatedPaymentMethods` (same account number, different bank
+  code and fee); EUR comes back as a single `BankSepa`. `BankCode` is a routing number on ACH and
+  Fedwire, a BIC on SWIFT and SEPA. `pnpm test` pins this to two real sandbox responses.
+- **`NOAH_FIAT_OPTIONS` decides which entities the hosted KYC runs.** Asking for USD adds the US
+  banking partner's agreement pages; a customer whose country that entity cannot serve fails inside
+  the hosted flow (500 or "Accounts unavailable"), and no customer record is created at all.
 - **Request signing is production-only here.** `noah.ts` signs whenever `NOAH_SIGNING_PRIVATE_KEY` is
   set. In sandbox, sending a signature from a public key Noah has not registered fails with
   `401 "public key not found"` — leave the variable empty unless the key was created with a signing key.

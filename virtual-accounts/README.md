@@ -92,6 +92,11 @@ Then, in the app:
 1. **Sign in** with an email OTP and create the wallet with a passkey.
 2. **Verify identity** — this opens Noah's hosted KYC. In sandbox you can complete it with test data;
    the page polls until Noah reports `Approved`.
+
+   > Ask only for the currencies you can serve. `NOAH_FIAT_OPTIONS` (default `USD,EUR`) decides which
+   > Noah entities the session runs: USD adds the US banking partner's agreement pages, and a customer
+   > whose country that entity cannot serve fails there — a 500 or "Accounts unavailable", with no
+   > customer record created. Onboarding EU customers, set `NOAH_FIAT_OPTIONS=EUR`.
 3. Pick **USD · ACH** or **EUR · SEPA** and press **Get bank details**. The fields are labeled for the
    rail you chose. Issuing both is fine — they point at the same wallet.
 4. **Simulate a deposit** (sandbox only). Noah runs the real conversion path and sends `USDC_TEST` to
@@ -111,11 +116,12 @@ Then, in the app:
 
 | | USD virtual account | EUR virtual account |
 | --- | --- | --- |
-| Rails | ACH and domestic wire | SEPA credit transfer |
+| Ways to pay it | SWIFT (primary), plus ACH and Fedwire in `RelatedPaymentMethods` | SEPA credit transfer |
 | `FiatCurrency` | `USD` | `EUR` |
-| `PaymentMethodType` | `BankAch` | `BankSepa` |
-| `AccountNumber` | Account number | IBAN |
-| `BankCode` | Routing number | BIC |
+| `PaymentMethodType` | `BankSwift`, `BankAch`, `BankFedwire` | `BankSepa` |
+| `AccountNumber` | Account number (same on all three) | IBAN |
+| `BankCode` | BIC on SWIFT, routing number on ACH and Fedwire | BIC |
+| Fee (sandbox) | $25 SWIFT · $20 Fedwire · $2.19 ACH, each + 0.15% | 1%, €1 minimum |
 | Coverage | United States | 27 European countries |
 | Extra checks | Ownership verification may send microdeposits under $1 — each fires two `FiatDeposit` and two `Transaction` events | Deposits above €15,000 per transaction or €30,000 per month trigger enhanced due diligence |
 

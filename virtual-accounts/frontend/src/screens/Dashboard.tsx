@@ -17,12 +17,10 @@ import {
 import { api, type FiatCurrency, formatFee, RAIL_LABELS, type VirtualAccount } from '../lib/api'
 import { chain, EXPLORER_URL, IS_SANDBOX, USDC_ADDRESS, USDC_DECIMALS } from '../openfort/wagmi'
 
-const CURRENCIES: FiatCurrency[] = ['USD', 'EUR']
-
 export function Dashboard() {
   const { getAccessToken } = useUser()
   const { address } = useAccount()
-  const [currency, setCurrency] = useState<FiatCurrency>('USD')
+  const [picked, setPicked] = useState<FiatCurrency | null>(null)
   // One account per currency — issuing EUR does not replace the USD one.
   const [accounts, setAccounts] = useState<Partial<Record<FiatCurrency, VirtualAccount>>>({})
 
@@ -61,8 +59,13 @@ export function Dashboard() {
     query: { enabled: Boolean(address), refetchInterval: 10_000 },
   })
 
-  const account = accounts[currency]
   const isApproved = customer.data?.status === 'approved'
+  // Only the currencies this backend onboards customers for can be issued, so
+  // a stale pick (or the first render) falls back to the first one offered.
+  const currencies = customer.data?.fiatOptions ?? []
+  const currency: FiatCurrency =
+    picked && currencies.includes(picked) ? picked : (currencies[0] ?? 'USD')
+  const account = accounts[currency]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -132,14 +135,14 @@ export function Dashboard() {
       <section style={card}>
         <span style={label}>Currency</span>
         <div style={{ display: 'flex', gap: 8, margin: '8px 0 16px' }}>
-          {CURRENCIES.map((option) => (
+          {currencies.map((option) => (
             <button
               key={option}
               type="button"
-              onClick={() => setCurrency(option)}
+              onClick={() => setPicked(option)}
               style={toggleBtn(option === currency)}
             >
-              {option === 'USD' ? 'USD · ACH' : 'EUR · SEPA'}
+              {option === 'USD' ? 'USD · ACH, wire' : 'EUR · SEPA'}
             </button>
           ))}
         </div>
@@ -181,7 +184,9 @@ function AccountDetails({ account }: { account: VirtualAccount }) {
         const fee = formatFee(method, account.currency)
         return (
           <div key={method.rail} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <div
+              style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}
+            >
               <span style={label}>{labels.title}</span>
               {fee && <span style={{ ...muted, fontSize: '0.75rem' }}>fee {fee}</span>}
             </div>
