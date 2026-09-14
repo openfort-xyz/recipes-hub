@@ -95,12 +95,22 @@ server proves wallet ownership by listing the session's Openfort accounts. An
 externally connected wallet isn't one of them, so offering "Connect Wallet"
 would sign people into a flow that then refuses them.
 
-**Build stubs.** `next.config.ts` aliases several optional peers to `false`:
-the wagmi 3 connector peers, and — new here — `@solana/kit`,
-`@solana-program/{token,system}` and `@solana/kora`, which `@openfort/react`
-1.6.x pulls in through its Solana send path even in an EVM-only app. It also
-silences one upstream webpack warning from `ox`'s Tempo module, reached through
-viem via `@openfort/openfort-node`.
+**A bad session token resolves, it doesn't reject.** `@openfort/openfort-node`
+0.12 returns `null` from `iam.getSession` for a token it can't validate, so
+destructuring the result turns an ordinary expired session into a `TypeError`.
+`src/lib/auth.ts` checks for it. Worth knowing if you copy an older recipe's
+auth helper.
+
+**Build stubs.** `next.config.ts` aliases eight optional peers to `false`.
+`@openfort/react` 2.x reaches its Solana send path from the package entry
+(`@solana/kit`, `@solana/kora`, `@solana-program/{token,system}`), and
+`@openfort/react/wagmi` re-exports its defaultConnectors module, which pulls the
+whole `@wagmi/connectors` barrel (`@coinbase/wallet-sdk`, the two
+`@safe-global/*` packages, `@walletconnect/ethereum-provider`) even though this
+recipe registers only the embedded connector. None of it is used here, and
+without the stubs the webpack build fails outright. It also silences one
+upstream warning from `ox`'s Tempo module, reached through viem via
+`@openfort/openfort-node`.
 
 ## Layout
 

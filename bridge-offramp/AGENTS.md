@@ -43,11 +43,13 @@ sandbox can actually run, and why the drain timeline is simulated there.
 - **Only the embedded-wallet connector is registered.** `getDefaultConfig` also
   registers Safe/Coinbase/injected connectors, and an external wallet fails the
   ownership check in step 3.
-- **`next.config.ts` stubs are load-bearing.** `@openfort/react` 1.6.x reaches
-  its Solana send path from the package entry, so `@solana/kit`,
-  `@solana-program/{token,system}` and `@solana/kora` must stay aliased to
-  `false` in an EVM-only app, alongside the wagmi 3 connector peers. Removing
-  them fails the webpack build outright.
+- **`iam.getSession` resolves to `null` for a bad token** on
+  `@openfort/openfort-node` 0.12 instead of rejecting. Destructuring it directly
+  (as older recipes do) raises a `TypeError` on every expired session.
+- **`next.config.ts` stubs are load-bearing.** All eight. `@openfort/react` 2.x
+  reaches its Solana send path from the package entry, and `@openfort/react/wagmi`
+  pulls the whole `@wagmi/connectors` barrel. Re-checked against 2.1.1 by
+  removing them: the build fails outright. Re-check on the next major.
 
 ## PR instructions
 

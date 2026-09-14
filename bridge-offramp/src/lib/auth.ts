@@ -30,13 +30,21 @@ export async function authenticateRequest(req: Request) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) throw new AuthError('Missing authorization token', 401)
 
+  let result: Awaited<ReturnType<ReturnType<typeof getOpenfort>['iam']['getSession']>> | null = null
   try {
-    const { session, user } = await getOpenfort().iam.getSession({ accessToken: token })
-    return { session, user }
+    result = await getOpenfort().iam.getSession({ accessToken: token })
   } catch (err) {
-    console.error('[auth] iam.getSession failed:', err)
+    // A thrown error here is the transport failing, not the token being bad.
+    console.error('[auth] iam.getSession threw:', err)
     throw new AuthError('Invalid or expired session', 401)
   }
+
+  // openfort-node 0.12 resolves to null for a token it can't validate rather
+  // than rejecting, so destructuring the result straight away turns an ordinary
+  // expired session into a TypeError.
+  if (!result?.user) throw new AuthError('Invalid or expired session', 401)
+
+  return { session: result.session, user: result.user }
 }
 
 /**
