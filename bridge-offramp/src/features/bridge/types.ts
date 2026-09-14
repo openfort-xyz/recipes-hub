@@ -1,15 +1,6 @@
 // Bridge API shapes, narrowed to what this recipe uses.
 // Reference: https://apidocs.bridge.xyz/api-reference
 
-/** Source token. Bridge also supports usdb, usdt, pyusd, eurc. */
-export type BridgeCurrency = 'usdc'
-
-/**
- * Source chain. Bridge has no testnet chains at all — sandbox returns dummy
- * data on mainnet chain names rather than exposing Sepolia or devnets.
- */
-export type BridgeChain = 'base' | 'ethereum' | 'polygon' | 'arbitrum' | 'optimism' | 'solana'
-
 /** The fiat rails this recipe offers. Bridge supports many more. */
 export type PaymentRail = 'ach' | 'wire' | 'sepa'
 
@@ -80,8 +71,9 @@ export interface LiquidationAddress {
   customer_id: string
   /** The blockchain address the user sends USDC to. */
   address: string
-  chain: BridgeChain
-  currency: BridgeCurrency
+  /** Bridge has no testnet chain values — always a mainnet name like `base`. */
+  chain: string
+  currency: 'usdc'
   external_account_id?: string
   destination_payment_rail: PaymentRail
   destination_currency: FiatCurrency

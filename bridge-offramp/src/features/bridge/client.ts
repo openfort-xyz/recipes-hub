@@ -3,7 +3,6 @@
 // The API key never reaches the browser: every call in this file runs inside a
 // route handler that has already verified the caller's Openfort session.
 
-import { createHash } from 'node:crypto'
 import type {
   ExternalAccount,
   IbanAccountInput,
@@ -37,14 +36,11 @@ function apiKey(): string {
 
 export class BridgeError extends Error {
   status: number
-  /** Bridge's own error payload, when it sent one. */
-  detail?: unknown
 
-  constructor(message: string, status: number, detail?: unknown) {
+  constructor(message: string, status: number) {
     super(message)
     this.name = 'BridgeError'
     this.status = status
-    this.detail = detail
   }
 }
 
@@ -54,8 +50,8 @@ export class BridgeError extends Error {
  * double-clicked button re-sends the *same* key, so Bridge returns the original
  * resource instead of minting a second bank account or cash-out address.
  */
-export function idempotencyKey(operation: string, userId: string, salt = ''): string {
-  return createHash('sha256').update(`${operation}:${userId}:${salt}`).digest('hex').slice(0, 36)
+function idempotencyKey(operation: string, userId: string, salt = ''): string {
+  return [operation, userId, salt].filter(Boolean).join(':')
 }
 
 async function request<T>(
@@ -82,7 +78,7 @@ async function request<T>(
     // Bridge returns { code, message, source } — surface its message rather
     // than a bare status, since the useful part is usually in `source`.
     const message = (payload as { message?: string } | null)?.message ?? `Bridge returned ${res.status} for ${path}`
-    throw new BridgeError(message, res.status, payload)
+    throw new BridgeError(message, res.status)
   }
 
   return payload as T

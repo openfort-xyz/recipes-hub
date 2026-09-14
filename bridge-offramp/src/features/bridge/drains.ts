@@ -11,26 +11,17 @@ import { listDrains } from '@/features/bridge/client'
 import type { Drain, DrainState } from '@/features/bridge/types'
 import type { SimulatedDrain } from '@/lib/store'
 
-/** How long the fake timeline spends in each state before moving on. */
-const SIMULATED_TIMELINE: { state: DrainState; afterMs: number }[] = [
-  { state: 'funds_received', afterMs: 0 },
-  { state: 'payment_submitted', afterMs: 8_000 },
-  { state: 'payment_processed', afterMs: 20_000 },
-]
-
 /**
  * Where a simulated cash-out has got to, derived from how long ago it started.
  *
  * Deriving rather than storing means a restart, a refresh or two browser tabs
  * all agree, and there is no interval to leak.
  */
-export function simulatedDrainState(drain: SimulatedDrain, now = Date.now()): DrainState {
+function simulatedDrainState(drain: SimulatedDrain, now = Date.now()): DrainState {
   const elapsed = now - drain.startedAt
-  let state: DrainState = 'funds_received'
-  for (const step of SIMULATED_TIMELINE) {
-    if (elapsed >= step.afterMs) state = step.state
-  }
-  return state
+  if (elapsed >= 20_000) return 'payment_processed'
+  if (elapsed >= 8_000) return 'payment_submitted'
+  return 'funds_received'
 }
 
 export function toDrain(simulated: SimulatedDrain, now = Date.now()): Drain {
