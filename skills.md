@@ -12,6 +12,7 @@ Quick reference mapping each recipe to the capabilities and integrations it demo
 | [morpho](./morpho/) | DeFi vault operations (Morpho Blue), supply/withdraw, WalletConnect, embedded wallets | Vite + React, GraphQL, ESLint |
 | [usdc](./usdc/) | USDC transfers, faucet funding, wallet creation, sponsored transactions on mobile | Expo React Native, Openfort React Native SDK |
 | [x402](./x402/) | x402 payment protocol, paywall content access, backend wallet management, CDP authentication, Shield sessions | React + Vite (frontend), Express 5 (backend), Biome |
+| [bridge-offramp](./bridge-offramp/) | Crypto-to-fiat offramp (Bridge/Stripe), hosted KYC links, external bank accounts (ACH + SEPA), liquidation addresses, drain-state tracking, session-verified API routes, gas-sponsored USDC transfer | Next.js 15, Bridge API, Openfort Node SDK, Biome |
 
 ## Common Across All Recipes
 
