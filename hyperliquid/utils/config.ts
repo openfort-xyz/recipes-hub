@@ -3,7 +3,6 @@ import Constants from "expo-constants";
 const PLACEHOLDER_VALUES = new Set([
   "YOUR_PROJECT_PUBLISHABLE_KEY",
   "YOUR_SHIELD_PUBLISHABLE_KEY",
-  "YOUR_SHIELD_ENCRYPTION_SHARE",
   "YOUR_GAS_SPONSORSHIP_POLICY_ID",
   "https://your-recovery-endpoint.example.com",
   "",
@@ -41,11 +40,11 @@ export function getShieldRecoveryBaseUrl(): string {
   );
 }
 
-export function getEthereumProviderPolicyId(): string | undefined {
-  const value = getExtraValue<string>("openfortEthereumProviderPolicyId");
+export function getFeeSponsorshipId(): string | undefined {
+  const value = getExtraValue<string>("openfortFeeSponsorshipId");
   if (!value || PLACEHOLDER_VALUES.has(value)) {
     console.warn(
-      "[CONFIG] No gas sponsorship policy configured (OPENFORT_ETHEREUM_PROVIDER_POLICY_ID). Gasless actions may be disabled."
+      "[CONFIG] No gas sponsorship policy configured (OPENFORT_FEE_SPONSORSHIP_ID). Gasless actions may be disabled."
     );
     return undefined;
   }

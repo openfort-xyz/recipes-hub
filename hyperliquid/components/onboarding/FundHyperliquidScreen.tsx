@@ -386,7 +386,7 @@ const SourceResultStep: React.FC<SourceResultStepProps> = ({ session, status, lo
           <Card>
             <Text style={styles.hint}>{error.message}</Text>
           </Card>
-        ) : paymentMethod ? (
+        ) : paymentMethod && paymentMethod.type !== "onramp" ? (
           <>
             <Card style={styles.addressCard}>
               <Text style={styles.balanceLabel}>Send to</Text>
