@@ -37,7 +37,7 @@ For a coding agent adding Openfort embedded wallets + LI.FI swaps to an existing
 
 **Install** (exact versions this recipe runs)
 ```sh
-pnpm add @openfort/react@2.1.3 wagmi@^3.6.20 viem@^2.52.2 @tanstack/react-query@^5.101.1 @lifi/sdk@^4.0.0 @lifi/sdk-provider-ethereum@^4.0.0
+pnpm add @openfort/react@2.1.3 @solana/kit@6.10.0 @solana/kora@0.2.1 @solana-program/token@0.12.0 @solana-program/compute-budget@0.13.0 wagmi@^3.6.20 viem@^2.52.2 @tanstack/react-query@^5.101.1 @lifi/sdk@^4.0.0 @lifi/sdk-provider-ethereum@^4.0.0
 ```
 
 **Files that carry the integration**
@@ -75,6 +75,7 @@ pnpm add @openfort/react@2.1.3 wagmi@^3.6.20 viem@^2.52.2 @tanstack/react-query@
 ## Failure modes
 | Error | Cause | Fix |
 | --- | --- | --- |
+| `Module not found: Can't resolve '@solana/kora'` (`next build` error, import trace through `@openfort/react/build/components/Pages/SendConfirmation/SolanaSendConfirmation.js`) | The Solana optional peers of `@openfort/react` are not installed; `OpenfortProvider` imports the Solana pages statically | Install `@solana/kit`, `@solana/kora`, `@solana-program/token` and `@solana-program/compute-budget` (versions in `package.json`) even in an EVM-only app |
 | `Module not found: Can't resolve '@coinbase/wallet-sdk'` (also `'@safe-global/safe-apps-sdk'`, `'@safe-global/safe-apps-provider'`, `'@walletconnect/ethereum-provider'`) as `next build` warnings | `import { injected } from "wagmi/connectors"` pulls the `@wagmi/connectors@8` barrel, which references optional connector peers that are not installed | Alias each to `false` in `next.config.ts` webpack `resolve.alias` (already done) |
 
 ## Upgrade notes (@lifi/sdk v4)
@@ -87,7 +88,7 @@ pnpm add @openfort/react@2.1.3 wagmi@^3.6.20 viem@^2.52.2 @tanstack/react-query@
 
 ## Upgrade notes (@openfort/react 2.1.3)
 - 2.0.1 to 2.1.3 has no breaking API changes for this recipe. The provider key stays `walletConfig.ethereum.ethereumFeeSponsorshipId`.
-- The Solana packages (`@solana/kit`, `@solana/kora`, `@solana-program/*`) are optional peers loaded only for Solana wallets; this EVM-only recipe does not install them.
+- The Solana packages (`@solana/kit`, `@solana/kora`, `@solana-program/token`, `@solana-program/compute-budget`) stay installed even though this recipe is EVM-only: they are optional peers of `@openfort/react`, but `OpenfortProvider` statically imports the Solana send-confirmation page, so webpack fails without them.
 - The header renders the SDK's `OpenfortButton` for both signed-out and signed-in states; the recipe no longer has its own connected-wallet UI.
 
 ## Project structure
