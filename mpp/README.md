@@ -70,7 +70,7 @@ OPENFORT_SECRET_KEY=sk_test_...
 OPENFORT_WALLET_SECRET=...
 TREASURY_WALLET_ID=acc_...        # backend wallet pre-funded with PathUSD on Tempo
 MPP_RECIPIENT=0x...               # Tempo address that receives payments
-MPP_SECRET_KEY=...                # secret the seller route uses to HMAC-bind payment challenges
+MPP_SECRET_KEY=...                # >= 32 bytes (openssl rand -base64 32); HMAC-binds payment challenges
 ```
 
 To create and fund a treasury wallet:
@@ -128,7 +128,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Notes
 
-- `mppx` is pinned exactly (`0.6.30`); its server charge handler reads `MPP_SECRET_KEY` from the environment.
+- `mppx` is pinned exactly (`0.10.1`); its server charge handler reads `MPP_SECRET_KEY` from the environment and rejects keys shorter than 32 bytes.
 - The treasury funds the agent over Tempo using viem's native Tempo support (`viem/chains` → `tempoModerato`, `viem/tempo` → `Actions.token.transfer`); Openfort signs but does not broadcast. If your Tempo deployment differs, fund the agent wallet directly from the faucet — the agent's MPP payment path is unaffected.
 
 ## Learn more

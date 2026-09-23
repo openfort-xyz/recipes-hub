@@ -22,7 +22,7 @@
 | `OPENFORT_WALLET_SECRET` | yes | Dashboard → Backend wallets → Setup. Same project as the secret key |
 | `TREASURY_WALLET_ID` | yes | An EVM backend wallet id (`acc_...`) holding PathUSD on Tempo testnet |
 | `MPP_RECIPIENT` | yes | Tempo address that receives the agent's payments |
-| `MPP_SECRET_KEY` | yes | Any high-entropy string; mppx uses it to HMAC-bind payment challenges |
+| `MPP_SECRET_KEY` | yes | At least 32 bytes (`openssl rand -base64 32`); mppx uses it to HMAC-bind payment challenges |
 | `MPP_CURRENCY` | no | PathUSD token address; defaults to `0x20c0000000000000000000000000000000000000` |
 
 ## Testing instructions
@@ -30,7 +30,7 @@
 - `pnpm verify` runs `biome lint` and `next build` (type-checks and compiles every route). CI runs it on every PR.
 - `pnpm check` — Biome lint + format with autofix.
 - Manual (needs real keys): `POST /api/agent/create` returns a new wallet address; `GET /api/agent/balance?address=0x..` reads PathUSD from the Tempo RPC. The full fund → pay flow needs a treasury funded with PathUSD on Tempo.
-- Last runtime check of the fund → pay flow was not repeated for the `@openfort/openfort-node` 0.12.2 upgrade (2026-09-23); only `pnpm verify` was run.
+- 2026-09-23 (openfort-node 0.12.2, mppx 0.10.1, next 16.3.5, viem 2.56.5): `pnpm verify` passes. With `pnpm start`, the weather route returned a `402` Tempo charge challenge (chainId 42431). An mppx client using the same `toAccount` + `SignatureEnvelope` adapter as `lib/openfort-account.ts`, with a faucet-funded local key in place of Openfort's `account.sign`, paid it and got `200` with a `payment-receipt`. Not run: the Openfort signing call itself, and treasury funding (no valid wallet secret locally).
 
 ## Add this to your app
 
@@ -44,7 +44,7 @@ For a coding agent adding MPP payments signed by Openfort backend wallets to an 
 **Install (exact versions)**
 
 ```bash
-pnpm add @openfort/openfort-node@0.12.2 mppx@0.6.30 viem@2.52.2 ox@0.14.29
+pnpm add @openfort/openfort-node@0.12.2 mppx@0.10.1 viem@2.56.5 ox@0.14.44
 ```
 
 **Files that carry the integration**
@@ -85,6 +85,7 @@ pnpm add @openfort/openfort-node@0.12.2 mppx@0.6.30 viem@2.52.2 ox@0.14.29
 | Error | Cause | Fix |
 | --- | --- | --- |
 | `Missing OPENFORT_SECRET_KEY or OPENFORT_WALLET_SECRET environment variables` | One of the two Openfort variables is unset | Set both in `.env.local` and restart `pnpm dev` |
+| ``Error: Secret key must be at least 32 bytes. Generate one with `openssl rand -base64 32` and set MPP_SECRET_KEY or pass it to Mppx.create().`` (the weather route returns 500) | `MPP_SECRET_KEY` is shorter than 32 bytes | Set it to `openssl rand -base64 32` output |
 | `TREASURY_WALLET_ID not configured` | `/api/agent/fund` called without a treasury wallet id | Set `TREASURY_WALLET_ID` to a funded backend wallet id |
 | `Standard EVM signTransaction is not supported — a Tempo chain serializer is required` | The Openfort viem account was used with a non-Tempo chain | Use it only with `tempoModerato` (or another Tempo chain); for other chains use Openfort's `sendTransaction` |
 | `Forbidden. You don't have permission to access this resource.` | Documented in the openfort-book for 7702 sends; same signEvmHash path, not reproduced here. A v2 signing policy on the account has no accept rule for `signEvmHash`, which `account.sign({ hash })` uses | Add an accept rule for `signEvmHash`, or pre-flight with `openfort.policies.evaluate({ operation: "signEvmHash", accountId })` |
@@ -93,6 +94,7 @@ pnpm add @openfort/openfort-node@0.12.2 mppx@0.6.30 viem@2.52.2 ox@0.14.29
 
 - Keep wallet-secret usage server-side: never import `lib/openfort*.ts` from a client component.
 - Don't route Tempo transactions through Openfort's broadcast API; Openfort does not index Tempo.
+- mppx 0.10 needs `viem >= 2.54` (peer). Pin `ox` to the version `viem` depends on (`0.14.44` for viem 2.56.5) so `SignatureEnvelope` from `ox/tempo` matches the type viem's Tempo serializer expects.
 - `@openfort/openfort-node` 0.12.x added Transactions V2 (`openfort.transactions`). This recipe does not use Openfort transactions, so the upgrade from 0.11.0 needed no code changes.
 
 ## Code style
