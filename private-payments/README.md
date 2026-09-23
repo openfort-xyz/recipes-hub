@@ -53,7 +53,7 @@ pnpx gitpick openfort-xyz/recipes-hub/tree/main/private-payments openfort-privat
 ### Openfort Dashboard ([dashboard.openfort.io](https://dashboard.openfort.io))
 
 1. **API keys** — copy your **Publishable Key** (`pk_test_...`) and **Secret Key** (`sk_test_...`).
-2. **Shield** (Shield → API Keys) — copy the **Publishable Key**.
+2. **Shield** (same API keys page, Shield section) — copy the **Shield Publishable Key**.
 3. Make sure your project has **Monad testnet** enabled and the **EOA** account type available.
 
 ### Unlink ([dashboard.unlink.xyz](https://dashboard.unlink.xyz))

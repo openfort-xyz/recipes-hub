@@ -30,7 +30,7 @@ Copy `backend/.env.local.example` → `backend/.env.local` and `frontend/.env.ex
 | `PORT` | backend | no | Default `3020` |
 | `CORS_ORIGINS` | backend | no | Comma-separated; empty allows any origin |
 | `VITE_OPENFORT_PUBLISHABLE_KEY` | frontend | yes | Dashboard → API Keys (`pk_test_...`) |
-| `VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY` | frontend | yes | Dashboard → Shield → API Keys |
+| `VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY` | frontend | yes | Dashboard → API keys (Shield section) |
 | `VITE_UNLINK_TOKEN` | frontend | yes | Unlink dashboard → Tokens (Monad-testnet token address) |
 | `VITE_API_BASE_URL` | frontend | no | Default `http://localhost:3020` |
 | `VITE_UNLINK_ENVIRONMENT` | frontend | no | Default `monad-testnet` |
