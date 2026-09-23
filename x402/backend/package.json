@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.51.0",
-    "@openfort/openfort-node": "0.11.0",
+    "@openfort/openfort-node": "0.12.2",
     "@solana/kit": "6.10.0",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",

@@ -13,17 +13,14 @@ import {
   createBackendWalletPayment,
   createPaymentRequiredResponse,
   decodePaymentHeader,
-  NETWORK_CHAIN_ID,
   parsePaymentPayload,
   settleWithFacilitator,
   submitTransferWithAuthorizationGasless,
-  tryUpgradeBackendWalletToDelegated,
   toErrorJson,
   verifyOffChainPayment,
   verifyOnChainPayment,
   verifyWithFacilitator,
 } from "./payment.js";
-import type { SupportedNetwork } from "./payment.js";
 
 function sendPaymentError(res: Response, error: unknown, errorLabel = "Failed to sign payment"): void {
   console.error(JSON.stringify({ context: "backend-wallet", ...toErrorJson(error) }));
@@ -32,13 +29,7 @@ function sendPaymentError(res: Response, error: unknown, errorLabel = "Failed to
     return;
   }
   const details = error instanceof Error ? error.message : "Unknown error";
-  const isAccountExists = typeof details === "string" && details.toLowerCase().includes("account already exist");
-  res.status(500).json({
-    error: errorLabel,
-    details: isAccountExists
-      ? `${details} (set OPENFORT_DELEGATED_ACCOUNT_ID in .env.local to skip upgrade)`
-      : details,
-  });
+  res.status(500).json({ error: errorLabel, details });
 }
 
 export async function handleHealth(_req: Request, res: Response): Promise<void> {
@@ -52,7 +43,7 @@ export async function handleHealth(_req: Request, res: Response): Promise<void> 
  * Creates an encryption session for AUTOMATIC embedded wallet recovery.
  * This endpoint is required when using automatic wallet recovery with Openfort Shield.
  *
- * @see https://www.openfort.io/docs/products/embedded-wallet/react-native/quickstart/automatic
+ * @see https://www.openfort.io/docs/products/embedded-wallet/server/automatic-recovery-session
  * @see https://github.com/openfort-xyz/openfort-backend-quickstart
  */
 export async function handleShieldSession(
@@ -256,9 +247,6 @@ export async function handleBackendWalletStatus(
     Boolean(env.openfort.facilitatorUrl?.trim()) &&
     Boolean(env.openfort.facilitatorApiKeyId?.trim()) &&
     Boolean(env.openfort.facilitatorApiKeySecret?.trim());
-  const openfortPolicyAvailable = Boolean(
-    env.openfort.delegatedAccountId?.trim(),
-  );
 
   res.status(200).json({
     configured,
@@ -267,7 +255,7 @@ export async function handleBackendWalletStatus(
     network: env.paywall.payment.network || undefined,
     maxAmountRequired: env.paywall.payment.maxAmountRequired || undefined,
     facilitatorAvailable,
-    openfortPolicyAvailable,
+    openfortPolicyAvailable: configured,
   });
 }
 
@@ -285,73 +273,9 @@ export async function handleBackendWalletCreate(
   }
   try {
     const account = await openfortClient.accounts.evm.backend.create();
-    let delegatedAccountId: string | undefined;
-    const network = env.paywall.payment.network as SupportedNetwork | undefined;
-    const chainId = network && network in NETWORK_CHAIN_ID ? NETWORK_CHAIN_ID[network] : 84532;
-    const rpcUrl = env.paywall.rpcUrl?.trim();
-    if (rpcUrl && env.openfort.secretKey) {
-      const upgraded = await tryUpgradeBackendWalletToDelegated(
-        openfortClient,
-        account.id,
-        chainId,
-        rpcUrl,
-        env.openfort.secretKey,
-      );
-      if (upgraded) delegatedAccountId = upgraded.delegatedAccountId;
-    }
-    res.status(201).json({
-      id: account.id,
-      address: account.address,
-      ...(delegatedAccountId && { delegatedAccountId }),
-    });
+    res.status(201).json({ id: account.id, address: account.address });
   } catch (error) {
     sendPaymentError(res, error, "Failed to create backend wallet");
-  }
-}
-
-/**
- * Upgrades the configured backend EOA to a Delegated Account (EIP-7702) for gasless transactions.
- * Requires OPENFORT_BACKEND_WALLET_ID. Use after creating a wallet if gas sponsorship is needed.
- */
-export async function handleBackendWalletUpgrade(
-  _req: Request,
-  res: Response,
-  openfortClient: Openfort | null,
-  env: Config,
-): Promise<void> {
-  const walletId = env.openfort.walletId?.trim();
-  if (!openfortClient || !env.openfort.walletSecret || !walletId) {
-    res.status(400).json({
-      error: "Backend wallet not configured. Set OPENFORT_WALLET_SECRET and OPENFORT_BACKEND_WALLET_ID.",
-    });
-    return;
-  }
-  const rpcUrl = env.paywall.rpcUrl?.trim();
-  if (!rpcUrl) {
-    res.status(400).json({ error: "Paywall RPC URL not set (X402_RPC_URL or network)." });
-    return;
-  }
-  const network = env.paywall.payment.network as SupportedNetwork | undefined;
-  const chainId = network && network in NETWORK_CHAIN_ID ? NETWORK_CHAIN_ID[network] : 84532;
-  try {
-    const result = await tryUpgradeBackendWalletToDelegated(
-      openfortClient,
-      walletId,
-      chainId,
-      rpcUrl,
-      env.openfort.secretKey,
-    );
-    if (result) {
-      res.status(200).json({ delegatedAccountId: result.delegatedAccountId });
-      return;
-    }
-    res.status(501).json({
-      error: "Upgrade not available",
-      message:
-        "Backend EOA → Delegated Account upgrade is not supported by the current Openfort SDK/API. Use @openfort/openfort-node 0.9+ and ensure the API supports PATCH /v2/accounts/backend/{id} or backend.update().",
-    });
-  } catch (error) {
-    sendPaymentError(res, error, "Failed to upgrade backend wallet");
   }
 }
 
@@ -404,51 +328,28 @@ export async function handleBackendWalletTestPayment(
       return;
     }
 
-    const feeSponsorshipId = env.openfort.feeSponsorshipId?.trim() ?? "";
-    const hasDelegatedAccount = Boolean(env.openfort.delegatedAccountId?.trim());
-    if (hasDelegatedAccount) {
-      try {
-        const raw = decodePaymentHeader(paymentHeader);
-        const payment = parsePaymentPayload(raw);
-        const asset = getAddress(env.paywall.payment.asset);
-        const transactionHash = await submitTransferWithAuthorizationGasless(
-          openfortClient,
-          walletId.trim(),
-          feeSponsorshipId,
-          payment,
-          asset,
-          env.paywall.rpcUrl,
-          env.openfort.secretKey,
-          env.openfort.delegatedAccountId || undefined,
-        );
-        await verifyOnChainPayment(transactionHash, env.paywall, env.paywall.rpcUrl);
-        console.log("x402 tx | wallet: backend | gas: openfort");
-        res.status(200).json({
-          success: true,
-          transactionHash,
-          message: "Payment accepted! Backend wallet x402 flow complete (gas sponsored).",
-          content: {
-            title: "Premium Content Unlocked",
-            data: "This is the protected content you paid for!",
-            timestamp: new Date().toISOString(),
-          },
-        });
-        return;
-      } catch (gaslessError) {
-        const isAccountTypeError =
-          gaslessError instanceof PaymentVerificationError &&
-          gaslessError.code === "TX_BROADCAST_FAILED" &&
-          (gaslessError.message.includes("Account type not supported") ||
-            gaslessError.message.includes("account type"));
-        if (isAccountTypeError) {
-          res.status(200).json({ paymentHeader });
-          return;
-        }
-        throw gaslessError;
-      }
-    }
-
-    res.status(200).json({ paymentHeader });
+    const raw = decodePaymentHeader(paymentHeader);
+    const payment = parsePaymentPayload(raw);
+    const transactionHash = await submitTransferWithAuthorizationGasless(
+      openfortClient,
+      walletId.trim(),
+      env.openfort.feeSponsorshipId,
+      payment,
+      getAddress(env.paywall.payment.asset),
+      env.paywall.rpcUrl,
+    );
+    await verifyOnChainPayment(transactionHash, env.paywall, env.paywall.rpcUrl);
+    console.log("x402 tx | wallet: backend | gas: openfort");
+    res.status(200).json({
+      success: true,
+      transactionHash,
+      message: "Payment accepted! Backend wallet x402 flow complete (gas sponsored).",
+      content: {
+        title: "Premium Content Unlocked",
+        data: "This is the protected content you paid for!",
+        timestamp: new Date().toISOString(),
+      },
+    });
   } catch (error) {
     sendPaymentError(res, error);
   }

@@ -12,7 +12,6 @@ import {
 	type Address,
 	type Hex,
 } from "viem";
-import { hashAuthorization } from "viem/utils";
 import type { Config } from "./config.js";
 
 // ---- Network types ----
@@ -570,203 +569,11 @@ function splitSignature(signature: Hex): { v: number; r: Hex; s: Hex } {
 }
 
 /**
- * Normalize ECDSA signature to use yParity (0/1) in the last byte for Account Abstraction V8.
- * Openfort parses r, s, yParity from the signature; some backends return v=27/28.
- */
-function signatureToYParityFormat(signature: string): string {
-	const hex = signature.startsWith("0x") ? signature.slice(2) : signature;
-	if (hex.length !== 130) return signature;
-	const v = Number.parseInt(hex.slice(128, 130), 16);
-	const yParity = v === 27 ? 0 : v === 28 ? 1 : v;
-	return `0x${hex.slice(0, 128)}${yParity.toString(16).padStart(2, "0")}`;
-}
-
-// EIP-7702 Calibur implementation (Base Sepolia); same address used in Openfort backend wallet gasless docs
-const EIP7702_CALIBUR_IMPLEMENTATION: Address =
-	"0x000000009b1d0af20d8c6d0a44e162d11f9b8f00";
-
-const OPENFORT_API_BASE = "https://api.openfort.io";
-
-/** Try multiple API response shapes (camelCase, snake_case) for delegated account id. */
-function parseDelegatedAccountId(data: unknown): string | null {
-	if (data === null || typeof data !== "object") return null;
-	const o = data as Record<string, unknown>;
-	const camel = o.delegatedAccount;
-	if (camel !== null && typeof camel === "object")
-		return (camel as { id: string }).id;
-	const snake = o.delegated_account;
-	if (
-		snake !== null &&
-		typeof snake === "object" &&
-		typeof (snake as { id?: string }).id === "string"
-	)
-		return (snake as { id: string }).id;
-	return null;
-}
-
-/**
- * Calls Openfort API to upgrade backend EOA to Delegated Account (EIP-7702).
- * API uses PUT. 409 "Account already exist" means already upgraded — we then GET to obtain delegatedAccount.id.
- */
-async function openfortBackendUpdateToDelegated(
-	apiSecretKey: string,
-	walletId: string,
-	chainId: number,
-): Promise<{ delegatedAccountId: string } | null> {
-	const url = `${OPENFORT_API_BASE}/v2/accounts/backend/${encodeURIComponent(walletId)}`;
-	const res = await fetch(url, {
-		method: "PUT",
-		headers: {
-			Authorization: `Bearer ${apiSecretKey}`,
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			accountType: "Delegated Account",
-			chainType: "EVM",
-			chainId,
-			implementationType: "Calibur",
-		}),
-	});
-
-	const bodyText = await res.text();
-	let parsed: unknown;
-	try {
-		parsed = bodyText ? JSON.parse(bodyText) : {};
-	} catch {
-		parsed = {};
-	}
-
-	if (res.ok) {
-		const id = parseDelegatedAccountId(parsed);
-		return id ? { delegatedAccountId: id } : null;
-	}
-
-	if (res.status === 409) {
-		const id = parseDelegatedAccountId(parsed);
-		if (id) return { delegatedAccountId: id };
-		const getRes = await fetch(url, {
-			method: "GET",
-			headers: { Authorization: `Bearer ${apiSecretKey}` },
-		});
-		const getText = await getRes.text();
-		if (getRes.ok) {
-			let getParsed: unknown;
-			try {
-				getParsed = getText ? JSON.parse(getText) : {};
-			} catch {
-				getParsed = {};
-			}
-			const getId = parseDelegatedAccountId(getParsed);
-			if (getId) return { delegatedAccountId: getId };
-		}
-		return null;
-	}
-
-	return null;
-}
-
-/**
- * Tries to upgrade a backend EOA to a Delegated Account (EIP-7702) for gasless transactions.
- * See https://www.openfort.io/docs/products/server/usage (Sending gasless transactions).
- * Returns delegatedAccountId when the SDK or API supports backend.update; otherwise null.
- */
-export async function tryUpgradeBackendWalletToDelegated(
-	openfortClient: Openfort,
-	walletId: string,
-	chainId: number,
-	rpcUrl: string,
-	apiSecretKey: string,
-): Promise<{ delegatedAccountId: string } | null> {
-	const result = await getDelegatedAccountAuth(
-		openfortClient,
-		walletId,
-		chainId,
-		rpcUrl,
-		apiSecretKey,
-	);
-	return result.delegatedAccountId
-		? { delegatedAccountId: result.delegatedAccountId }
-		: null;
-}
-
-/**
- * Builds EIP-7702 delegation signature and resolves Delegated Account id (SDK, API, or env override).
- * See https://www.openfort.io/docs/products/server/usage (Sending gasless transactions).
- */
-async function getDelegatedAccountAuth(
-	openfortClient: Openfort,
-	walletId: string,
-	chainId: number,
-	rpcUrl: string,
-	apiSecretKey: string,
-	delegatedAccountIdOverride?: string,
-): Promise<{ delegatedAccountId?: string; signedAuthorization: Hex }> {
-	const account = await openfortClient.accounts.evm.backend.get({
-		id: walletId,
-	});
-	if (!account) {
-		throw new PaymentVerificationError(
-			"TX_BROADCAST_FAILED",
-			"Backend wallet account not found for EIP-7702 auth",
-		);
-	}
-	const publicClient = createPublicClient({ transport: http(rpcUrl) });
-	const eoaNonce = await publicClient.getTransactionCount({
-		address: account.address,
-	});
-	const authHash = hashAuthorization({
-		contractAddress: EIP7702_CALIBUR_IMPLEMENTATION,
-		chainId,
-		nonce: eoaNonce,
-	});
-	const signedAuthorization = await account.sign({ hash: authHash });
-
-	if (delegatedAccountIdOverride?.trim()) {
-		return {
-			delegatedAccountId: delegatedAccountIdOverride.trim(),
-			signedAuthorization,
-		};
-	}
-
-	const backend = openfortClient.accounts.evm.backend;
-	if (typeof backend.update === "function") {
-		try {
-			const updated = await backend.update({
-				walletId: account?.walletId,
-				accountId: account?.id,
-				accountType: "Delegated Account",
-				chainId,
-				implementationType: "Calibur",
-			});
-			const delegatedId = updated?.id;
-			if (delegatedId)
-				return { delegatedAccountId: delegatedId, signedAuthorization };
-		} catch (updateErr) {
-			console.error("Error updating backend wallet to delegated account", updateErr);
-		}
-	}
-
-	const apiResult = await openfortBackendUpdateToDelegated(
-		apiSecretKey,
-		walletId,
-		chainId,
-	);
-	if (apiResult)
-		return {
-			delegatedAccountId: apiResult.delegatedAccountId,
-			signedAuthorization,
-		};
-
-	return { signedAuthorization };
-}
-
-/**
- * Submits transferWithAuthorization via Openfort transaction intents with policy gas sponsorship.
- * Flow: EOA (backend wallet, walletId) signs the userOpHash; the Delegated Account (delegatedAccountId,
- * same on-chain address as EOA but with EIP-7702 code) is the transaction sender. Backend wallet must
- * be upgraded to a Delegated Account for the chain; see
- * https://www.openfort.io/docs/products/server/usage (Sending gasless transactions).
- * When feeSponsorshipId is empty, no policy is sent and Openfort uses project-scoped fee sponsorship (auto-discovered).
+ * Submits transferWithAuthorization from the backend wallet with Openfort gas sponsorship.
+ * `accounts.evm.backend.sendTransaction` registers the EIP-7702 Delegated Account on first use,
+ * signs the authorization while the EOA is not yet delegated on-chain, then creates and signs the
+ * transaction intent. See https://www.openfort.io/docs/products/server/evm/gasless-transactions.
+ * When feeSponsorshipId is empty, no policy is sent and Openfort uses project-scoped fee sponsorship.
  * When feeSponsorshipId is set, it is sent for transaction-scoped fee sponsorship.
  */
 export async function submitTransferWithAuthorizationGasless(
@@ -776,8 +583,6 @@ export async function submitTransferWithAuthorizationGasless(
 	payload: PaymentPayload,
 	asset: Address,
 	rpcUrl: string,
-	apiSecretKey: string,
-	delegatedAccountIdOverride?: string,
 ): Promise<Hex> {
 	const chainId = NETWORK_CHAIN_ID[payload.network];
 	const { authorization, signature } = payload.payload;
@@ -799,43 +604,22 @@ export async function submitTransferWithAuthorizationGasless(
 		],
 	});
 
-	const { delegatedAccountId, signedAuthorization: signedAuth } =
-		await getDelegatedAccountAuth(
-			openfortClient,
-			walletId,
-			chainId,
-			rpcUrl,
-			apiSecretKey,
-			delegatedAccountIdOverride,
-		);
-
-	if (!delegatedAccountId) {
-		throw new PaymentVerificationError(
-			"TX_BROADCAST_FAILED",
-			"Account type not supported (backend EOA cannot use policy; Delegated Account upgrade not available from API)",
-		);
-	}
-
-	// Project-scoped fee sponsorship: omit policy so Openfort auto-discovers. Transaction-scoped: send policy.
-	const createParams = {
-		chainId,
-		account: delegatedAccountId,
-		...(feeSponsorshipId.trim() ? { policy: feeSponsorshipId.trim() } : {}),
-		signedAuthorization: signedAuth,
-		interactions: [{ to: asset, data }],
-	};
+	const account = await openfortClient.accounts.evm.backend.get({ id: walletId });
+	const policy = feeSponsorshipId.trim();
 	let intent: Awaited<
-		ReturnType<typeof openfortClient.transactionIntents.create>
+		ReturnType<typeof openfortClient.accounts.evm.backend.sendTransaction>
 	>;
 	try {
-		intent = await openfortClient.transactionIntents.create(
-			createParams
-		);
+		intent = await openfortClient.accounts.evm.backend.sendTransaction({
+			account,
+			chainId,
+			rpcUrl,
+			interactions: [{ to: asset, data }],
+			...(policy ? { policy } : {}),
+		});
 	} catch (err) {
 		const msg = openfortErrorMessage(err);
-		const invalidPol =
-			typeof msg === "string" &&
-			(msg.includes("Invalid pol") || msg.includes("Invalid policy"));
+		const invalidPol = msg.includes("Invalid pol") || msg.includes("Invalid policy");
 		throw new PaymentVerificationError(
 			"TX_BROADCAST_FAILED",
 			invalidPol
@@ -844,86 +628,18 @@ export async function submitTransferWithAuthorizationGasless(
 		);
 	}
 
-	let txHash = intent.response?.transactionHash;
-
-	// For non-custodial accounts Openfort returns nextAction.payload.signableHash.
-	// For custodial EIP-7702 Delegated Accounts, Openfort cannot auto-sign (AA V8 limitation),
-	// so nextAction is absent. Fall back to intent.details.userOperationHash which AA V8 always exposes.
-	const nextActionHash = (
-		intent.nextAction?.payload
-	)?.signableHash;
-	const detailsHash = (
-		intent.details as { userOperationHash?: string } | null | undefined
-	)?.userOperationHash;
-	const hashToSign = nextActionHash ?? detailsHash;
-
-	if (!txHash && hashToSign) {
-		// Sign the userOperationHash with the backend wallet EOA key.
-		// Must be a raw hash sign (no EIP-191 prefix) — the Calibur validateUserOp
-		// verifies ecrecover(userOpHash, sig) === owner (the delegating EOA).
-		const account = await openfortClient.accounts.evm.backend.get({
-			id: walletId,
-		});
-		if (!account) {
-			throw new PaymentVerificationError(
-				"TX_BROADCAST_FAILED",
-				"Backend wallet account not found for signing intent",
-			);
-		}
-		const signableHex = hashToSign.startsWith("0x")
-			? hashToSign
-			: `0x${hashToSign}`;
-
-		let sig: string;
-		try {
-			sig = await account.sign({ hash: signableHex as Hex });
-		} catch (signErr) {
-			throw new PaymentVerificationError(
-				"TX_BROADCAST_FAILED",
-				`Backend sign failed: ${signErr instanceof Error ? signErr.message : String(signErr)}`,
-			);
-		}
-
-		// Openfort docs pass raw signature; use yParity only if OPENFORT_SIGNATURE_YPARITY=1 (for debugging).
-		const useYParity = process.env.OPENFORT_SIGNATURE_YPARITY === "1";
-		const signatureForApi = useYParity ? signatureToYParityFormat(sig) : sig;
-
-		// EOA (backend wallet) signs userOpHash; delegated account (same address, with code) is the UserOp sender.
-		// Use SDK so Openfort receives the signature in the format it expects (matches docs: transactionIntents.signature(txIntent.id, { signature })).
-		let signed: Awaited<
-			ReturnType<typeof openfortClient.transactionIntents.signature>
-		>;
-		try {
-			signed = await openfortClient.transactionIntents.signature(intent.id, {
-				signature: signatureForApi,
-			});
-		} catch (sigApiErr) {
-			const msg = openfortErrorMessage(sigApiErr);
-			throw new PaymentVerificationError("TX_BROADCAST_FAILED", msg);
-		}
-		txHash = signed.response?.transactionHash;
-	}
-
 	// Openfort may broadcast asynchronously — poll up to 10s for the transaction hash.
-	if (!txHash) {
-		for (let attempt = 0; attempt < 5; attempt++) {
-			await new Promise((r) => setTimeout(r, 2000));
-			const pollRes = await fetch(
-				`${OPENFORT_API_BASE}/v1/transaction_intents/${encodeURIComponent(intent.id)}`,
-				{ headers: { Authorization: `Bearer ${apiSecretKey}` } },
-			);
-			if (pollRes.ok) {
-				const polled = (await pollRes.json());
-				txHash = polled.response?.transactionHash;
-				if (txHash) break;
-			}
-		}
+	let txHash = intent.response?.transactionHash;
+	for (let attempt = 0; !txHash && attempt < 5; attempt++) {
+		await new Promise((resolve) => setTimeout(resolve, 2000));
+		const polled = await openfortClient.transactionIntents.get(intent.id);
+		txHash = polled.response?.transactionHash;
 	}
 
 	if (!txHash) {
 		throw new PaymentVerificationError(
 			"TX_BROADCAST_FAILED",
-			`Openfort intent ${intent.id} created but no transactionHash. Check fee sponsorship (${feeSponsorshipId ? `fee sponsorship ${feeSponsorshipId}` : "project-scoped fee sponsorship"}) in Openfort dashboard. See server logs for intent/response details.`,
+			`Openfort intent ${intent.id} created but no transactionHash. Check fee sponsorship (${policy ? `fee sponsorship ${policy}` : "project-scoped fee sponsorship"}) in Openfort dashboard. See server logs for intent/response details.`,
 		);
 	}
 	return txHash as Hex;
