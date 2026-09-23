@@ -28,9 +28,9 @@ publishable key is all you need — no Shield secret and no backend server.
 
 ### Create a Fee Sponsorship (Optional)
 
-1. Navigate to **Gas Policies**
-2. Create a new fee sponsorship to sponsor user transactions
-3. Copy the **Fee Sponsorship ID**
+1. Navigate to **Gas sponsorship**
+2. Click **Add gas sponsorship** for Base / Base Sepolia
+3. Copy the **Fee Sponsorship ID** (`pol_...`)
 
 ## 3. Configure Environment
 
@@ -44,6 +44,7 @@ Add your credentials to `.env`:
 VITE_OPENFORT_PUBLISHABLE_KEY=pk_...
 VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY=...
 VITE_OPENFORT_FEE_SPONSORSHIP_ID=pol_...     # Optional
+VITE_WALLET_CONNECT_PROJECT_ID=...           # Optional
 ```
 
 ## 4. Install & Run
