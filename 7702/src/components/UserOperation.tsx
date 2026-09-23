@@ -4,13 +4,12 @@ import { OpenfortButton, use7702Authorization, useOpenfort, useSignOut, useUser 
 import { useEthereumEmbeddedWallet } from '@openfort/react/ethereum'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { createPublicClient, http, zeroAddress } from 'viem'
+import { createPublicClient, http, type SignableMessage, type TypedDataDefinition, zeroAddress } from 'viem'
 // These ERC-4337 clients come from viem itself (an existing dependency), NOT from
 // permissionless/pimlico. They are pointed at Openfort's own bundler + paymaster
 // (https://api.openfort.io/rpc/<chainId>) and sponsored by an Openfort fee-sponsorship
 // policy — i.e. this is Openfort infrastructure, with viem as the thin 4337 transport.
 import { createBundlerClient, createPaymasterClient, toSimple7702SmartAccount } from 'viem/account-abstraction'
-import { toAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'
 import { useAccount, useSwitchChain, useWalletClient } from 'wagmi'
 import { Button } from '@/components/ui/button'
@@ -74,21 +73,14 @@ export function UserOperation() {
         transport: http(),
       })
 
-      const owner = toAccount({
-        address: walletClient.data.account.address,
-        async sign({ hash }) {
-          return walletClient.data!.signMessage({ message: { raw: hash } })
-        },
-        async signMessage({ message }) {
-          return walletClient.data!.signMessage({ message })
-        },
-        async signTransaction(tx) {
-          return walletClient.data!.signTransaction(tx as any)
-        },
-        async signTypedData(typedData) {
-          return walletClient.data!.signTypedData(typedData as any)
-        },
-      })
+      // toSimple7702SmartAccount only reads the owner's address, signMessage and
+      // signTypedData, so the wagmi wallet client stands in for a local account.
+      const wallet = walletClient.data
+      const owner = {
+        address: eoa,
+        signMessage: ({ message }: { message: SignableMessage }) => wallet.signMessage({ message }),
+        signTypedData: (typedData: TypedDataDefinition) => wallet.signTypedData(typedData),
+      }
       // viem's toSimple7702SmartAccount handles everything:
       // - factory: 0x7702, factoryData: 0x
       // - execute/executeBatch call encoding (Simple7702Account ABI)
