@@ -3,7 +3,7 @@ import Constants from "expo-constants";
 const PLACEHOLDER_VALUES = new Set([
   "YOUR_PROJECT_PUBLISHABLE_KEY",
   "YOUR_SHIELD_PUBLISHABLE_KEY",
-  "YOUR_GAS_SPONSORSHIP_POLICY_ID",
+  "YOUR_FEE_SPONSORSHIP_ID",
   "https://your-recovery-endpoint.example.com",
   "",
 ]);
@@ -40,11 +40,11 @@ export function getShieldRecoveryBaseUrl(): string {
   );
 }
 
-export function getEthereumProviderPolicyId(): string | undefined {
-  const value = getExtraValue<string>("openfortEthereumProviderPolicyId");
+export function getFeeSponsorshipId(): string | undefined {
+  const value = getExtraValue<string>("openfortFeeSponsorshipId");
   if (!value || PLACEHOLDER_VALUES.has(value)) {
     console.warn(
-      "[CONFIG] No gas sponsorship policy configured (OPENFORT_ETHEREUM_PROVIDER_POLICY_ID). Mainnet gas is real ETH.",
+      "[CONFIG] No fee sponsorship configured (OPENFORT_FEE_SPONSORSHIP_ID). Mainnet gas is real ETH.",
     );
     return undefined;
   }
@@ -56,10 +56,6 @@ export function getLighterServerBaseUrl(): string {
     getExtraValue<string>("lighterServerBaseUrl"),
     "[CONFIG] Missing Lighter recipe server URL. Set LIGHTER_SERVER_BASE_URL in .env.",
   );
-}
-
-export function getLighterMarketSymbol(): string {
-  return getExtraValue<string>("lighterMarketSymbol") ?? "ETH";
 }
 
 /** Optional shared secret matching the server's LIGHTER_SERVER_AUTH_TOKEN. Empty = server is open. */

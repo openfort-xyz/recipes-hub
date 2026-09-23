@@ -54,6 +54,8 @@ OPENFORT_PUBLISHABLE_KEY=pk_test_your_publishable_key
 OPENFORT_SHIELD_PUBLISHABLE_KEY=pk_test_your_shield_key
 OPENFORT_SHIELD_RECOVERY_BASE_URL=http://localhost:3008
 LIGHTER_SERVER_BASE_URL=http://localhost:3008
+# Optional, mainnet deposit path only:
+OPENFORT_FEE_SPONSORSHIP_ID=pol_your_policy_id
 ```
 
 ## 5. Install & run

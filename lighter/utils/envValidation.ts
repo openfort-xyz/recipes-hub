@@ -16,7 +16,7 @@ interface EnvRule {
 const PLACEHOLDER_VALUES = new Set([
   "YOUR_PROJECT_PUBLISHABLE_KEY",
   "YOUR_SHIELD_PUBLISHABLE_KEY",
-  "YOUR_GAS_SPONSORSHIP_POLICY_ID",
+  "YOUR_FEE_SPONSORSHIP_ID",
   "https://your-recovery-endpoint.example.com",
   "",
 ]);
