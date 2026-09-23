@@ -623,7 +623,7 @@ export async function submitTransferWithAuthorizationGasless(
 		throw new PaymentVerificationError(
 			"TX_BROADCAST_FAILED",
 			invalidPol
-				? `${msg} Use a fee sponsorship from the Fee sponsorships tab (not a backend wallet policy). For project-scoped gas sponsorship, leave OPENFORT_FEE_SPONSORSHIP_ID empty.`
+				? `${msg} Use a sponsorship from the Gas sponsorships tab (not a backend wallet policy). For project-scoped gas sponsorship, leave OPENFORT_FEE_SPONSORSHIP_ID empty.`
 				: msg,
 		);
 	}
