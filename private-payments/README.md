@@ -71,7 +71,7 @@ PORT=3020
 CORS_ORIGINS=http://localhost:5181
 
 OPENFORT_SECRET_KEY=sk_test_...
-OPENFORT_PUBLISHABLE_KEY=pk_test_...   # same project as the frontend's key
+OPENFORT_PUBLISHABLE_KEY=pk_test_...   # same project; required by the session check
 
 UNLINK_API_KEY=...
 UNLINK_ENVIRONMENT=monad-testnet
@@ -81,7 +81,7 @@ Create `frontend/.env` (see `frontend/.env.example`):
 
 ```env
 VITE_OPENFORT_PUBLISHABLE_KEY=pk_test_...
-VITE_OPENFORT_SHIELD_KEY=...
+VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY=...
 VITE_API_BASE_URL=http://localhost:3020
 VITE_UNLINK_ENVIRONMENT=monad-testnet
 VITE_UNLINK_TOKEN=0x...   # your Monad-testnet token address
@@ -168,8 +168,8 @@ private-payments/
 - **Funding.** The recipe seeds the shielded balance with the Unlink faucet for a frictionless demo. In
   production you would deposit from the treasury EOA (`depositWithApproval`); deposits are public by design,
   the withdraw is what breaks the link.
-- This is an MVP focused on the integration shape, verified against `@unlink-xyz/sdk@0.3.0-canary.717` and
-  `@openfort/react@1.3.0`. Add operator auth and a real store before production.
+- This is an MVP focused on the integration shape, verified against `@unlink-xyz/sdk@0.3.0-canary.717`,
+  `@openfort/react@2.1.3` and `@openfort/openfort-node@0.12.2`. Add operator auth and a real store before production.
 - **`account.fromWallet` naming.** It is live on the latest `@unlink-xyz/sdk` `canary` dist-tag and lands in
   the next stable release. On older builds the method was `account.fromMetaMask` (still exported as a
   deprecated alias with the same options).

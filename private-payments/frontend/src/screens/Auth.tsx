@@ -26,8 +26,8 @@ const EmailOtpForm = () => {
 
   const handleRequestOtp = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    await requestEmailOtp({ email })
-    setOtpSent(true)
+    const { error: requestError } = await requestEmailOtp({ email })
+    if (!requestError) setOtpSent(true)
   }
 
   const handleVerifyOtp = async (event: FormEvent<HTMLFormElement>) => {
@@ -58,7 +58,7 @@ const EmailOtpForm = () => {
           required
           style={inputStyle}
         />
-        {error && <p style={errorStyle}>{error.message}</p>}
+        {error && <p style={errorStyle}>{error.shortMessage}</p>}
         <button
           type="submit"
           disabled={isRequesting}
@@ -105,7 +105,7 @@ const EmailOtpForm = () => {
         required
         style={inputStyle}
       />
-      {error && <p style={errorStyle}>{error.message}</p>}
+      {error && <p style={errorStyle}>{error.shortMessage}</p>}
       <button
         type="submit"
         disabled={isLoading}

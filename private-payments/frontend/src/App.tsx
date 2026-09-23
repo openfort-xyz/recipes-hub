@@ -17,14 +17,16 @@ type Step = 'loading' | 'auth' | 'wallet' | 'dashboard'
 function useStep(): Step {
   const { isLoading: isSdkLoading } = useOpenfort()
   const { isAuthenticated } = useUser()
-  const { isConnected } = useAccount()
+  const { isConnected, status: accountStatus } = useAccount()
   const wallet = useEthereumEmbeddedWallet()
   const isLoadingWallets = wallet.status === 'fetching-wallets'
   const isConnecting = wallet.isConnecting
   const activeWallet = wallet.activeWallet
 
   if (isSdkLoading) return 'loading'
-  if (isAuthenticated && (isLoadingWallets || isConnecting)) return 'loading'
+  // getDefaultConfig sets wagmi `ssr: true`, so the first render reports 'reconnecting'.
+  if (isAuthenticated && (isLoadingWallets || isConnecting || accountStatus === 'reconnecting'))
+    return 'loading'
   if (!isAuthenticated) return 'auth'
   if (!isConnected || !activeWallet || activeWallet.accountType !== AccountTypeEnum.EOA)
     return 'wallet'
