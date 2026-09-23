@@ -87,7 +87,7 @@ pnpm add @openfort/openfort-node@0.12.2 mppx@0.6.30 viem@2.52.2 ox@0.14.29
 | `Missing OPENFORT_SECRET_KEY or OPENFORT_WALLET_SECRET environment variables` | One of the two Openfort variables is unset | Set both in `.env.local` and restart `pnpm dev` |
 | `TREASURY_WALLET_ID not configured` | `/api/agent/fund` called without a treasury wallet id | Set `TREASURY_WALLET_ID` to a funded backend wallet id |
 | `Standard EVM signTransaction is not supported — a Tempo chain serializer is required` | The Openfort viem account was used with a non-Tempo chain | Use it only with `tempoModerato` (or another Tempo chain); for other chains use Openfort's `sendTransaction` |
-| `Forbidden. You don't have permission to access this resource.` | A v2 signing policy on the account has no accept rule for `signEvmHash`, which `account.sign({ hash })` uses | Add an accept rule for `signEvmHash`, or pre-flight with `openfort.policies.evaluate({ operation: "signEvmHash", accountId })` |
+| `Forbidden. You don't have permission to access this resource.` | Documented in the openfort-book for 7702 sends; same signEvmHash path, not reproduced here. A v2 signing policy on the account has no accept rule for `signEvmHash`, which `account.sign({ hash })` uses | Add an accept rule for `signEvmHash`, or pre-flight with `openfort.policies.evaluate({ operation: "signEvmHash", accountId })` |
 
 ## Notes
 
