@@ -10,7 +10,7 @@
     "verify": "pnpm lint && pnpm build"
   },
   "dependencies": {
-    "@openfort/react": "2.0.1",
+    "@openfort/react": "2.1.3",
     "@solana-program/compute-budget": "0.13.0",
     "@solana-program/token": "0.12.0",
     "@solana/kit": "6.10.0",
