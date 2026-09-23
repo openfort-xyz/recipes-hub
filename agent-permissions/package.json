@@ -14,6 +14,10 @@
   "dependencies": {
     "@openfort/openfort-node": "0.12.2",
     "@openfort/react": "2.1.3",
+    "@solana-program/compute-budget": "0.13.0",
+    "@solana-program/token": "0.12.0",
+    "@solana/kit": "6.10.0",
+    "@solana/kora": "0.2.1",
     "@tanstack/react-query": "^5.101.1",
     "@upstash/redis": "^1.38.0",
     "next": "^15.5.19",

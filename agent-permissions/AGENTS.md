@@ -47,6 +47,10 @@ For a coding agent adding "a backend agent acts on the user's smart account unde
 pnpm add @openfort/react@2.1.3 @openfort/openfort-node@0.12.2 wagmi@^3.6.20 viem@^2.52.2 @tanstack/react-query@^5.101.1
 pnpm add @upstash/redis@^1.38.0   # or any store for agent configs
 ```
+Also install the Solana peers, even in an EVM-only app: `OpenfortProvider` imports its Solana module statically, and `next build` fails without them.
+```bash
+pnpm add @solana/kit@6.10.0 @solana/kora@0.2.1 @solana-program/token@0.12.0 @solana-program/compute-budget@0.13.0
+```
 With webpack (Next 15), set the optional wagmi connector peers to `false` in `resolve.fallback` and externalize `pino-pretty`; copy `next.config.js`.
 
 **Files that carry the integration**
@@ -95,6 +99,7 @@ With webpack (Next 15), set the optional wagmi connector peers to `false` in `re
 | Error | Cause | Fix |
 | --- | --- | --- |
 | `UnknownError: Something went wrong. Please contact support at support@openfort.xyz (cause: _MissingWalletSecretError: Wallet secret not configured. Required for: POST /v2/accounts/backend)` | `OPENFORT_WALLET_SECRET` is empty, so `accounts.evm.backend.create()` in `/api/dca` fails (from the Openfort triage book). | Set `OPENFORT_WALLET_SECRET` to the project's existing wallet secret. Do not rotate it to get a new one: rotation invalidates the old secret for every running client. |
+| `Module not found: Can't resolve '@solana/kit'` (also `@solana-program/token`, `@solana/kora`) | `next build` with `@openfort/react` 2.1.3 but without its Solana peers. The provider imports its Solana confirmation module statically, so EVM-only apps still need them. | Install `@solana/kit`, `@solana/kora`, `@solana-program/token` and `@solana-program/compute-budget` (versions in `package.json`). |
 | `OPENFORT_SECRET_KEY is not configured` | Server env missing the secret key. | Set `OPENFORT_SECRET_KEY` in `.env.local` or the Vercel project. |
 | `Invalid or expired session` (401) | The Bearer token failed `openfort.iam.getSession` (the route logs the underlying error as `[auth] iam.getSession failed:`). | Send a fresh `useUser().getAccessToken()` value; check the server log for the cause. |
 | `Address not owned by authenticated user` (403) | The `address` in the request is not one of the signed-in user's Openfort accounts. | Send the active embedded wallet address from wagmi `useAccount`. |
@@ -112,7 +117,7 @@ With webpack (Next 15), set the optional wagmi connector peers to `false` in `re
 - **Mock WETH**: `0xbabe0001489722187FbaF0689C47B2f5E97545C5`
 
 ## Upgrade notes
-- **September 2026** (`@openfort/react` 2.0.1 to 2.1.3, `@openfort/openfort-node` 0.11.0 to 0.12.2): env vars renamed to the shared names (`NEXT_PUBLIC_SHIELD_PUBLISHABLE_KEY` to `NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY`, `NEXT_PUBLIC_FEE_SPONSORSHIP_ID` to `NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID`, `OPENFORT_WALLET_SECRET_KEY` to `OPENFORT_WALLET_SECRET`). The agent wallet is created with `openfort.accounts.evm.backend.create()` instead of the standalone `createBackendWallet`. The `@solana/*` packages were removed: both SDKs load them with dynamic `import()` only on Solana paths, which this EVM recipe never takes.
+- **September 2026** (`@openfort/react` 2.0.1 to 2.1.3, `@openfort/openfort-node` 0.11.0 to 0.12.2): env vars renamed to the shared names (`NEXT_PUBLIC_SHIELD_PUBLISHABLE_KEY` to `NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY`, `NEXT_PUBLIC_FEE_SPONSORSHIP_ID` to `NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID`, `OPENFORT_WALLET_SECRET_KEY` to `OPENFORT_WALLET_SECRET`). The agent wallet is created with `openfort.accounts.evm.backend.create()` instead of the standalone `createBackendWallet`. The `@solana/*` packages stay: removing them fails `next build` with `Module not found: Can't resolve '@solana/kit'`.
 - **June 2026**: `walletConfig` nests `accountType` / `ethereumFeeSponsorshipId` under `ethereum: { ... }`. Stays on Next.js 15 (the webpack walletconnect shim is incompatible with Next 16 Turbopack); `app/layout.tsx` keeps `force-dynamic`.
 
 ## Code style
