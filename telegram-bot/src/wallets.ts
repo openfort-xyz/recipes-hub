@@ -39,7 +39,10 @@ export async function getBalances(address: `0x${string}`) {
 }
 
 export async function sendUsdc(telegramUserId: number, to: `0x${string}`, amount: string): Promise<string> {
-  const account = await getOrCreateWallet(telegramUserId)
+  return sendUsdcFrom(await getOrCreateWallet(telegramUserId), to, amount)
+}
+
+export async function sendUsdcFrom(account: BackendAccount, to: `0x${string}`, amount: string): Promise<string> {
   const data = encodeFunctionData({
     abi: erc20Abi,
     functionName: 'transfer',
@@ -50,12 +53,19 @@ export async function sendUsdc(telegramUserId: number, to: `0x${string}`, amount
     account,
     chainId: CHAIN_ID,
     interactions: [{ to: USDC_ADDRESS, data }],
-    policy: config.gasPolicyId,
+    policy: config.feeSponsorshipId,
   })
 
-  const hash = result.response?.transactionHash
-  if (!hash) {
-    throw new Error(`Transaction was not submitted: ${JSON.stringify(result.response ?? result)}`)
+  return result.response?.transactionHash ?? waitForHash(result.id)
+}
+
+// sendTransaction resolves once the intent exists; the hash can arrive a few seconds later.
+async function waitForHash(intentId: string, tries = 20): Promise<string> {
+  for (let i = 0; i < tries; i++) {
+    const intent = await openfort.transactionIntents.get(intentId)
+    const hash = intent.response?.transactionHash
+    if (hash) return hash
+    await new Promise((resolve) => setTimeout(resolve, 1000))
   }
-  return hash
+  throw new Error(`Transaction ${intentId} produced no hash after ${tries}s — it may not have been broadcast.`)
 }
