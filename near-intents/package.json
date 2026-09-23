@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "verify": "pnpm lint && pnpm build"
   },
   "dependencies": {
     "@openfort/react": "2.0.1",

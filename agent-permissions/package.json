@@ -8,7 +8,8 @@
     "start": "next start",
     "check": "biome check --write --unsafe .",
     "lint": "biome lint .",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "verify": "pnpm lint && pnpm build"
   },
   "dependencies": {
     "@openfort/openfort-node": "0.11.0",

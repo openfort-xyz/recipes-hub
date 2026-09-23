@@ -10,7 +10,8 @@
     "ios-no-cache": "expo run:ios --no-build-cache",
     "web": "expo start --web",
     "server": "bun --watch --hot ./server/index.ts",
-    "doctor": "pnpm dlx expo-doctor@latest --verbose --pnpm && pnpm expo install --fix --pnpm"
+    "doctor": "pnpm dlx expo-doctor@latest --verbose --pnpm && pnpm expo install --fix --pnpm",
+    "verify": "tsc --noEmit"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",

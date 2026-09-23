@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "verify": "pnpm lint && pnpm build"
   },
   "dependencies": {
     "@lifi/sdk": "^4.0.0",

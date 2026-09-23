@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "check": "biome check --write .",
     "lint": "biome lint .",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "verify": "pnpm lint && pnpm build"
   },
   "dependencies": {
     "@openfort/react": "1.3.0",

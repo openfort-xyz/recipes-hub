@@ -11,7 +11,8 @@
     "check": "biome check --write .",
     "lint": "biome lint .",
     "format": "biome format --write .",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "verify": "pnpm lint && pnpm build"
   },
   "dependencies": {
     "@openfort/react": "2.1.0",

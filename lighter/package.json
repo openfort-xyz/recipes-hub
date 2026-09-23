@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "doctor": "pnpm dlx expo-doctor@latest --verbose --pnpm && pnpm expo install --fix --pnpm"
+    "doctor": "pnpm dlx expo-doctor@latest --verbose --pnpm && pnpm expo install --fix --pnpm",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test"
   },
   "dependencies": {
     "@openfort/react-native": "1.1.7",

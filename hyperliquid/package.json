@@ -13,7 +13,8 @@
     "web": "pnpm dev",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "doctor": "pnpm dlx expo-doctor@latest --verbose --pnpm && pnpm expo install --fix --pnpm"
+    "doctor": "pnpm dlx expo-doctor@latest --verbose --pnpm && pnpm expo install --fix --pnpm",
+    "verify": "pnpm lint && pnpm typecheck"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",

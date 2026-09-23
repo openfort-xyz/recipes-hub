@@ -11,7 +11,8 @@
     "dev": "tsc && node --watch dist/server.js",
     "check": "biome check --write .",
     "lint": "biome lint .",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "verify": "pnpm lint && pnpm build"
   },
   "dependencies": {
     "@openfort/openfort-node": "^0.10.5",

@@ -7,7 +7,8 @@
     "start": "tsx src/bot.ts",
     "demo": "tsx src/demo.ts",
     "lint": "biome check src",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "verify": "pnpm lint && pnpm type-check"
   },
   "dependencies": {
     "@openfort/openfort-node": "0.10.8",

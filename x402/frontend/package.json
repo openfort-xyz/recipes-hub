@@ -10,7 +10,8 @@
     "build": "tsc -b && vite build",
     "check": "biome check --write --unsafe",
     "format": "biome format --write .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify": "biome lint . && pnpm build"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
