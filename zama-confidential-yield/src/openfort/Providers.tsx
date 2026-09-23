@@ -9,26 +9,19 @@ import { wagmiConfig } from './wagmi'
 const queryClient = new QueryClient()
 
 /**
- * The wallet is an **EOA** either way — Zama's `userDecrypt` EIP-712 permit is
- * verified with `ecrecover` against the user address, so the signer has to be a
- * plain ECDSA key (a 4337 smart account would decrypt nothing).
+ * The signer is an **EOA** key — Zama's `userDecrypt` EIP-712 permit is verified
+ * with `ecrecover` against the user address, so it has to be a plain ECDSA key
+ * (a 4337 smart account with its own address would decrypt nothing).
  *
- * Setting `VITE_OPENFORT_FEE_SPONSORSHIP_ID` (a `pol_…` id) upgrades that EOA to
- * an EIP-7702 **delegated account** so an Openfort paymaster can sponsor every
- * transaction; the address and the signing key are unchanged. Leave it unset and
- * the same EOA pays its own gas.
- *
- * Known Openfort-side issue: the *first* write from an undelegated 7702 account
- * takes ~30s to build server-side and Cloudflare cuts the request at 15s, so it
- * surfaces as viem's `Transaction creation failed … Details: Network Error` and
- * the account never gets delegated. Until that is fixed, unset the sponsorship
- * id to run self-paid (fund the wallet with Sepolia ETH).
+ * The account type is EIP-7702 **delegated**: same address, same key, plus
+ * Calibur code so an Openfort paymaster can sponsor every write. All writes go
+ * through `useSponsoredSender`, which needs `VITE_OPENFORT_FEE_SPONSORSHIP_ID`
+ * (a `pol_…` id); `App` refuses to start without it.
  */
-export const FEE_SPONSORSHIP_ID = import.meta.env.VITE_OPENFORT_FEE_SPONSORSHIP_ID || undefined
+export const FEE_SPONSORSHIP_ID: string | undefined =
+  import.meta.env.VITE_OPENFORT_FEE_SPONSORSHIP_ID || undefined
 
-export const ACCOUNT_TYPE = FEE_SPONSORSHIP_ID
-  ? AccountTypeEnum.DELEGATED_ACCOUNT
-  : AccountTypeEnum.EOA
+export const ACCOUNT_TYPE = AccountTypeEnum.DELEGATED_ACCOUNT
 
 /**
  * Headless Openfort: no `uiConfig`, because this app never opens the Openfort
@@ -50,7 +43,7 @@ export function Providers({ children }: { children: ReactNode }) {
           <OpenfortProvider
             publishableKey={import.meta.env.VITE_OPENFORT_PUBLISHABLE_KEY}
             walletConfig={{
-              shieldPublishableKey: import.meta.env.VITE_OPENFORT_SHIELD_KEY,
+              shieldPublishableKey: import.meta.env.VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY,
               connectOnLogin: false,
               ethereum: {
                 accountType: ACCOUNT_TYPE,

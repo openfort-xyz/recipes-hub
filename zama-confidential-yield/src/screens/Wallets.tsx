@@ -2,6 +2,7 @@ import { RecoveryMethod, useUser } from '@openfort/react'
 import { useEthereumEmbeddedWallet } from '@openfort/react/ethereum'
 import { useMemo, useState } from 'react'
 import { fontStack, ghostBtn, monoStack, primaryBtn } from '../components/styles'
+import { CHAIN } from '../contracts/addresses'
 import { ACCOUNT_TYPE } from '../openfort/Providers'
 
 function truncate(addr: string) {
@@ -61,7 +62,7 @@ export function Wallets() {
       <div style={col}>
         <h1 style={heading}>Create your wallet</h1>
         <p style={body}>
-          A self-custodial wallet on Ethereum mainnet, secured by a passkey (Face ID / Touch ID). It
+          A self-custodial wallet on {CHAIN.name}, secured by a passkey (Face ID / Touch ID). It
           signs your confidential balance decryptions and every shield / vault action.
         </p>
         {createBtn}
