@@ -53,7 +53,7 @@ Tempo is not a chain Openfort indexes, so Openfort is used purely as a **remote 
 
 ### Prerequisites
 
-- Node.js 18+ and pnpm
+- Node.js 22+ and pnpm
 - An [Openfort](https://dashboard.openfort.io) account with a secret key and wallet secret
 - A treasury backend wallet funded with PathUSD on the Tempo testnet
 
@@ -128,7 +128,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Notes
 
-- `mppx@0.3.6` is pinned to match the version this demo is built against; newer releases are marked deprecated upstream and may change the API.
+- `mppx` is pinned exactly (`0.6.30`); its server charge handler reads `MPP_SECRET_KEY` from the environment.
 - The treasury funds the agent over Tempo using viem's native Tempo support (`viem/chains` → `tempoModerato`, `viem/tempo` → `Actions.token.transfer`); Openfort signs but does not broadcast. If your Tempo deployment differs, fund the agent wallet directly from the faucet — the agent's MPP payment path is unaffected.
 
 ## Learn more
