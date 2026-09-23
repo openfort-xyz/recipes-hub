@@ -85,7 +85,7 @@ async function pollUntil<T>(
     try {
       const value = await fn({ timeLeftMs });
       if (predicate(value)) return value;
-    } catch (_) {
+    } catch {
       // ignore and retry until timeout
     }
     await delay(intervalMs);
@@ -110,7 +110,9 @@ export function useUsdcBalance(params: {
   const [balance, setBalance] = useState("0.000000");
 
   const onBalanceUpdateRef = useRef(onBalanceUpdate);
-  onBalanceUpdateRef.current = onBalanceUpdate;
+  useEffect(() => {
+    onBalanceUpdateRef.current = onBalanceUpdate;
+  });
 
   useEffect(() => {
     if (!activeWalletOrProvider || !ownerAddress) return;

@@ -12,7 +12,8 @@ pnpx gitpick openfort-xyz/recipes-hub/tree/main/usdc openfort-usdc && cd openfor
 
 - XCode for iOS with iOS Simulator
 - Android Studio for Android with Android Emulator (if targeting Android)
-- Openfort account with Shield configuration and provider policy
+- Node.js 22+
+- Openfort account with Shield configuration and a fee sponsorship policy
 
 ## 3. Backend Setup
 
@@ -39,9 +40,9 @@ Add your Openfort credentials to `.env.local`:
 
 ```env
 OPENFORT_PUBLISHABLE_KEY=pk_test_your_publishable_key
-OPENFORT_SHIELD_PUBLISHABLE_KEY=pk_test_your_shield_key
-OPENFORT_SHIELD_RECOVERY_BASE_URL=http://localhost:3000
-OPENFORT_ETHEREUM_PROVIDER_POLICY_ID=pol_your_policy_id
+OPENFORT_SHIELD_PUBLISHABLE_KEY=your_shield_publishable_key
+OPENFORT_SHIELD_RECOVERY_BASE_URL=http://localhost:3000  # use your LAN IP or a tunnel on a physical device
+OPENFORT_FEE_SPONSORSHIP_ID=pol_your_policy_id  # optional, sponsors gas
 ```
 
 ## 5. Install & Run

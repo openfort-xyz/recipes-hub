@@ -68,10 +68,10 @@ export const UserScreen = () => {
 
       // Only update if we got valid balances (not null from timeout)
       if (balanceA !== null) {
-        setWalletA(prev => prev ? { ...prev, balance: balanceA } : null);
+        setWalletA(prev => prev && prev.balance !== balanceA ? { ...prev, balance: balanceA } : prev);
       }
       if (balanceB !== null) {
-        setWalletB(prev => prev ? { ...prev, balance: balanceB } : null);
+        setWalletB(prev => prev && prev.balance !== balanceB ? { ...prev, balance: balanceB } : prev);
       }
       
       // Update ETH balances
@@ -87,14 +87,15 @@ export const UserScreen = () => {
     } catch (error) {
       console.error("Error updating balances:", error);
     }
-  }, [JSON.stringify(walletA), JSON.stringify(walletB), getUSDCBalance, getETHBalance, isInitialLoad]);
+  }, [walletA, walletB, getUSDCBalance, getETHBalance, isInitialLoad]);
 
   useEffect(() => {
     if (currentScreen === 'main-app' && walletA && walletB) {
       // Initial balance fetch only
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- updateBalances only sets state after awaiting the RPC calls
       updateBalances();
     }
-  }, [currentScreen, JSON.stringify(walletA), JSON.stringify(walletB), updateBalances]);
+  }, [currentScreen, walletA, walletB, updateBalances]);
 
   if (!user) return null;
 
