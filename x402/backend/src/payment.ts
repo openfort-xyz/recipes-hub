@@ -628,21 +628,24 @@ export async function submitTransferWithAuthorizationGasless(
 		);
 	}
 
-	// Openfort may broadcast asynchronously — poll up to 10s for the transaction hash.
-	let txHash = intent.response?.transactionHash;
-	for (let attempt = 0; !txHash && attempt < 5; attempt++) {
-		await new Promise((resolve) => setTimeout(resolve, 2000));
-		const polled = await openfortClient.transactionIntents.get(intent.id);
-		txHash = polled.response?.transactionHash;
+	// sendTransaction resolves once the transaction exists, not once it has landed.
+	// The receipt (and its hash) is set when the status turns terminal.
+	for (let attempt = 0; attempt < 30; attempt++) {
+		const tx = await openfortClient.transactions.get(intent.id);
+		if (tx.status === "succeeded" && tx.receipt?.transactionHash)
+			return tx.receipt.transactionHash as Hex;
+		if (tx.status === "reverted" || tx.status === "failed") {
+			throw new PaymentVerificationError(
+				"TX_BROADCAST_FAILED",
+				`Openfort transaction ${intent.id} ${tx.status}: ${tx.receipt?.error?.reason ?? "no reason given"}`,
+			);
+		}
+		await new Promise((resolve) => setTimeout(resolve, 1000));
 	}
-
-	if (!txHash) {
-		throw new PaymentVerificationError(
-			"TX_BROADCAST_FAILED",
-			`Openfort intent ${intent.id} created but no transactionHash. Check fee sponsorship (${policy ? `fee sponsorship ${policy}` : "project-scoped fee sponsorship"}) in Openfort dashboard. See server logs for intent/response details.`,
-		);
-	}
-	return txHash as Hex;
+	throw new PaymentVerificationError(
+		"TX_BROADCAST_FAILED",
+		`Openfort transaction ${intent.id} did not land after 30s. Check fee sponsorship (${policy ? `fee sponsorship ${policy}` : "project-scoped fee sponsorship"}) and the transaction status in the Openfort dashboard.`,
+	);
 }
 
 export function toErrorJson(err: unknown): object {

@@ -49,7 +49,7 @@ For a coding agent adding an x402 USDC paywall with Openfort wallets to an exist
    2. Wrap the app in the providers from `OpenfortProviders.tsx`, pointing `createEncryptedSessionEndpoint` at that route.
    3. Add the 402 route: with no payment header return `402` with the requirements (`scheme: "exact"`, `payTo`, `asset`, `maxAmountRequired`, `extra: { name, version }`); with an `X-TRANSACTION-HASH` header verify the USDC `Transfer` log on-chain; with a `PAYMENT-SIGNATURE`/`X-PAYMENT` header verify the EIP-712 signature or forward it to the facilitator.
    4. In the client, after login, pay with `writeContract` (USDC `transfer` to `payTo`) and resend the request with `X-TRANSACTION-HASH`, or sign `TransferWithAuthorization` and resend with `PAYMENT-SIGNATURE`.
-   5. Backend wallet (optional): `openfort.accounts.evm.backend.create()` once, store the `acc_…` id, sign `TransferWithAuthorization` with `account.signTypedData`, and submit `transferWithAuthorization` through `openfort.accounts.evm.backend.sendTransaction({ account, chainId, interactions, policy })`. Poll `openfort.transactionIntents.get(id)` until `response.transactionHash` appears.
+   5. Backend wallet (optional): `openfort.accounts.evm.backend.create()` once, store the `acc_…` id, sign `TransferWithAuthorization` with `account.signTypedData`, and submit `transferWithAuthorization` through `openfort.accounts.evm.backend.sendTransaction({ account, chainId, interactions, policy })`. Poll `openfort.transactions.get(result.id)` until `status` is `succeeded` (hash at `receipt.transactionHash`); `reverted` or `failed` carry the reason at `receipt.error.reason`.
 5. **Check it works**: the protected URL returns `402` with requirements; after paying, the same request returns `200` with the content and the transaction hash resolves on https://sepolia.basescan.org.
 
 ## Openfort primitives
@@ -65,7 +65,7 @@ For a coding agent adding an x402 USDC paywall with Openfort wallets to an exist
 | `openfort.accounts.evm.backend.create` / `.get` | `backend/src/routes.ts`, `backend/src/openfort.ts` | Secret key, wallet secret | https://www.openfort.io/docs/products/server/accounts |
 | `EvmAccount.signTypedData` | `backend/src/payment.ts` (`createBackendWalletPayment`) | Wallet secret | https://www.openfort.io/docs/products/server/accounts |
 | `openfort.accounts.evm.backend.sendTransaction` | `backend/src/payment.ts` (`submitTransferWithAuthorizationGasless`) | Fee sponsorship (transaction- or project-scoped) | https://www.openfort.io/docs/products/server/evm/gasless-transactions |
-| `openfort.transactionIntents.get` | `backend/src/payment.ts` | None | https://www.openfort.io/docs/products/server/evm/gasless-transactions |
+| `openfort.transactions.get` (replaces the deprecated `transactionIntents`) | `backend/src/payment.ts` | None | https://www.openfort.io/docs/api-reference/transactions |
 
 ## Failure modes
 | Error | Cause | Fix |
@@ -77,7 +77,7 @@ For a coding agent adding an x402 USDC paywall with Openfort wallets to an exist
 ## Recipe notes
 - **Payer vs recipient (Backend wallet tab):** the payer is the backend wallet address (fund it with USDC, "Payer (fund this)" in the UI); the recipient is `PAY_TO_ADDRESS`. On the explorer the transaction "From" may be the bundler; the token transfer is payer → recipient.
 - **Gas modes:** the Backend wallet tab offers "Openfort policy" whenever the backend wallet is configured, and "Facilitator" when `X402_FACILITATOR_URL` and both CDP keys are set. The facilitator path returns the signed header to the client, which sends it to `/api/protected-content`.
-- **Upgrade notes (September 2026):** `@openfort/react` 2.0.1 → 2.1.3 and `@openfort/openfort-node` 0.11.0 → 0.12.2. The backend now submits gasless payments with `accounts.evm.backend.sendTransaction`, which registers the EIP-7702 Delegated Account (default `CaliburV9`) and signs the authorization itself. The hand-rolled delegation upgrade (REST `PUT /v2/accounts/backend/{id}`, `POST /api/backend-wallet/upgrade`), the `OPENFORT_DELEGATED_ACCOUNT_ID` and `OPENFORT_SIGNATURE_YPARITY` variables and the raw-REST intent polling were removed. Backend wallets delegated to `Calibur` (V8) by the earlier version keep their existing record; that path was not runtime-tested after the change.
+- **Upgrade notes (September 2026):** `@openfort/react` 2.0.1 → 2.1.3 and `@openfort/openfort-node` 0.11.0 → 0.12.2. The backend now submits gasless payments with `accounts.evm.backend.sendTransaction`, which registers the EIP-7702 Delegated Account (default `CaliburV9`) and signs the authorization itself. The hand-rolled delegation upgrade (REST `PUT /v2/accounts/backend/{id}`, `POST /api/backend-wallet/upgrade`), the `OPENFORT_DELEGATED_ACCOUNT_ID` and `OPENFORT_SIGNATURE_YPARITY` variables and the raw-REST intent polling were removed; the backend polls `openfort.transactions.get` because `openfort.transactionIntents` is deprecated in 0.12. Backend wallets delegated to `Calibur` (V8) by the earlier version keep their existing record; that path was not runtime-tested after the change.
 - Protocol helpers in `frontend/src/integrations/x402/` stay pure TypeScript (no React, no UI imports). Hardcoded token addresses live in `frontend/src/integrations/x402/contracts.ts`.
 
 ## Code style
