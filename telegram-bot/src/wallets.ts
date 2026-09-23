@@ -56,16 +56,19 @@ export async function sendUsdcFrom(account: BackendAccount, to: `0x${string}`, a
     policy: config.feeSponsorshipId,
   })
 
-  return result.response?.transactionHash ?? waitForHash(result.id)
+  return waitForReceipt(result.id)
 }
 
-// sendTransaction resolves once the intent exists; the hash can arrive a few seconds later.
-async function waitForHash(intentId: string, tries = 20): Promise<string> {
+// sendTransaction resolves once the transaction exists, not once it has landed.
+// The receipt (and its hash) is set when the status turns terminal.
+async function waitForReceipt(transactionId: string, tries = 30): Promise<string> {
   for (let i = 0; i < tries; i++) {
-    const intent = await openfort.transactionIntents.get(intentId)
-    const hash = intent.response?.transactionHash
-    if (hash) return hash
+    const tx = await openfort.transactions.get(transactionId)
+    if (tx.status === 'succeeded' && tx.receipt?.transactionHash) return tx.receipt.transactionHash
+    if (tx.status === 'reverted' || tx.status === 'failed') {
+      throw new Error(`Transaction ${transactionId} ${tx.status}: ${tx.receipt?.error?.reason ?? 'no reason given'}`)
+    }
     await new Promise((resolve) => setTimeout(resolve, 1000))
   }
-  throw new Error(`Transaction ${intentId} produced no hash after ${tries}s — it may not have been broadcast.`)
+  throw new Error(`Transaction ${transactionId} did not land after ${tries}s — check its status in the dashboard.`)
 }

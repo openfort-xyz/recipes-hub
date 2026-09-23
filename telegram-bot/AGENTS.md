@@ -45,14 +45,14 @@ pnpm add @openfort/openfort-node@0.12.2 viem@2.55.5
 | File | Role |
 | --- | --- |
 | `src/openfort.ts` | `new Openfort(secretKey, { walletSecret })` |
-| `src/wallets.ts` | `getOrCreateWallet` (one backend wallet per user id), `getBalances` (viem reads), `sendUsdcFrom` (`accounts.evm.backend.sendTransaction` with the fee sponsorship, then waits for the hash) |
+| `src/wallets.ts` | `getOrCreateWallet` (one backend wallet per user id), `getBalances` (viem reads), `sendUsdcFrom` (`accounts.evm.backend.sendTransaction` with the fee sponsorship, then polls `openfort.transactions.get` until the transaction succeeds) |
 | `src/store.ts` | user id → `{ accountId, address }` mapping (JSON file here; replace with your database) |
 | `src/commands.ts` | Chat-agnostic handlers for start / balance / send, including input and balance checks |
 
 **Steps**
 1. Copy `src/openfort.ts` and `src/wallets.ts`; keep them server-side.
 2. Replace `src/store.ts` with a table keyed by your platform's user id, storing only the Openfort account `id` and address.
-3. On first contact call `getOrCreateWallet(userId)`; on a send call `sendUsdc(userId, to, amount)`.
+3. On first contact call `getOrCreateWallet(userId)`; on a send call `sendUsdc(userId, to, amount)`. It returns the on-chain hash only after `openfort.transactions.get(id)` reports `succeeded`, and throws on `reverted` or `failed`.
 4. Wire the handlers in `src/commands.ts` to your bot framework (see `src/bot.ts` for grammY).
 
 **Check it works**
@@ -67,7 +67,7 @@ pnpm add @openfort/openfort-node@0.12.2 viem@2.55.5
 | `openfort.accounts.evm.backend.create()` | `src/wallets.ts` | Wallet secret | https://www.openfort.io/docs/products/server/accounts |
 | `openfort.accounts.evm.backend.get({ id })` / `get({ address })` | `src/wallets.ts`, `src/demo.ts` | — | https://www.openfort.io/docs/products/server/accounts |
 | `openfort.accounts.evm.backend.sendTransaction({ account, chainId, interactions, policy })` | `src/wallets.ts` | Fee sponsorship (`pol_`) | https://www.openfort.io/docs/products/server/evm/gasless-transactions |
-| `openfort.transactionIntents.get(id)` (poll for the hash) | `src/wallets.ts` | — | https://www.openfort.io/docs/products/server/evm/gasless-transactions |
+| `openfort.transactions.get(id)` (Transactions V2: poll `status` until terminal, hash in `receipt.transactionHash`) | `src/wallets.ts` | — | https://www.openfort.io/docs/api-reference/transactions |
 | Gas sponsorship policy + fee sponsorship | `OPENFORT_FEE_SPONSORSHIP_ID` | Dashboard → Gas sponsorship | https://www.openfort.io/docs/configuration/gas-sponsorship |
 | Pattern: one backend wallet per app user | `src/wallets.ts`, `src/store.ts` | — | https://www.openfort.io/docs/products/server/workflows/server-side-user-wallets |
 
@@ -78,13 +78,13 @@ pnpm add @openfort/openfort-node@0.12.2 viem@2.55.5
 | `Missing environment variable OPENFORT_FEE_SPONSORSHIP_ID. Copy .env.example to .env and fill it in (see README).` (same form for every required variable) | A required variable is unset | Fill `.env` from `.env.example` |
 | `Missing TELEGRAM_BOT_TOKEN. Create a bot with @BotFather (/newbot) and put the token in .env. …` | `pnpm start` without a bot token | Set `TELEGRAM_BOT_TOKEN`, or use `pnpm demo` |
 | `APIError: Authentication failed (request_id: …)` (status 401, thrown from `signHash` during `sendTransaction`) | `OPENFORT_WALLET_SECRET` is from another project or was rotated | Use the current wallet secret of the project that owns `OPENFORT_SECRET_KEY` |
-| `Forbidden. You don't have permission to access this resource.` | A v2 signing policy on the account has no accept rule for `signEvmHash`, which the 7702 authorization and the intent signature both use | Add an accept rule for `signEvmHash`; pre-flight with `openfort.policies.evaluate({ operation: "signEvmHash", accountId })` |
+| `Forbidden. You don't have permission to access this resource.` | Documented in the openfort-book for 7702 sends; same signEvmHash path, not reproduced here. A v2 signing policy on the account has no accept rule for `signEvmHash` | Add an accept rule for `signEvmHash`; pre-flight with `openfort.policies.evaluate({ operation: "signEvmHash", accountId })` |
 
 ## Notes
 - `openfort.accounts.evm.backend.get({ address })` requires the EIP-55 checksummed address, not lowercase.
-- `sendTransaction` resolves once the transaction intent exists; `response.transactionHash` can still be empty. `sendUsdcFrom` polls `transactionIntents.get` for up to 20 s before failing.
+- `sendTransaction` resolves once the transaction exists, not once it has landed. `sendUsdcFrom` passes the returned id (`tin_...`) to `openfort.transactions.get` and polls for up to 30 s: `status` goes `submitted` → `succeeded` | `reverted` | `failed`, and `receipt.transactionHash` is set only at a terminal status. V2 `get` accepts the `tin_` ids that `sendTransaction` returns (checked against a live project on 2026-09-23).
 - `sendTransaction` auto-upgrades the EOA to a 7702 delegated account on first use; without an `account_functions` "All functions" rule the fee sponsorship does not sponsor it.
-- `@openfort/openfort-node` 0.12.x adds Transactions V2 (`openfort.transactions`) and marks `transactionIntents` deprecated. `accounts.evm.backend.sendTransaction` is not deprecated and still handles the 7702 delegation, so the recipe keeps it.
+- `@openfort/openfort-node` 0.12.x adds Transactions V2 (`openfort.transactions`) and marks `transactionIntents` deprecated; the recipe reads status through V2. `accounts.evm.backend.sendTransaction` is not deprecated and still handles the 7702 delegation, so the recipe keeps it for sending.
 - `src/demo.ts` funds from a hardcoded treasury address that belongs to the recipe author's project. Set `TREASURY_ADDRESS` there to a backend wallet in your own project to fund the demo; otherwise it sends 0 USDC.
 - The wallet mapping lives in `data/wallets.json` (gitignored). Delete it to start fresh — old accounts remain in the Openfort project.
 
