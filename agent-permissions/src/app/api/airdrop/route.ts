@@ -12,7 +12,7 @@ function getOpenfort() {
   const key = process.env.OPENFORT_SECRET_KEY
   if (!key) throw new Error('OPENFORT_SECRET_KEY is not configured')
   return new Openfort(key, {
-    walletSecret: process.env.OPENFORT_WALLET_SECRET_KEY,
+    walletSecret: process.env.OPENFORT_WALLET_SECRET,
   })
 }
 
