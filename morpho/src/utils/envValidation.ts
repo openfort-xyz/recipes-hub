@@ -39,13 +39,6 @@ export function validateEnvironmentVariables(): ValidationError[] {
         message: 'Openfort publishable key should start with "pk_"',
       })
     }
-
-    if (key === 'VITE_OPENFORT_FEE_SPONSORSHIP_ID' && !value.startsWith('pol_')) {
-      errors.push({
-        key,
-        message: 'Openfort fee sponsorship ID should start with "pol_"',
-      })
-    }
   })
 
   return errors
