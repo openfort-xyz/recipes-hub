@@ -94,23 +94,19 @@ pnpm i
 cp .env.example .env.local
 ```
 
-Fill in `.env.local`:
+Fill in `.env.local`. Each variable is described in `.env.example`:
 
 ```env
-# From https://dashboard.openfort.io
 NEXT_PUBLIC_OPENFORT_PUBLISHABLE_KEY=
-NEXT_PUBLIC_SHIELD_PUBLISHABLE_KEY=
-NEXT_PUBLIC_FEE_SPONSORSHIP_ID=
+NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY=
+NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID=
 
-# Server-side
 OPENFORT_SECRET_KEY=
-OPENFORT_WALLET_SECRET_KEY=
+OPENFORT_WALLET_SECRET=
 OPENFORT_BACKEND_WALLET_ID=
 
-# Vercel Cron
 CRON_SECRET=
 
-# Upstash Redis
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
 ```

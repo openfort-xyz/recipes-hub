@@ -10,6 +10,10 @@ const nextConfig = {
       porto: false,
       '@base-org/account': false,
       '@metamask/connect-evm': false,
+      '@coinbase/wallet-sdk': false,
+      '@safe-global/safe-apps-sdk': false,
+      '@safe-global/safe-apps-provider': false,
+      '@walletconnect/ethereum-provider': false,
     }
 
     config.externals.push({
