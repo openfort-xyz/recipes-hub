@@ -1,41 +1,98 @@
 # AGENTS.md
 
 ## Project overview
-- Openfort + Aave integration with a Vite React frontend.
-- Uses Shield to manage embedded wallets and sponsored lending transactions.
-- Requires external backend (openfort-backend-quickstart) for Shield authentication sessions.
+- Vite + React app: log in with an Openfort embedded wallet, then supply 0.1 USDC to Aave and withdraw it again.
+- Chains: Base mainnet (default) and Base Sepolia. Reserves are discovered on whichever chain the wallet is connected to.
+- Uses the Aave **v4** SDK (`@aave/react` 6.x, hub/spoke model).
+- Wallet recovery is passkey (client-side WebAuthn), so there is no backend.
 
 ## Setup commands
 - `pnpm i`
-- `cp .env.example .env`
-- `pnpm dev` (serves UI on `http://localhost:5173`)
-- Backend: Clone and run [openfort-backend-quickstart](https://github.com/openfort-xyz/openfort-backend-quickstart) on `http://localhost:3001`
+- `cp .env.example .env` and fill in the keys
+- `pnpm dev` (serves on `http://localhost:5173`)
 
 ## Environment
-- Frontend `.env` must define `VITE_OPENFORT_PUBLISHABLE_KEY`, `VITE_OPENFORT_SHIELD_PUBLIC_KEY`, `VITE_OPENFORT_FEE_SPONSORSHIP_ID` (optional), and `VITE_BACKEND_URL`.
-- Backend (external) `.env` must define `OPENFORT_SECRET_KEY` from Openfort dashboard.
-- Populate both files with real Openfort credentials from the dashboard—placeholder values will fail.
+All variables are in `.env.example`, each with a comment.
+
+| Variable | Required | Source |
+|---|---|---|
+| `VITE_OPENFORT_PUBLISHABLE_KEY` | yes | Dashboard > API keys (`pk_...`) |
+| `VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY` | yes | Dashboard > API keys, Shield section |
+| `VITE_OPENFORT_FEE_SPONSORSHIP_ID` | no | Dashboard > Gas sponsorship (`pol_...`); unset = user pays gas |
+| `VITE_WALLET_CONNECT_PROJECT_ID` | no | cloud.reown.com; unset = no WalletConnect connector |
+
+`src/utils/envValidation.ts` blocks rendering and shows a modal when a required key is missing or the publishable key does not start with `pk_`.
 
 ## Testing instructions
-- `pnpm lint` / `pnpm check` (Biome lint, or lint+format with autofix)
-- `pnpm build` (TypeScript compilation + Vite build)
-- Verify frontend starts without runtime errors after updating environment values.
+- `pnpm verify` runs `biome lint .` and `tsc -b && vite build`. It proves the app type-checks and bundles against the pinned SDKs. There are no unit tests.
+- Manual runtime checks (need real keys and a wallet funded with USDC on Base or Base Sepolia): passkey login through `OpenfortButton`, USDC balance shown, "Supply 0.1 USDC to pool" (approval or permit, then supply), position and APY shown, "Withdraw all from pool".
+- Last runtime-verified: not recorded. The 2.1.3 upgrade was verified with `pnpm verify` only.
+
+## Add this to your app
+For a coding agent adding Openfort login + Aave supply/withdraw to an existing React app (Vite or Next.js client components).
+
+**Dashboard setup**
+1. Create a project at https://dashboard.openfort.io and copy the publishable key (`pk_...`) and the Shield publishable key.
+2. Add your app's origin (for example `http://localhost:5173`) to allowed domains.
+3. Optional: create a gas sponsorship for Base / Base Sepolia and copy its ID (`pol_...`).
+
+**Install** (exact versions this recipe builds with)
+```sh
+pnpm add @openfort/react@2.1.3 wagmi@^3.6.20 viem@^2.52.2 @tanstack/react-query@^5.101.1 \
+  @aave/react@^6.1.0 @aave/client@^6.1.0 @aave/graphql@^3.0.1
+```
+
+**Files that carry the integration**
+| File | Role |
+|---|---|
+| `src/Providers.tsx` | `QueryClientProvider` > `WagmiProvider` > `OpenfortWagmiBridge` > `AaveProvider` > `OpenfortProvider` with passkey recovery and `walletConfig.ethereum.ethereumFeeSponsorshipId` |
+| `src/lib/aave.ts` | `AaveClient.create()` |
+| `src/hooks/useAaveOperations.ts` | `useSupply` / `useWithdraw` with an execution-plan handler that sends each step through the wagmi wallet client |
+| `src/hooks/useAaveSupplies.ts` | `useUserSupplies` for the user's positions |
+| `src/App.tsx` | `useReserves` to find the USDC reserve, USDC `balanceOf`, wiring |
+
+**Steps**
+1. Wrap the app in the provider stack from `src/Providers.tsx`. Order matters: `OpenfortWagmiBridge` goes inside `WagmiProvider`, and `OpenfortProvider` inside the bridge. Put `embeddedWalletConnector()` first in the wagmi connectors.
+2. Render `<OpenfortButton />` for login and the wallet panel. Read login state with `useUser().isAuthenticated` and the address with wagmi `useAccount()`.
+3. Find the reserve: `useReserves({ query: { chainIds: [chainId(id)] }, user })`, then match `reserve.asset.underlying.info.symbol`. Supply/withdraw take `reserve.id`.
+4. Copy the plan handler from `useAaveOperations.ts`: `TransactionRequest` and `PreContractActionRequired` go through `useSendTransaction(walletClient)`, `Erc20Approval` uses `.bySignature` (sign typed data) or `.byTransaction`.
+5. Call `supply({ reserve, amount: { erc20: { value: bigDecimal(0.1) } }, sender })` and `withdraw({ reserve, amount: { erc20: { max: true } }, sender })`; both return a `Result`, check `isErr()`.
+
+**Check it works**: log in, fund the wallet with USDC, supply, wait for the receipt, and the position from `useUserSupplies` appears. With a fee sponsorship set, the wallet needs no ETH.
+
+## Openfort primitives
+| Primitive | Where in code | Dashboard setup | Docs |
+|---|---|---|---|
+| `OpenfortProvider` (`publishableKey`, `walletConfig.shieldPublishableKey`) | `src/Providers.tsx` | Publishable key + Shield publishable key | [React quickstart](https://www.openfort.io/docs/products/embedded-wallet/react/quickstart/passkey) |
+| `uiConfig.walletRecovery.defaultMethod = RecoveryMethod.PASSKEY` | `src/Providers.tsx` | none (client-side WebAuthn) | [Recovery methods](https://www.openfort.io/docs/configuration/recovery-methods) |
+| `walletConfig.ethereum.ethereumFeeSponsorshipId` | `src/Providers.tsx` | Gas sponsorship on Base / Base Sepolia | [Gas sponsorship](https://www.openfort.io/docs/configuration/gas-sponsorship) |
+| `OpenfortWagmiBridge`, `embeddedWalletConnector` (`@openfort/react/wagmi`) | `src/Providers.tsx` | none | [Ethereum wallets](https://www.openfort.io/docs/products/embedded-wallet/react/wallet/ethereum) |
+| `OpenfortButton` | `src/components/ActionButtons.tsx` | none | [UI components](https://www.openfort.io/docs/products/embedded-wallet/react/ui) |
+| `useUser` | `src/App.tsx` | none | [useUser](https://www.openfort.io/docs/products/embedded-wallet/react/hooks/useUser) |
+| Allowed domains | n/a | App origin listed | [Allowed domains](https://www.openfort.io/docs/configuration/allowed-domains) |
+| Publishable / Shield keys | `.env` | API keys page | [API keys](https://www.openfort.io/docs/configuration/api-keys) |
+
+## Failure modes
+| Error | Cause | Fix |
+|---|---|---|
+| Blank page in `vite dev`, provider chunk fails to load | `@openfort/react` before 1.1.1 marked its lazy imports `@vite-ignore`, so Vite resolved them against `node_modules/.vite/deps` | Use `@openfort/react` 1.1.1 or later (2.1.3 has no `@vite-ignore`; no patch needed) |
+| `Openfort publishable key should start with "pk_"` | `VITE_OPENFORT_PUBLISHABLE_KEY` holds a secret or Shield key | Use the project publishable key |
+| `Supply cap reached` (button) / `The USDC supply cap for this market is full.` | `reserve.canSupply` is false on the connected chain | Switch to Base mainnet or wait for capacity |
+| `Insufficient balance. You need at least 0.1 USDC to supply to the pool.` | Wallet holds under 0.1 USDC | Fund the wallet with USDC on the connected chain |
+| `[GraphQL] Bad user input - ...` | Aave API rejected the supply/withdraw request | The text after `- ` is shown in the UI; fix the input it names |
+| Unhandled rejection with `name === 'InvariantError'` | Thrown internally by the Aave SDK | `src/main.tsx` suppresses it; nothing to fix in app code |
+
+## Upgrade notes
+- Aave v4: there is no `useAaveMarkets`. Discover reserves with `useReserves`; the underlying token is at `reserve.asset.underlying.info`, supply APY at `reserve.asset.summary.supplyApy.value`, the supply gate at `reserve.canSupply`. Positions come from `useUserSupplies` (auto-refreshing, no manual refetch); balance at `position.balance.amount.value`.
+- `@openfort/react` 2.0.1 -> 2.1.3 (2026-09): no API changes needed here. 2.1.3 fixes a login that asked for the passkey twice. The fee sponsorship key stays `walletConfig.ethereum.ethereumFeeSponsorshipId`.
+- `@solana/*` packages in `package.json` are optional peers of `@openfort/react`; this recipe is EVM-only.
 
 ## Code style
-- Vite + TypeScript, **Biome** for lint/format (`pnpm lint` / `pnpm check`) — single quotes, no semicolons, 2-space, 120 col.
-- Prefer functional React components and hooks; wallet state is managed through wagmi and `@openfort/react` hooks.
-- Uses `@aave/react`, `@aave/client`, `@aave/graphql` (**v6 = Aave v4 hub/spoke model**) for protocol interactions.
-- React Query (`@tanstack/react-query`) is a peer dependency used internally by wagmi and `@aave/react`; application code does not call React Query hooks directly.
-
-## Upgrade notes (Aave v4)
-- This sample uses the Aave **v4** SDK (hub/spoke), not v3 markets. There is no `useAaveMarkets`.
-- Discover reserves with `useReserves({ query: { chainIds: [chainId(n)] }, user })`; the underlying token is at `reserve.asset.underlying.info.symbol` / `.address`, the market supply APY at `reserve.asset.summary.supplyApy.value`, and the supply gate at `reserve.canSupply`.
-- Supply/withdraw key off `reserve.id` (no market/currency/chainId) and run through an execution-plan handler passed to `useSupply`/`useWithdraw` (cases `TransactionRequest` / `Erc20Approval` with `.bySignature`|`.byTransaction` / `PreContractActionRequired`), sending each step via `useSendTransaction`/`useSignTypedData` from `@aave/react/viem`.
-- User positions come from the declarative `useUserSupplies` hook (it auto-refreshes; there is no manual refetch). Balance/token at `position.balance.amount.value` / `position.balance.token.info.symbol`.
-- The wallet integration uses `@openfort/react@2.0.1` with `wagmi@^3`.
-- The supply/withdraw flow compiles but should be re-verified at runtime against a funded testnet wallet.
+- Vite + TypeScript, **Biome** for lint/format (`pnpm lint` / `pnpm check`): single quotes, no semicolons, 2-space, 120 col.
+- Functional components and hooks; wallet state comes from wagmi and `@openfort/react` hooks.
+- `@tanstack/react-query` is a peer used by wagmi and `@aave/react`; app code does not call it directly.
 
 ## PR instructions
 - Title format: `[aave] <summary>`.
-- Run `pnpm lint` and `pnpm build` before requesting review.
-- Document new env vars or contract addresses in `aave/README.md` when they change.
+- Run `pnpm verify` before requesting review.
+- Document new env vars or contract addresses in `README.md` and here.
