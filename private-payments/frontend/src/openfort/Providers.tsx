@@ -28,7 +28,7 @@ export function Providers({ children }: { children: ReactNode }) {
             publishableKey={import.meta.env.VITE_OPENFORT_PUBLISHABLE_KEY}
             walletConfig={{
               chainType: ChainTypeEnum.EVM,
-              shieldPublishableKey: import.meta.env.VITE_OPENFORT_SHIELD_KEY,
+              shieldPublishableKey: import.meta.env.VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY,
               ethereum: {
                 accountType: AccountTypeEnum.EOA,
               },

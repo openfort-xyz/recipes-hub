@@ -14,16 +14,16 @@
     "verify": "pnpm lint && pnpm build"
   },
   "dependencies": {
-    "@openfort/react": "1.3.0",
-    "@tanstack/react-query": ">=5.45.1",
+    "@openfort/react": "2.1.3",
+    "@tanstack/react-query": "^5.99.2",
     "@unlink-xyz/sdk": "0.3.0-canary.717",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "viem": "^2.52.2",
-    "wagmi": "^3.6.16"
+    "wagmi": "^3.7.7"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.16",
+    "@biomejs/biome": "2.4.16",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
