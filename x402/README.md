@@ -24,41 +24,15 @@ You'll need to configure credentials for both frontend and backend.
 
 ### Configure Environment
 
-Create `frontend/.env.local`:
-
-```env
-VITE_OPENFORT_PUBLISHABLE_KEY=pk_test_...
-VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY=shpk_test_...
-VITE_WALLET_CONNECT_PROJECT_ID=your-wallet-connect-project-id
-VITE_OPENFORT_FEE_SPONSORSHIP_ID=pol_...
-VITE_CREATE_ENCRYPTED_SESSION_ENDPOINT=http://localhost:3007/api/protected-create-encryption-session
-VITE_OPENFORT_THEME=
-VITE_X402_RESOURCE_URL=http://localhost:3007/api/protected-content
-VITE_X402_DEFAULT_AMOUNT=0.1
+```bash
+cp frontend/.env.example frontend/.env.local
+cp backend/.env.local.example backend/.env.local
 ```
 
-Create `backend/.env.local`:
+Every variable is listed with a one-line comment (where to get it, required or optional) in those two files:
 
-```env
-PORT=3007
-OPENFORT_SECRET_KEY=sk_test_...
-OPENFORT_SHIELD_PUBLISHABLE_KEY=shpk_test_...
-OPENFORT_SHIELD_SECRET_KEY=shsk_test_...
-OPENFORT_SHIELD_ENCRYPTION_KEY=shield_encryption_share
-PAY_TO_ADDRESS=0x...
-X402_NETWORK=base-sepolia
-X402_RESOURCE=http://localhost:3007/api/protected-content
-X402_DESCRIPTION=Access to premium content
-X402_MIME_TYPE=application/json
-X402_MAX_AMOUNT=100000
-X402_TIMEOUT=300
-X402_ASSET_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
-X402_ASSET_NAME=USDC
-X402_ASSET_VERSION=2
-CORS_ORIGINS=http://localhost:5173,http://localhost:3007
-```
-
-See `backend/.env.local.example` for all available options including backend wallet and gas sponsorship configuration.
+- `frontend/.env.example`: `VITE_OPENFORT_PUBLISHABLE_KEY`, `VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY`, `VITE_OPENFORT_FEE_SPONSORSHIP_ID`, `VITE_CREATE_ENCRYPTED_SESSION_ENDPOINT`, `VITE_WALLET_CONNECT_PROJECT_ID`, `VITE_X402_RESOURCE_URL`, `VITE_X402_DEFAULT_AMOUNT`.
+- `backend/.env.local.example`: `PORT`, `OPENFORT_SECRET_KEY`, `OPENFORT_WALLET_SECRET`, `OPENFORT_BACKEND_WALLET_ID`, `OPENFORT_FEE_SPONSORSHIP_ID`, `OPENFORT_SHIELD_PUBLISHABLE_KEY`, `OPENFORT_SHIELD_SECRET_KEY`, `OPENFORT_SHIELD_ENCRYPTION_KEY`, `X402_FACILITATOR_URL`, `CDP_API_KEY_ID`, `CDP_API_KEY_SECRET`, `PAY_TO_ADDRESS`, `X402_NETWORK`, `X402_RESOURCE`, `X402_DESCRIPTION`, `X402_MIME_TYPE`, `X402_MAX_AMOUNT`, `X402_TIMEOUT`, `X402_ASSET_ADDRESS`, `X402_ASSET_NAME`, `X402_ASSET_VERSION`, `X402_RPC_URL`, `CORS_ORIGINS`.
 
 ## 3. Install & Start
 
@@ -107,7 +81,7 @@ How it works:
 
 Key integration points:
 - `backend/src/openfort.ts` — Backend wallet client initialization
-- `backend/src/routes.ts` — Wallet creation, upgrade, and payment endpoints
+- `backend/src/routes.ts` — Wallet creation and payment endpoints
 - `backend/src/payment.ts` — `createBackendWalletPayment()` and `submitTransferWithAuthorizationGasless()`
 - `frontend/src/features/backend-wallet/BackendWalletExperience.tsx` — UI for triggering backend wallet flows
 
@@ -121,7 +95,7 @@ Openfort's fee sponsorship uses a paymaster pattern to cover gas costs.
 
 **For embedded wallets:** Set `VITE_OPENFORT_FEE_SPONSORSHIP_ID` in the frontend env. When the user signs a USDC `transfer()` via wagmi, Openfort's smart account infrastructure routes the transaction through a paymaster that sponsors gas based on the fee sponsorship rules.
 
-**For backend wallets:** The backend wallet EOA is upgraded to an EIP-7702 Delegated Account, enabling it to use Openfort's transaction intent system. Set `OPENFORT_DELEGATED_ACCOUNT_ID` and optionally `OPENFORT_FEE_SPONSORSHIP_ID` in the backend env. The server calls `submitTransferWithAuthorizationGasless()` which creates an Openfort transaction intent with gas sponsorship.
+**For backend wallets:** The server calls `openfort.accounts.evm.backend.sendTransaction()` (`submitTransferWithAuthorizationGasless()` in `backend/src/payment.ts`). On first use the SDK registers the backend EOA as an EIP-7702 Delegated Account and attaches the signed authorization; it then creates and signs the transaction intent. Set `OPENFORT_FEE_SPONSORSHIP_ID` for a transaction-scoped fee sponsorship, or leave it empty to use a project-scoped one.
 
 ### Via Facilitator (Coinbase CDP)
 

@@ -30,7 +30,6 @@ interface OpenfortConfig {
   secretKey: string;
   walletSecret: string;
   walletId: string;
-  delegatedAccountId: string;
   feeSponsorshipId: string;
   facilitatorUrl: string;
   facilitatorApiKeyId: string;
@@ -96,8 +95,6 @@ export function loadConfig(): Config {
       secretKey: process.env.OPENFORT_SECRET_KEY ?? "",
       walletSecret: process.env.OPENFORT_WALLET_SECRET ?? "",
       walletId: process.env.OPENFORT_BACKEND_WALLET_ID ?? "",
-      delegatedAccountId:
-        process.env.OPENFORT_DELEGATED_ACCOUNT_ID?.trim() ?? "",
       feeSponsorshipId: process.env.OPENFORT_FEE_SPONSORSHIP_ID ?? "",
       facilitatorUrl: process.env.X402_FACILITATOR_URL?.trim() ?? "",
       facilitatorApiKeyId: process.env.CDP_API_KEY_ID?.trim() ?? "",

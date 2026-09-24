@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
   "root": true,
   "vcs": {
     "enabled": true,
@@ -18,25 +18,25 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "a11y": {
-        "recommended": true,
+        "preset": "recommended",
         "useButtonType": "off"
       },
       "complexity": {
-        "recommended": true
+        "preset": "recommended"
       },
       "correctness": {
-        "recommended": true,
+        "preset": "recommended",
         "useUniqueElementIds": "off"
       },
       "suspicious": {
-        "recommended": true,
+        "preset": "recommended",
         "noExplicitAny": "warn",
         "noUnknownAtRules": "off"
       },
       "style": {
-        "recommended": true,
+        "preset": "recommended",
         "noDescendingSpecificity": "off",
         "noNonNullAssertion": "off"
       }

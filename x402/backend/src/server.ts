@@ -7,7 +7,6 @@ import {
   handleBackendWalletCreate,
   handleBackendWalletStatus,
   handleBackendWalletTestPayment,
-  handleBackendWalletUpgrade,
   handleHealth,
   handleProtectedContent,
   handleShieldSession,
@@ -85,9 +84,6 @@ resolvePayToAddress().then(() => {
   );
   app.post("/api/backend-wallet/create", (_req: express.Request, res: express.Response) =>
     handleBackendWalletCreate(_req, res, openfortClient, env),
-  );
-  app.post("/api/backend-wallet/upgrade", (_req: express.Request, res: express.Response) =>
-    handleBackendWalletUpgrade(_req, res, openfortClient, env),
   );
   app.get("/api/backend-wallet/test-payment", rateLimitTestPayment, (_req: express.Request, res: express.Response) =>
     handleBackendWalletTestPayment(_req, res, openfortClient, env),
