@@ -2,7 +2,7 @@
 // Telegram user — verifies the full Openfort flow end-to-end without a bot token.
 import { handleBalance, handleSend, handleStart } from './commands.js'
 import { openfort } from './openfort.js'
-import { getBalances, getWalletAddress } from './wallets.js'
+import { getBalances, getWalletAddress, sendUsdcFrom } from './wallets.js'
 
 const DEMO_TELEGRAM_USER_ID = 777_000_111
 const TREASURY_ADDRESS = '0xB7fd0ac229f66a64623Df7DBfD42B955AD5673f9' as const
@@ -22,7 +22,6 @@ if (Number(demoBalance.usdc) < 0.02) {
   if (Number(treasury.usdc) >= 0.05) {
     console.log(`\nFunding demo wallet with 0.05 USDC from treasury ${TREASURY_ADDRESS}…`)
     const treasuryAccount = await openfort.accounts.evm.backend.get({ address: TREASURY_ADDRESS })
-    const { sendUsdcFrom } = await import('./treasury.js')
     const hash = await sendUsdcFrom(treasuryAccount, demoAddress, '0.05')
     console.log(`Funded: https://sepolia.basescan.org/tx/${hash}`)
   } else {

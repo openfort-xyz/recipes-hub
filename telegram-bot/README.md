@@ -8,7 +8,7 @@ A Telegram bot where every user gets their own on-chain wallet, created and oper
 
 ## How it works
 
-Each Telegram user ID maps to one Openfort backend wallet (`data/wallets.json` here; use your real database in production). Openfort holds the encrypted keys; your server authorizes every signature with the wallet secret. Gas is sponsored through a policy, so wallets work with zero ETH.
+Each Telegram user ID maps to one Openfort backend wallet (`data/wallets.json` here; use your real database in production). Openfort holds the encrypted keys; your server authorizes every signature with the wallet secret. Gas is sponsored through a fee sponsorship, so wallets work with zero ETH.
 
 ```
 Telegram user ──/send──▶ bot (grammY) ──▶ Openfort backend wallet ──▶ Base Sepolia
@@ -24,7 +24,7 @@ The command handlers in `src/commands.ts` are plain functions — `src/bot.ts` w
 2. `cp .env.example .env` and fill in:
    - `OPENFORT_SECRET_KEY` — dashboard → API keys
    - `OPENFORT_WALLET_SECRET` — dashboard → Backend wallets → Setup
-   - `OPENFORT_GAS_POLICY_ID` — a Base Sepolia gas sponsorship policy
+   - `OPENFORT_FEE_SPONSORSHIP_ID` — a Base Sepolia fee sponsorship (`pol_...`, dashboard → Gas sponsorship)
 3. Try the flow without Telegram: `pnpm demo`
 4. Go live: message [@BotFather](https://t.me/botfather), run `/newbot`, put the token in `TELEGRAM_BOT_TOKEN`, then `pnpm start` and message your bot.
 
