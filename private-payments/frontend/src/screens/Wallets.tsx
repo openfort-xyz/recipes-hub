@@ -32,26 +32,20 @@ export const Wallets = () => {
 
   const handleCreate = async () => {
     setError(null)
-    try {
-      await embeddedWallet.create({
-        accountType: AccountTypeEnum.EOA,
-        recoveryMethod: RecoveryMethod.PASSKEY,
-      })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Wallet creation failed')
-    }
+    const result = await embeddedWallet.create({
+      accountType: AccountTypeEnum.EOA,
+      recoveryMethod: RecoveryMethod.PASSKEY,
+    })
+    if (result.error) setError(result.error.shortMessage)
   }
 
   const handleRecover = async (wallet: WalletEntry) => {
     setError(null)
-    try {
-      await embeddedWallet.setActive({
-        address: wallet.address,
-        recoveryMethod: RecoveryMethod.PASSKEY,
-      })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Recovery failed')
-    }
+    const result = await embeddedWallet.setActive({
+      address: wallet.address,
+      recoveryMethod: RecoveryMethod.PASSKEY,
+    })
+    if (result.error) setError(result.error.shortMessage)
   }
 
   const createButton = (

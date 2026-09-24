@@ -1,4 +1,4 @@
-import Openfort, { createBackendWallet } from '@openfort/openfort-node'
+import Openfort from '@openfort/openfort-node'
 import { NextResponse } from 'next/server'
 import { type Address, createClient, http, publicActions } from 'viem'
 import { baseSepolia } from 'viem/chains'
@@ -19,7 +19,7 @@ function getOpenfort() {
   const key = process.env.OPENFORT_SECRET_KEY
   if (!key) throw new Error('OPENFORT_SECRET_KEY is not configured')
   return new Openfort(key, {
-    walletSecret: process.env.OPENFORT_WALLET_SECRET_KEY,
+    walletSecret: process.env.OPENFORT_WALLET_SECRET,
   })
 }
 
@@ -117,10 +117,7 @@ export async function POST(req: Request) {
 
     if (enabled) {
       // Create a backend wallet via Openfort to act as the DCA agent
-      getOpenfort() // ensure global API client is configured
-      const agent = await createBackendWallet({
-        chainType: 'EVM',
-      })
+      const agent = await getOpenfort().accounts.evm.backend.create()
 
       const config: DcaConfig = {
         amount: parsedAmount ?? existing?.amount ?? '0.1',

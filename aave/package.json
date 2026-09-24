@@ -9,13 +9,14 @@
     "check": "biome check --write .",
     "lint": "biome lint .",
     "format": "biome format --write .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify": "pnpm lint && pnpm build"
   },
   "dependencies": {
     "@aave/client": "^6.1.0",
     "@aave/graphql": "^3.0.1",
     "@aave/react": "^6.1.0",
-    "@openfort/react": "2.0.1",
+    "@openfort/react": "2.1.3",
     "@solana-program/compute-budget": "0.13.0",
     "@solana-program/token": "0.12.0",
     "@solana/kit": "6.10.0",

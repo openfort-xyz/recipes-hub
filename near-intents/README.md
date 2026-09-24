@@ -17,8 +17,8 @@ pnpx gitpick openfort-xyz/recipes-hub/tree/main/near-intents openfort-near-inten
 1. Create an account at [dashboard.openfort.io](https://dashboard.openfort.io)
 2. Create a new project
 3. Navigate to **API Keys** and copy your publishable key
-4. Navigate to **Shield** settings and copy your Shield publishable key
-5. (Optional) Create a **Policy** for gas sponsorship and copy the fee sponsorship ID
+4. In **API keys**, copy your Shield publishable key
+5. (Optional) Create a **fee sponsorship** policy for your default chain and copy its ID
 
 ### NEAR Intents
 
@@ -89,7 +89,7 @@ accepts `confidentiality: "advanced"` for a higher privacy tier.
 ## Features
 
 - **Cross-chain swaps** across Ethereum, Base, Arbitrum, Optimism, Polygon, and Avalanche
-- **Openfort embedded wallets** with email/social authentication
+- **Openfort embedded wallets** with email or external-wallet sign-in
 - **Single-deposit UX** — solvers handle routing and settlement; no NEAR keys needed
 - **Confidential swaps** (optional) — a Public/Private toggle routes trades through NEAR Confidential Intents so they aren't broadcast publicly
 - **Gas sponsorship** with Openfort policies (optional)

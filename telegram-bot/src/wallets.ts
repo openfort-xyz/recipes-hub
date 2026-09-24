@@ -39,7 +39,10 @@ export async function getBalances(address: `0x${string}`) {
 }
 
 export async function sendUsdc(telegramUserId: number, to: `0x${string}`, amount: string): Promise<string> {
-  const account = await getOrCreateWallet(telegramUserId)
+  return sendUsdcFrom(await getOrCreateWallet(telegramUserId), to, amount)
+}
+
+export async function sendUsdcFrom(account: BackendAccount, to: `0x${string}`, amount: string): Promise<string> {
   const data = encodeFunctionData({
     abi: erc20Abi,
     functionName: 'transfer',
@@ -50,12 +53,22 @@ export async function sendUsdc(telegramUserId: number, to: `0x${string}`, amount
     account,
     chainId: CHAIN_ID,
     interactions: [{ to: USDC_ADDRESS, data }],
-    policy: config.gasPolicyId,
+    policy: config.feeSponsorshipId,
   })
 
-  const hash = result.response?.transactionHash
-  if (!hash) {
-    throw new Error(`Transaction was not submitted: ${JSON.stringify(result.response ?? result)}`)
+  return waitForReceipt(result.id)
+}
+
+// sendTransaction resolves once the transaction exists, not once it has landed.
+// The receipt (and its hash) is set when the status turns terminal.
+async function waitForReceipt(transactionId: string, tries = 30): Promise<string> {
+  for (let i = 0; i < tries; i++) {
+    const tx = await openfort.transactions.get(transactionId)
+    if (tx.status === 'succeeded' && tx.receipt?.transactionHash) return tx.receipt.transactionHash
+    if (tx.status === 'reverted' || tx.status === 'failed') {
+      throw new Error(`Transaction ${transactionId} ${tx.status}: ${tx.receipt?.error?.reason ?? 'no reason given'}`)
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000))
   }
-  return hash
+  throw new Error(`Transaction ${transactionId} did not land after ${tries}s — check its status in the dashboard.`)
 }

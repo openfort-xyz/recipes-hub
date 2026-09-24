@@ -1,6 +1,6 @@
 # Openfort × Morpho
 
-Interact with a Morpho Blue USDC vault on Base using Openfort embedded wallets and Shield authentication.
+Deposit into and redeem from a Morpho USDC vault on Base mainnet using Openfort embedded wallets. Use live-mode keys: Base mainnet is not available in test mode.
 
 ## 1. Setup
 
@@ -14,14 +14,14 @@ From your [Openfort dashboard](https://dashboard.openfort.io):
 
 1. **Publishable Key**: Go to **Developers** → **API Keys** → copy your publishable key
 2. **Shield Publishable Key**: Go to **Developers** → **API Keys** → copy your Shield publishable key
-3. **Fee Sponsorship ID** (optional): Go to **Policies** → select or create a fee sponsorship → copy the fee sponsorship ID
+3. **Fee Sponsorship ID** (optional): Go to **Gas sponsorship** → **Add gas sponsorship** on Base → copy the fee sponsorship ID (`pol_...`)
 
 This recipe uses **passkey** wallet recovery (client-side WebAuthn), so the Shield
 publishable key is all you need — no Shield secret and no backend server.
 
-## 3. Get WalletConnect Project ID
+## 3. Get WalletConnect Project ID (optional)
 
-1. Go to [WalletConnect Cloud](https://cloud.walletconnect.com/)
+1. Go to [Reown Cloud](https://cloud.reown.com/)
 2. Create a new project or use an existing one
 3. Copy the Project ID
 

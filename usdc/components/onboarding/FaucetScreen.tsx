@@ -39,7 +39,7 @@ export const FaucetScreen = ({ walletB, onNext }: Props) => {
           <Text style={styles.stepPillText}>Step 2 of 3</Text>
         </View>
         <Text style={styles.title}>Add test USDC</Text>
-        <Text style={styles.subtitle}>Fund Wallet B with $10 from Circle's Ethereum Sepolia faucet.</Text>
+        <Text style={styles.subtitle}>Fund Wallet B with $10 from Circle&apos;s Ethereum Sepolia faucet.</Text>
 
         <Pressable
           style={({ pressed }) => [styles.addressCard, pressed && styles.buttonPressed]}
@@ -70,7 +70,7 @@ export const FaucetScreen = ({ walletB, onNext }: Props) => {
         </View>
 
         <Text style={styles.note}>
-          After opening the faucet you'll land on a screen that detects your funds automatically.
+          After opening the faucet you&apos;ll land on a screen that detects your funds automatically.
         </Text>
       </ScrollView>
 

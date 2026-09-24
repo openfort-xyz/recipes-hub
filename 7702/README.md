@@ -16,7 +16,7 @@ pnpx gitpick openfort-xyz/recipes-hub/tree/main/7702 openfort-7702 && cd openfor
 2. Create a new project
 3. Navigate to **API Keys** and copy your publishable key
 4. Navigate to **Shield** settings and copy your Shield publishable key
-5. Create a **Fee Sponsorship** and copy the policy ID
+5. Under **Gas sponsorships**, add a gas sponsorship for Base Sepolia and copy its `pol_...` ID
 
 This recipe uses **passkey** wallet recovery (client-side WebAuthn), so the Shield
 publishable key is all you need — no Shield secret, encryption share, or backend.

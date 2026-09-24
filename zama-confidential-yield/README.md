@@ -4,11 +4,10 @@ Shield USDC into Zama's confidential token (**cUSDC**) and earn private yield in
 **Steakhouse Confidential** Morpho vault, from an Openfort embedded wallet. Balances,
 deposits and yield stay **encrypted** on-chain.
 
-The wallet is an **EOA + passkey**. It has to be an EOA: Zama's relayer `ecrecover`s the
+The wallet is an **EOA + passkey**. It has to be an EOA key: Zama's relayer `ecrecover`s the
 decryption permit against your address, so a 4337 smart account would decrypt nothing.
-Set `VITE_OPENFORT_FEE_SPONSORSHIP_ID` and that same EOA is EIP-7702-delegated so an
-Openfort **paymaster** sponsors every transaction; leave it empty and the EOA pays its
-own gas from a Sepolia faucet.
+That same EOA is EIP-7702-delegated so an Openfort **paymaster** sponsors every
+transaction, which is why `VITE_OPENFORT_FEE_SPONSORSHIP_ID` is required.
 
 Writes are submitted as **sponsored UserOperations** through Openfort's bundler and
 paymaster (`api.openfort.io/rpc/<chainId>`) rather than through `POST /v1/transaction_intents`.
@@ -44,7 +43,7 @@ From your [Openfort dashboard](https://dashboard.openfort.io):
 1. **Publishable Key**: **Developers → API Keys** → copy your publishable key (`pk_test_…`)
 2. **Shield Publishable Key**: **Developers → API Keys** → copy your Shield publishable key
 3. Enable **Ethereum Sepolia** and make sure the **Delegated** (EIP-7702) account type is available
-4. **Fee Sponsorship ID**: **Policies** → create a gas-sponsorship policy for Sepolia → copy its id (`pol_…`). This is what makes transactions gasless.
+4. **Fee Sponsorship ID** (required): **Policies** → create a gas-sponsorship policy for Sepolia → copy its id (`pol_…`). Every write is a UserOperation sponsored by it.
 
 This recipe uses **passkey** recovery (client-side WebAuthn), so the Shield publishable
 key is all you need — no Shield secret and no backend.
@@ -56,9 +55,10 @@ Copy `.env.example` to `.env` and fill it in:
 ```bash
 VITE_NETWORK=sepolia
 VITE_OPENFORT_PUBLISHABLE_KEY=pk_test_...
-VITE_OPENFORT_SHIELD_KEY=...
-VITE_OPENFORT_FEE_SPONSORSHIP_ID=          # empty → self-paid EOA; pol_… → gasless 7702
-VITE_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY=...
+VITE_OPENFORT_FEE_SPONSORSHIP_ID=pol_...
+VITE_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com   # optional
+VITE_CALIBUR_IMPLEMENTATION=                                # optional; required off Sepolia
 ```
 
 ## 4. Run it
@@ -113,7 +113,9 @@ an EIP-1193 provider directly.
 
 ```
 src/
-  openfort/   Providers.tsx (headless config: delegated account + sponsorship), wagmi.ts
+  openfort/   Providers.tsx (headless config: delegated account + sponsorship), wagmi.ts,
+              calibur.ts + useSponsoredSender.ts (sponsored 7702 UserOperations),
+              useEmbeddedWalletClient.ts (viem wallet client on the active wallet)
   zama/       sdk.ts (ZamaSDK ← wagmi's viem clients), confidential.ts (shield/unshield/deposit/redeem/claim/decrypt)
   contracts/  addresses.ts (Sepolia + mainnet, RPC), abis.ts
   components/ PhoneFrame.tsx, Dashboard.tsx, BatchStatus.tsx, ui.tsx, styles.ts

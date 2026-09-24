@@ -2,7 +2,7 @@ import { useSignOut } from '@openfort/react'
 import { type CSSProperties, useCallback, useEffect, useMemo, useState } from 'react'
 import { formatUnits } from 'viem'
 import { usePublicClient } from 'wagmi'
-import { ADDRESSES, DECIMALS, FAUCET_URL, GAS_FAUCET_URL, NETWORK } from '../contracts/addresses'
+import { ADDRESSES, DECIMALS, FAUCET_URL, NETWORK } from '../contracts/addresses'
 import { useEmbeddedWalletClient } from '../openfort/useEmbeddedWalletClient'
 import { useSponsoredSender } from '../openfort/useSponsoredSender'
 import {
@@ -28,7 +28,6 @@ import { AmountAction, Spinner } from './ui'
 
 type Hex = `0x${string}`
 const ZERO: Hex = `0x${'0'.repeat(64)}`
-const GASLESS = Boolean(import.meta.env.VITE_OPENFORT_FEE_SPONSORSHIP_ID)
 const fmt = (v: bigint) =>
   Number(formatUnits(v, DECIMALS)).toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -234,9 +233,7 @@ export function Dashboard() {
           <span style={chip('var(--pd-private)')}>
             {NETWORK === 'mainnet' ? 'Mainnet' : 'Sepolia'}
           </span>
-          <span style={chip(GASLESS ? 'var(--pd-success)' : 'var(--pd-ink-500)')}>
-            {GASLESS ? '⚡ Gasless' : 'Self-pay'}
-          </span>
+          <span style={chip('var(--pd-success)')}>⚡ Gasless</span>
           <button
             type="button"
             onClick={() => signOut()}
@@ -302,18 +299,6 @@ export function Dashboard() {
                   title="Circle USDC faucet"
                 >
                   Get USDC ↗
-                </a>
-              )}
-              {/* Unsponsored: every action costs gas, so surface the ETH faucet. */}
-              {!GASLESS && NETWORK === 'sepolia' && (
-                <a
-                  href={GAS_FAUCET_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={heroPill}
-                  title="Sepolia ETH for gas"
-                >
-                  ⛽ Get ETH ↗
                 </a>
               )}
             </div>

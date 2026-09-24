@@ -10,7 +10,7 @@ pnpx gitpick openfort-xyz/recipes-hub/tree/main/hyperliquid openfort-hyperliquid
 
 ## 2. Prerequisites
 
-- Node.js 18+
+- Node.js 22+
 - iOS Simulator (XCode) or Android Emulator (Android Studio)
 - Openfort account with Shield configuration ([Sign up](https://openfort.io))
 - **Hyperliquid testnet access** (see step 3)
@@ -49,10 +49,9 @@ Update `.env.local` with your credentials:
 
 ```env
 OPENFORT_PUBLISHABLE_KEY=pk_test_your_publishable_key
-OPENFORT_SHIELD_PUBLISHABLE_KEY=pk_test_your_shield_key
-OPENFORT_SHIELD_ENCRYPTION_KEY=your_shield_encryption_share
-OPENFORT_SHIELD_RECOVERY_BASE_URL=http://localhost:3000
-OPENFORT_ETHEREUM_PROVIDER_POLICY_ID=pol_your_policy_id
+OPENFORT_SHIELD_PUBLISHABLE_KEY=your_shield_publishable_key
+OPENFORT_SHIELD_RECOVERY_BASE_URL=https://your-recovery-api.com  # must be HTTPS (e.g. a tunnel to localhost:3000)
+OPENFORT_FEE_SPONSORSHIP_ID=pol_your_policy_id  # optional, sponsors gas
 ```
 
 `HYPERLIQUID_WALLET_ADDRESS` is optional — by default your embedded wallet trades on its own

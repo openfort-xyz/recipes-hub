@@ -11,7 +11,7 @@ function required(name: string): string {
 export const config = {
   openfortSecretKey: required('OPENFORT_SECRET_KEY'),
   openfortWalletSecret: required('OPENFORT_WALLET_SECRET'),
-  gasPolicyId: required('OPENFORT_GAS_POLICY_ID'),
+  feeSponsorshipId: required('OPENFORT_FEE_SPONSORSHIP_ID'),
   // biome-ignore lint/complexity/useLiteralKeys: noPropertyAccessFromIndexSignature requires bracket access
   telegramBotToken: process.env['TELEGRAM_BOT_TOKEN'],
 }

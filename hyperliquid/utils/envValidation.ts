@@ -16,7 +16,6 @@ interface EnvRule {
 const PLACEHOLDER_VALUES = new Set([
   "YOUR_PROJECT_PUBLISHABLE_KEY",
   "YOUR_SHIELD_PUBLISHABLE_KEY",
-  "YOUR_SHIELD_ENCRYPTION_SHARE",
   "YOUR_GAS_SPONSORSHIP_POLICY_ID",
   "https://your-recovery-endpoint.example.com",
   "",
@@ -37,12 +36,6 @@ const ENV_RULES: EnvRule[] = [
     extraKey: "openfortShieldPublishableKey",
     envName: "OPENFORT_SHIELD_PUBLISHABLE_KEY",
     description: "Shield publishable key used for wallet encryption",
-    required: true,
-  },
-  {
-    extraKey: "openfortShieldEncryptionShare",
-    envName: "OPENFORT_SHIELD_ENCRYPTION_KEY",
-    description: "Shield encryption share required for signing requests",
     required: true,
   },
   {

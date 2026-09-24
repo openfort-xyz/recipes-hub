@@ -1,20 +1,20 @@
 import { OpenfortProvider } from "@openfort/react-native";
 import { getEncryptionSessionFromEndpoint } from "../services/walletRecovery";
 
-import { getPublishableKey, getShieldPublishableKey, getEthereumProviderPolicyId } from "../utils/config";
+import { getPublishableKey, getShieldPublishableKey, getFeeSponsorshipId } from "../utils/config";
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
  
 export default function RootLayout() {
   const publishableKey = getPublishableKey();
   const shieldPublishableKey = getShieldPublishableKey();
-  const ethereumProviderPolicyId = getEthereumProviderPolicyId();
+  const feeSponsorshipId = getFeeSponsorshipId();
   return (
     <SafeAreaProvider>
       <OpenfortProvider
         publishableKey={publishableKey}
         walletConfig={{
-          feeSponsorshipId: ethereumProviderPolicyId,
+          feeSponsorshipId,
           shieldPublishableKey,
           getEncryptionSession: getEncryptionSessionFromEndpoint,
         }}

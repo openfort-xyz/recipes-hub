@@ -9,7 +9,7 @@ import type { OpenfortWalletConfig } from "@openfort/react";
 import type { PropsWithChildren } from "react";
 
 const _defaultChainId = Number.parseInt(
-  process.env.NEXT_PUBLIC_OPENFORT_DEFAULT_CHAIN_ID ?? "11155111",
+  process.env.NEXT_PUBLIC_OPENFORT_DEFAULT_CHAIN_ID ?? "8453",
   10
 );
 const _feeSponsorshipId = process.env.NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID;

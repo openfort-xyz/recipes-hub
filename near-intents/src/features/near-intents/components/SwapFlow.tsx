@@ -2,7 +2,7 @@
 
 import { AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import OpenfortConnectButton from "@/features/openfort/components/connect-button";
+import { OpenfortButton } from "@openfort/react";
 import { TERMINAL_STATUSES } from "@/features/near-intents/constants";
 import { useSwapController } from "@/features/near-intents/hooks/use-swap-controller";
 import { CoBrandHero } from "./co-branding";
@@ -43,7 +43,7 @@ export default function SwapFlow() {
                 Sign in with your Openfort wallet to choose a chain and asset
                 and start a swap.
               </p>
-              <OpenfortConnectButton className="justify-center" />
+              <OpenfortButton label="Connect Wallet" />
             </CardContent>
           </Card>
         ) : isLoadingAssets ? (

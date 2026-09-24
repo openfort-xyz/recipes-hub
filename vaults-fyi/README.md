@@ -27,12 +27,13 @@ This recipe uses the same external backend as the other Openfort recipes for Shi
 git clone https://github.com/openfort-xyz/openfort-backend-quickstart.git
 cd openfort-backend-quickstart
 cp .env.example .env
-# add OPENFORT_API_KEY and OPENFORT_SHIELD_SECRET_KEY
+# set OPENFORT_SECRET_KEY, SHIELD_PUBLISHABLE_KEY, SHIELD_SECRET_KEY, SHIELD_ENCRYPTION_KEY
+# delete the SHIELD_BASE_PATH line (leave it undeclared, not empty)
 pnpm install
 pnpm dev
 ```
 
-The backend runs on `http://localhost:3000`.
+The backend runs on `http://localhost:3000` and serves `POST /api/protected-create-encryption-session`, which the frontend calls to recover the Shield-managed wallet (automatic recovery).
 
 ## 3. Get Openfort credentials
 
@@ -40,7 +41,7 @@ From your [Openfort dashboard](https://dashboard.openfort.io):
 
 1. **Publishable Key**: Developers → API Keys
 2. **Shield Public Key**: Developers → API Keys
-3. **Fee Sponsorship ID** (optional): Policies → select or create a fee sponsorship policy
+3. **Fee Sponsorship ID** (optional): [Gas sponsorships](https://dashboard.openfort.io/policies) → Add gas sponsorship
 
 ## 4. Get a vaults.fyi API key
 
@@ -58,6 +59,7 @@ Fill in:
 VITE_OPENFORT_PUBLISHABLE_KEY=pk_...
 VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY=pk_...
 VITE_OPENFORT_FEE_SPONSORSHIP_ID=pol_...           # optional
+VITE_WALLET_CONNECT_PROJECT_ID=...                  # optional
 VITE_BACKEND_URL=http://localhost:3000
 VAULTS_FYI_API_KEY=...
 ```
@@ -100,6 +102,8 @@ Borrow is **market-based** rather than vault-based: a market exposes several ass
 
 ## Files
 
+- `src/Providers.tsx` — `OpenfortProvider` + wagmi config (`embeddedWalletConnector`, `OpenfortWagmiBridge`), Shield session endpoint, optional fee sponsorship.
+
 - `src/lib/vaultsFyi.ts` — `@vaultsfyi/sdk` client instance, configured to proxy through Vite so the API key stays server-side.
 - `src/lib/vaultsFyiBeta.ts` — direct fetch client for the beta borrow + fixed-term endpoints, routed through the same proxy.
 - `src/hooks/useDepositOptions.ts`, `usePositions.ts`, `useRewards.ts`, `useBorrowMarkets.ts` — React Query hooks.
@@ -111,4 +115,4 @@ Borrow is **market-based** rather than vault-based: a market exposes several ass
 
 - [Openfort docs](https://www.openfort.io/docs)
 - [vaults.fyi docs](https://docs.vaults.fyi)
-- [Cookbook recipe on docs.openfort.io](https://www.openfort.io/docs/recipes/yield-on-vaultsfyi)
+- [Cookbook recipe on docs.openfort.io](https://www.openfort.io/docs/recipes/vaults-fyi)

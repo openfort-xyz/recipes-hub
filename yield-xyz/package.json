@@ -9,10 +9,11 @@
     "check": "biome check --write .",
     "lint": "biome lint .",
     "format": "biome format --write .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify": "pnpm lint && pnpm build"
   },
   "dependencies": {
-    "@openfort/react": "2.1.1",
+    "@openfort/react": "2.1.3",
     "@tanstack/react-query": "^5.101.4",
     "@walletconnect/ethereum-provider": "2.23.10",
     "react": "^19.2.8",

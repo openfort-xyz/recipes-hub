@@ -20,7 +20,7 @@ Both run through the same `POST /v1/actions/enter` → sign → `submit-hash` lo
 ## 1. Setup
 
 ```sh
-cd openfort-yield-xyz
+pnpx gitpick openfort-xyz/recipes-hub/tree/main/yield-xyz openfort-yield-xyz && cd openfort-yield-xyz
 ```
 
 ## 2. Setup backend
@@ -31,10 +31,10 @@ This recipe uses the same external backend as the other Openfort recipes for Shi
 git clone https://github.com/openfort-xyz/openfort-backend-quickstart.git
 cd openfort-backend-quickstart
 cp .env.example .env
-# add OPENFORT_SECRET_KEY, SHIELD_PUBLISHABLE_KEY, SHIELD_SECRET_KEY, SHIELD_ENCRYPTION_KEY
-# leave OPENFORT_BASE_PATH and SHIELD_BASE_PATH out of .env entirely rather than
-# blank - the SDK's Shield base-path default only applies when the var is
-# unset, not when it's an empty string, and an empty string breaks the fetch.
+# set OPENFORT_SECRET_KEY, SHIELD_PUBLISHABLE_KEY, SHIELD_SECRET_KEY, SHIELD_ENCRYPTION_KEY
+# delete the SHIELD_BASE_PATH line (leave it undeclared, not empty): the SDK's
+# Shield base-path default only applies when the var is unset, and an empty
+# string makes session creation fail with "Only absolute URLs are supported".
 pnpm install
 pnpm dev
 ```
@@ -47,7 +47,7 @@ From your [Openfort dashboard](https://dashboard.openfort.io):
 
 1. **Publishable Key**: Developers → API Keys
 2. **Shield Publishable Key**: Developers → API Keys
-3. **Fee Sponsorship ID** (optional): Policies → select or create a fee sponsorship policy for Monad
+3. **Fee Sponsorship ID** (optional): [Gas sponsorships](https://dashboard.openfort.io/policies) → Add gas sponsorship for Monad
 
 ## 4. Get a Yield.xyz API key
 
@@ -123,6 +123,7 @@ Nothing else is network-specific: every component keys off the single `DEMO` con
 
 ## Files
 
+- `src/Providers.tsx` - `OpenfortProvider` + wagmi config (`embeddedWalletConnector`, `OpenfortWagmiBridge`), Shield session endpoint, Monad RPC URL, optional fee sponsorship.
 - `src/lib/yieldXyz.ts` - typed REST client, proxied through Vite so the API key stays server-side.
 - `src/config/demos.ts` - the single Monad config (network, chain id, yieldId, explorer) that every panel keys off.
 - `src/hooks/useYieldQueries.ts` - React Query hooks: `useYieldDetail`, `useYields`, `useValidators`, `useBalances`.
@@ -136,15 +137,13 @@ Nothing else is network-specific: every component keys off the single `DEMO` con
 
 ## Deploying
 
-**Push only the `openfort-yield-xyz/` folder** (i.e. everything in this directory). `.gitignore` already excludes `node_modules/`, `dist/`, `.env`, and `pnpm-lock.yaml` - nothing in here contains real credentials; `.env.example` and the docs only reference variable names.
+`.gitignore` already excludes `node_modules/`, `dist/`, `.env`, and `pnpm-lock.yaml` - nothing in here contains real credentials; `.env.example` and the docs only reference variable names.
 
 `openfort-backend-quickstart/` is a separate, already-public repo - don't copy it into this one. Either point your deployment at your own clone of it (with its own `.env`, never committed), or fold its single `/api/protected-create-encryption-session` route into whatever backend you're already running. Either way, that backend's `.env` (holding `OPENFORT_SECRET_KEY` and the `SHIELD_*` keys) is a separate deploy from the frontend and must never ship in the frontend bundle.
 
 Two things to change for a real deployment, beyond what's already covered above:
 - **Environment variables**: set the real values (your dashboard keys, your own `YIELD_XYZ_API_KEY`, your deployed backend's URL) in your hosting provider's env var settings - not in a committed `.env`.
 - **The Yield.xyz API key proxy**: `vite.config.ts`'s dev proxy only runs under `vite dev`. For a production build, replace it with a real backend route (in whatever backend you're already running) that adds the `X-API-KEY` header server-side, and point `src/lib/yieldXyz.ts`'s `BASE_PATH` at that route instead of `/api/yield-xyz`.
-
-That covers hosting this app yourself. **Submitting it as a PR into `openfort-xyz/recipes-hub`** (so it shows up alongside the other recipes) is a different process - see `AGENTS.md`'s "Submitting this recipe to recipes-hub" section for the full step-by-step (forking, folder placement, version/theme conventions to reconcile, README table entries, and a from-clean re-verification checklist).
 
 ## Security
 
@@ -153,5 +152,6 @@ Yield.xyz is SOC 2 Type II and has undergone multiple smart-contract audits (Can
 ## Resources
 
 - [Openfort docs](https://www.openfort.io/docs)
+- [Cookbook recipe on openfort.io](https://www.openfort.io/docs/recipes/yield-xyz)
 - [Yield.xyz docs](https://docs.yield.xyz/docs/getting-started)
 - [Yield.xyz products overview](https://stakekit.notion.site/Yield-xyz-Products-Overview-3135318e934e8042be5be2a6aa4c78bd)

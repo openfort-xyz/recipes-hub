@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowDown, ChevronDown, Eye, Lock } from "lucide-react";
+import { ArrowDown, ChevronDown, Eye, Lock, Wallet } from "lucide-react";
+import { useUI } from "@openfort/react";
 import { erc20Abi, formatUnits } from "viem";
 import { useBalance, useReadContract } from "wagmi";
 import { isWagmiChainId } from "@/features/openfort/config/wagmi-config";
@@ -18,7 +19,6 @@ import type {
 } from "@/features/near-intents/types";
 import AssetIcon from "./AssetIcon";
 import AssetPicker from "./AssetPicker";
-import FundWallet from "./FundWallet";
 
 interface SwapFormProps {
   originAssets: SwapAsset[];
@@ -59,6 +59,7 @@ export default function SwapForm({
   onConfidentialityChange,
   onFlip,
 }: SwapFormProps) {
+  const { openFunding } = useUI();
   const [pickerField, setPickerField] = useState<"from" | "to" | null>(null);
 
   const handleSelect = (asset: SwapAsset) => {
@@ -77,7 +78,16 @@ export default function SwapForm({
       <div className="rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-lg">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">Swap</h2>
-          {walletAddress && <FundWallet walletAddress={walletAddress} />}
+          {walletAddress && (
+            <button
+              type="button"
+              onClick={openFunding}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+            >
+              <Wallet className="h-4 w-4" />
+              Need tokens? Fund your wallet
+            </button>
+          )}
         </div>
 
         {CONFIDENTIAL_SWAPS_ENABLED && (

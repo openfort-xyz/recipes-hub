@@ -9,10 +9,11 @@
     "start": "node dist/src/server.js",
     "dev": "tsc && node --watch dist/src/server.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "verify": "pnpm build && pnpm test"
   },
   "dependencies": {
-    "@openfort/openfort-node": "0.10.8",
+    "@openfort/openfort-node": "0.12.2",
     "dotenv": "17.4.2",
     "express": "5.2.1",
     "express-rate-limit": "8.5.2",
@@ -22,7 +23,7 @@
     "@types/express": "5.0.6",
     "@types/node": "26.1.1",
     "typescript": "5.9.3",
-    "vitest": "4.1.10"
+    "vitest": "5.0.1"
   },
   "keywords": [
     "openfort",

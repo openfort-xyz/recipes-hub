@@ -13,12 +13,13 @@
     "web": "pnpm dev",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "doctor": "pnpm dlx expo-doctor@latest --verbose --pnpm && pnpm expo install --fix --pnpm"
+    "doctor": "pnpm dlx expo-doctor@latest --verbose --pnpm && pnpm expo install --fix --pnpm",
+    "verify": "pnpm lint && pnpm typecheck"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
     "@nktkas/hyperliquid": "^0.33.1",
-    "@openfort/react-native": "2.0.0",
+    "@openfort/react-native": "2.1.2",
     "@peculiar/webcrypto": "^1.7.1",
     "@react-navigation/bottom-tabs": "^7.18.8",
     "@react-navigation/elements": "^2.9.30",
