@@ -1,7 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { OpenfortButton } from "@openfort/react";
 import OpenfortLogo from "@/features/openfort/components/logo";
 import { HamburgerMenu } from "./hamburger-menu";
-import OpenfortConnectButton from "@/features/openfort/components/connect-button";
 
 export default function Header() {
   return (
@@ -12,11 +14,11 @@ export default function Header() {
         </Link>
       </div>
       <div className="hidden md:flex gap-2 pr-4">
-        <OpenfortConnectButton />
+        <OpenfortButton />
       </div>
       <div className="md:hidden pr-4 w-48">
         <HamburgerMenu>
-          <OpenfortConnectButton compact className="w-full" />
+          <OpenfortButton />
         </HamburgerMenu>
       </div>
     </div>

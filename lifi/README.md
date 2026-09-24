@@ -15,8 +15,8 @@ pnpx gitpick openfort-xyz/recipes-hub/tree/main/lifi openfort-lifi && cd openfor
 1. Create an account at [dashboard.openfort.io](https://dashboard.openfort.io)
 2. Create a new project
 3. Navigate to **API Keys** and copy your publishable key
-4. Navigate to **Shield** settings and copy your Shield publishable key
-5. (Optional) Create a **Policy** for gas sponsorship and copy the policy ID
+4. In **API keys**, copy your Shield publishable key
+5. (Optional) Create a **fee sponsorship** policy for your default chain and copy its ID
 
 ### LiFi
 
