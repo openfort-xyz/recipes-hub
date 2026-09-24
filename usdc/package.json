@@ -9,13 +9,14 @@
     "ios": "expo run:ios",
     "ios-no-cache": "expo run:ios --no-build-cache",
     "web": "expo start --web",
-    "server": "bun --watch --hot ./server/index.ts",
     "doctor": "pnpm dlx expo-doctor@latest --verbose --pnpm && pnpm expo install --fix --pnpm",
-    "verify": "tsc --noEmit"
+    "verify": "pnpm lint && pnpm typecheck",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
-    "@openfort/react-native": "2.0.0",
+    "@openfort/react-native": "2.1.2",
     "@react-navigation/native": "^7.3.7",
     "dotenv": "^17.4.2",
     "expo": "~57.0.2",
@@ -44,6 +45,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.17",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~57.0.2",
     "react-test-renderer": "19.2.3",
     "typescript": "~6.0.3"
   },

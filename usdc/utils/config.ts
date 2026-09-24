@@ -30,11 +30,11 @@ export function getShieldPublishableKey(): string {
   return value as string;
 }
 
-export function getEthereumProviderPolicyId(): string | undefined {
-  const value = Constants.expoConfig?.extra?.openfortEthereumProviderPolicyId as string | undefined;
+export function getFeeSponsorshipId(): string | undefined {
+  const value = Constants.expoConfig?.extra?.openfortFeeSponsorshipId as string | undefined;
   if (isPlaceholder(value)) {
     console.warn(
-      "[CONFIG] No gas sponsorship policy configured (OPENFORT_ETHEREUM_PROVIDER_POLICY_ID). Gasless actions may be disabled."
+      "[CONFIG] No gas sponsorship policy configured (OPENFORT_FEE_SPONSORSHIP_ID). Gasless actions may be disabled."
     );
     return undefined;
   }
