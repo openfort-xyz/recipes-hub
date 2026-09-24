@@ -40,7 +40,7 @@ These are non-obvious and will break samples if ignored:
 - **`@openfort/react` provider needs a publishable key at render time.** In Next.js samples, the App Router will throw during static prerender without it — every Next sample sets `export const dynamic = 'force-dynamic'` in `app/layout.tsx`. Its `walletConfig` nests `accountType` / `ethereumFeeSponsorshipId` under `ethereum: { … }`. The React Native SDK config key is `feeSponsorshipId` (not `ethereumProviderPolicyId`).
 - **Next.js stays on 15 for the wallet samples.** Next 16 forces Turbopack and rejects the webpack walletconnect shims (`pino-pretty` external, `@react-native-async-storage/async-storage: false`). Only `mpp` (no wagmi/walletconnect) runs on Next 16.
 - **Biome 2.4 config:** use `files.includes` with `!!` excludes (not the deprecated `experimentalScannerIgnores`) and enable `css.parser.tailwindDirectives: true` so `@apply`/`@theme` parse.
-- React Native samples use the latest published `@openfort/react-native` (pinned exactly, same version in every recipe): Hyperliquid targets **Expo 56 / RN 0.85**, while USDC targets **Expo 57 / RN 0.86**. Realign each matrix with `pnpm expo install --fix` rather than hand-editing `expo-*` versions.
+- React Native samples use the latest published `@openfort/react-native` (pinned exactly, same version in every recipe): both Hyperliquid and USDC target **Expo 57 / RN 0.86**. Realign each matrix with `pnpm expo install --fix` rather than hand-editing `expo-*` versions.
 
 ## PR instructions
 - Title format: `[sample-name] <summary>` (for example, `[aave] Update Shield policy ID`).
