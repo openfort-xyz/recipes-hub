@@ -16,33 +16,44 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  packages:
+    name: select packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      dirs: ${{ steps.select.outputs.dirs }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # Pull requests verify only the packages they touch; a change to this workflow, a push to
+      # main, the weekly run and manual runs verify every package.
+      - id: select
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          all=$(git ls-files '*package.json' | xargs -n1 dirname | sort)
+          if [ "$EVENT" = pull_request ]; then
+            changed=$(git diff --name-only "$BASE_SHA"...HEAD)
+            if ! grep -qx '.github/workflows/verify.yml' <<<"$changed"; then
+              all=$(for dir in $all; do grep -q "^$dir/" <<<"$changed" && echo "$dir" || true; done)
+            fi
+          fi
+          echo "dirs=$(jq -cnR '[inputs | select(length > 0)]' <<<"$all")" >> "$GITHUB_OUTPUT"
+
   recipe:
     name: ${{ matrix.dir }}
+    needs: packages
+    if: needs.packages.outputs.dirs != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        dir:
-          - 7702
-          - aave
-          - agent-permissions
-          - hyperliquid
-          - lifi
-          - lighter
-          - lighter/server
-          - morpho
-          - mpp
-          - near-intents
-          - private-payments/backend
-          - private-payments/frontend
-          - telegram-bot
-          - usdc
-          - vaults-fyi
-          - x402/backend
-          - x402/frontend
-          - yield-xyz
-          - zama-confidential-yield
+        dir: ${{ fromJSON(needs.packages.outputs.dirs) }}
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
@@ -53,6 +64,8 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: 22
-      - run: corepack enable pnpm
+      # Same pnpm as the recipes' packageManager field. Corepack would pull the latest
+      # major for packages without that field, and pnpm 11+ fails on unapproved build scripts.
+      - run: npm install --global pnpm@10.30.3
       - run: pnpm install
       - run: pnpm verify
