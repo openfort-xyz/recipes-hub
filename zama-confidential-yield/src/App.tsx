@@ -11,7 +11,9 @@ import { Auth } from './screens/Auth'
 import { Wallets } from './screens/Wallets'
 
 const HAS_KEYS = Boolean(
-  import.meta.env.VITE_OPENFORT_PUBLISHABLE_KEY && import.meta.env.VITE_OPENFORT_SHIELD_KEY
+  import.meta.env.VITE_OPENFORT_PUBLISHABLE_KEY &&
+    import.meta.env.VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY &&
+    import.meta.env.VITE_OPENFORT_FEE_SPONSORSHIP_ID
 )
 
 type Step = 'loading' | 'auth' | 'wallet' | 'dashboard'
@@ -79,11 +81,11 @@ function ConfigNotice() {
             lineHeight: 1.55,
           }}
         >
-          Copy <code>.env.example</code> → <code>.env</code> and set your <strong>live</strong>{' '}
-          Openfort keys (<code>VITE_OPENFORT_PUBLISHABLE_KEY</code>,{' '}
-          <code>VITE_OPENFORT_SHIELD_KEY</code>) plus a mainnet RPC (
-          <code>VITE_MAINNET_RPC_URL</code>). This demo runs on Ethereum mainnet, so test keys won't
-          work.
+          Copy <code>.env.example</code> → <code>.env</code> and set your Openfort keys (
+          <code>VITE_OPENFORT_PUBLISHABLE_KEY</code>,{' '}
+          <code>VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY</code>) and fee sponsorship policy (
+          <code>VITE_OPENFORT_FEE_SPONSORSHIP_ID</code>). Test keys run on Sepolia; set{' '}
+          <code>VITE_NETWORK=mainnet</code> only with live keys.
         </p>
       </div>
     </Stage>
