@@ -2,33 +2,79 @@
 
 ## Project overview
 - Openfort + Yield.xyz integration with a Vite React frontend.
-- Lets a Shield-managed embedded wallet discover, enter, track, and exit both native MON staking (`monad-mon-native-staking`) and ERC-4626 vaults on **Monad mainnet** via the Yield.xyz v1 REST API. Monad Testnet lists one opportunity and zero vaults, which is why this targets mainnet - and why every action here moves real funds.
-- No other Yield.xyz partner recipe (Turnkey, Privy, Portal, Crossmint) has a working Monad demo as of Aug 2026 - verified by checking each one directly; Portal's docs list Monad only as a network-dropdown entry, no code/tx example.
+- A Shield-managed (automatic recovery) Openfort embedded wallet discovers, enters, tracks and exits native MON staking (`monad-mon-native-staking`) and ERC-4626 vaults via the Yield.xyz v1 REST API.
+- Chain: **Monad mainnet** (143). Every action moves real funds. Monad Testnet lists one opportunity and zero vaults, which is why this targets mainnet (README "Running against testnet" covers rehearsing staking there).
+- Backend: the shared [openfort-backend-quickstart](https://github.com/openfort-xyz/openfort-backend-quickstart) serves the Shield encryption session.
 
 ## Setup commands
 - `pnpm i`
 - `cp .env.example .env`
-- `pnpm dev` (serves UI on `http://localhost:5173`)
-- Backend: clone and run [openfort-backend-quickstart](https://github.com/openfort-xyz/openfort-backend-quickstart) for Shield sessions. Defaults to `http://localhost:3000`; if that's taken by another recipe, set `PORT` in the backend's `.env` and match `VITE_BACKEND_URL`.
+- Backend: clone and run openfort-backend-quickstart (see `## Environment`). Defaults to `http://localhost:3000`; if another recipe uses that port, set `PORT` in the backend's `.env` and match `VITE_BACKEND_URL`.
+- `pnpm dev` (serves UI on `http://localhost:5173`).
 
 ## Environment
-- `.env` needs `VITE_OPENFORT_PUBLISHABLE_KEY`, `VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY`, optional `VITE_OPENFORT_FEE_SPONSORSHIP_ID`, `VITE_BACKEND_URL`, and `YIELD_XYZ_API_KEY` (server-side only, no `VITE_` prefix - see `vite.config.ts`).
-- Populate with real Openfort credentials from the dashboard and a real Yield.xyz key - placeholders fail past the discovery screen.
-- `openfort-backend-quickstart`'s own `.env.example` ships `OPENFORT_BASE_PATH=` and `SHIELD_BASE_PATH=` as empty strings. `OPENFORT_BASE_PATH` is fine (the SDK falls back via `||`), but `SHIELD_BASE_PATH` breaks: `createEncryptionSession`'s default parameter only applies to `undefined`, not `''`, so an empty string produces a relative URL and `node-fetch` throws "Only absolute URLs are supported." Fix: don't declare `SHIELD_BASE_PATH` in the backend `.env` at all.
+- Frontend `.env` (see `.env.example`):
+  - `VITE_OPENFORT_PUBLISHABLE_KEY` (required), `VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY` (required).
+  - `VITE_OPENFORT_FEE_SPONSORSHIP_ID` (optional; unset = the wallet pays gas in MON).
+  - `VITE_BACKEND_URL` (required).
+  - `YIELD_XYZ_API_KEY` (required; server-side only, injected by the Vite dev proxy in `vite.config.ts`; never prefix with `VITE_`). `.env.example` defaults to Yield.xyz's public, shared, rate-limited demo key.
+- Backend `.env` (openfort-backend-quickstart): `OPENFORT_SECRET_KEY`, `SHIELD_PUBLISHABLE_KEY`, `SHIELD_SECRET_KEY`, `SHIELD_ENCRYPTION_KEY`. Leave `SHIELD_BASE_PATH` undeclared (delete the line): `createEncryptionSession`'s default parameter only applies to `undefined`, not `''`, so an empty value produces a relative URL and fails (see `## Failure modes`).
+- Placeholder Openfort keys fail past the discovery screen; use real dashboard credentials.
 
 ## Testing instructions
-- `pnpm lint` / `pnpm check` (Biome)
-- `pnpm build` (TypeScript + Vite build)
-- Full enter/exit verification needs a funded mainnet wallet and spends real MON. Mainnet has no faucet; the `fund wallet` action only copies the address. To rehearse for free, follow README "Running against testnet" (staking only - the vault panel is empty on testnet).
-- Verified live end-to-end on 2026-08-14: real embedded wallet created, 2 MON delegated via `monad-testnet-mon-native-staking`, confirmed on-chain via `eth_getTransactionReceipt` against `testnet-rpc.monad.xyz`, position picked up by `GET /v1/yields/{yieldId}/balances`.
+- `pnpm verify` = `biome lint .` + `tsc -b && vite build`. It checks types against `@openfort/react` 2.1.3 / wagmi 3 and that the bundle builds; it does not run the app.
+- Full enter/exit verification needs a funded mainnet wallet and spends real MON. Mainnet has no faucet; the `fund wallet` action only copies the address. To rehearse for free, follow README "Running against testnet" (staking only; the vault panel is empty on testnet).
+- Last live end-to-end run: 2026-08-14 on `@openfort/react` 2.0.2: embedded wallet created, 2 MON delegated via `monad-testnet-mon-native-staking`, confirmed on-chain via `eth_getTransactionReceipt` against `testnet-rpc.monad.xyz`, position picked up by `GET /v1/yields/{yieldId}/balances`.
+- Not runtime-verified for the 2.1.3 upgrade (2026-09-23): only `pnpm verify` was run.
 
-## Code style
-- Vite + TypeScript, **Biome** for lint/format (`pnpm lint` / `pnpm check`) - single quotes, no semicolons, 2-space, 120 col.
-- Prefer functional React components and hooks; wallet state via wagmi + `@openfort/react`.
-- Yield.xyz data comes from a hand-rolled REST client (`src/lib/yieldXyz.ts`) - there is no official browser SDK, so requests go through the Vite dev proxy to keep the API key server-side.
+## Add this to your app
+For a coding agent adding Openfort wallets + Yield.xyz staking/vaults to an existing React app (Vite shown; any bundler works if the Yield.xyz key stays server-side).
+
+1. **Dashboard setup** ([dashboard.openfort.io](https://dashboard.openfort.io)):
+   - Developers → API Keys: copy the publishable key, and create Shield keys (publishable key, secret key, encryption share).
+   - Optional: [Gas sponsorships](https://dashboard.openfort.io/policies) → Add gas sponsorship for Monad; copy its id.
+   - Yield.xyz: get an API key at [dashboard.yield.xyz](https://dashboard.yield.xyz) and make sure the yields you use are enabled for your project.
+2. **Install** (exact versions this recipe verifies with):
+   `pnpm add @openfort/react@2.1.3 wagmi@^3.7.7 viem@^2.56.8 @tanstack/react-query@^5.103.2`
+3. **Backend**: expose `POST /api/protected-create-encryption-session` that returns `{ session }` from `openfort.createEncryptionSession(SHIELD_PUBLISHABLE_KEY, SHIELD_SECRET_KEY, SHIELD_ENCRYPTION_KEY)` (`@openfort/openfort-node`, authenticated with `OPENFORT_SECRET_KEY`). openfort-backend-quickstart `src/app.ts` is a working copy.
+4. **Files that carry the integration** (copy and adapt):
+   - `src/Providers.tsx`: `QueryClientProvider` → `WagmiProvider` (chain `monad`, connector `embeddedWalletConnector()`) → `OpenfortWagmiBridge` → `OpenfortProvider` with `walletConfig.shieldPublishableKey`, `walletConfig.createEncryptedSessionEndpoint`, `walletConfig.ethereum.rpcUrls` (Monad is not in the SDK's chain table) and `walletConfig.ethereum.ethereumFeeSponsorshipId`.
+   - `vite.config.ts`: dev proxy `/api/yield-xyz/*` → `https://api.yield.xyz/v1` that adds the `X-API-KEY` header. In production, replace with your own backend route that adds the same header and point `BASE_PATH` in `src/lib/yieldXyz.ts` at it.
+   - `src/lib/yieldXyz.ts`: typed REST client (`listYields`, `getYield`, `getValidators`, `getBalances`, `enter`, `exit`, `submitHash`).
+   - `src/hooks/useExecuteAction.ts`: switches the wallet to the target chain, then signs each `transactions[]` step in `stepIndex` order with wagmi `useSendTransaction` (passing Yield.xyz's `gasLimit`), waits for the receipt, and reports the hash with `submitHash`.
+   - `src/config/demos.ts`: network, chain id, yieldId and explorer that every panel keys off.
+5. **Steps in order**: wrap the app in the providers; render `OpenfortButton` and gate the yield UI on `useUser().isAuthenticated` plus a wagmi `address`; load the yield and validators; call `enter` with `{ yieldId, address, arguments: { amount, validatorAddress? } }`; pass `transactions` to `useExecuteAction`; read the position with `getBalances`; `exit` works the same way.
+6. **Check it works**: after login the wallet address shows in `OpenfortButton`; a stake returns one tx hash (vault deposits return two: approval + supply) and the position appears under balances.
+
+## Openfort primitives
+| Primitive | Where in code | Dashboard setup | Docs |
+|---|---|---|---|
+| `OpenfortProvider` (`publishableKey`, `walletConfig`, `walletConfig.ethereum.rpcUrls`) | `src/Providers.tsx` | Publishable key | https://www.openfort.io/docs/products/embedded-wallet/react/ui/configuration |
+| `embeddedWalletConnector`, `OpenfortWagmiBridge` (`@openfort/react/wagmi`) | `src/Providers.tsx` | None | https://www.openfort.io/docs/products/embedded-wallet/react/wallet/ethereum |
+| Shield automatic recovery (`walletConfig.shieldPublishableKey`, `createEncryptedSessionEndpoint`) | `src/Providers.tsx`; backend `POST /api/protected-create-encryption-session` | Shield publishable key, secret key, encryption share | https://www.openfort.io/docs/products/embedded-wallet/server/automatic-recovery-session |
+| `openfort.createEncryptionSession` (`@openfort/openfort-node`) | openfort-backend-quickstart `src/app.ts` | Secret key + Shield keys | https://www.openfort.io/docs/products/embedded-wallet/server/automatic-recovery-session |
+| Gas sponsorship (`walletConfig.ethereum.ethereumFeeSponsorshipId`) | `src/Providers.tsx` | Gas sponsorship for Monad (optional) | https://www.openfort.io/docs/configuration/gas-sponsorship |
+| `OpenfortButton` (login + connected wallet panel: copy, Send, Deposit) | `src/App.tsx` | Auth providers enabled | https://www.openfort.io/docs/products/embedded-wallet/react/ui |
+| Wallet funding (the panel's Deposit hub) | `OpenfortButton` panel | None for crypto transfers | https://www.openfort.io/docs/products/embedded-wallet/react/wallet/funding |
+| `useUser` | `src/App.tsx` | None | https://www.openfort.io/docs/products/embedded-wallet/react/hooks/useUser |
+| Chain switch via wagmi `useSwitchChain` on the embedded wallet | `src/hooks/useExecuteAction.ts` | None | https://www.openfort.io/docs/products/embedded-wallet/react/wallet/actions/switch-chain |
+| Send transaction via wagmi `useSendTransaction` on the embedded wallet | `src/hooks/useExecuteAction.ts` | None | https://www.openfort.io/docs/products/embedded-wallet/react/wallet/actions/send-transaction/ethereum |
+
+## Failure modes
+| Error | Cause | Fix |
+|---|---|---|
+| `Only absolute URLs are supported` (backend log, session request fails) | `SHIELD_BASE_PATH=` declared empty in the backend `.env`; the empty string overrides the Shield URL default | Delete the `SHIELD_BASE_PATH` line from the backend `.env` |
+| `current chain does not match target chain` | The embedded connector does not switch chains per transaction when `sendTransaction({ chainId })` targets another chain | Call `switchChainAsync({ chainId })` before signing (done in `useExecuteAction`) |
+| `Gas limit too low` | Local gas estimation failed and fell back to 21000; the Monad staking precompile needs about 300k | Pass Yield.xyz's `gasLimit` through as `gas` (done in `parseUnsignedTransaction`) |
+| Chain switch to 143 fails on first connect (wallet creation) | Monad is not in the SDK's chain table and the wagmi transport fallback is not ready yet | Set `walletConfig.ethereum.rpcUrls: { [monad.id]: ... }` |
+| `Funding isn't available on this network` | `OpenfortButton` Deposit hub on Monad Testnet | Fund testnet wallets from the Monad faucet; mainnet Deposit works |
+| HTTP 400 from `POST /v1/actions/enter` (shown under the vault card) | The chosen Yield.xyz opportunity is not enabled for your Yield.xyz project | Enable it in the Yield.xyz dashboard or pick another vault |
+
+## Upgrade notes
+- September 2026: `@openfort/react` 2.1.1 → 2.1.3. No API changes affect this recipe; Monad (143) is still not in the SDK's built-in chain table, so keep `walletConfig.ethereum.rpcUrls`. 2.1.3 builds under Vite without the `@vite-ignore` pnpm patch.
 
 ## Integration notes (verified against the live API, Aug 2026)
-- `POST /v1/actions/enter` / `/exit` returns `{ transactions: [{ id, stepIndex, unsignedTransaction, ... }] }`. `unsignedTransaction` is a **JSON-stringified** plain tx object (`to`/`data`/`value`/`chainId`/`nonce`/`gasLimit`/`maxFeePerGas`/`maxPriorityFeePerGas`), not raw hex. `useExecuteAction` parses it and only forwards `to`/`data`/`value`/`chainId` to wagmi, letting it re-estimate gas/nonce fresh (the API's nonce is observed to be stale/`0` across multi-step actions).
+- `POST /v1/actions/enter` / `/exit` returns `{ transactions: [{ id, stepIndex, unsignedTransaction, ... }] }`. `unsignedTransaction` is a **JSON-stringified** plain tx object (`to`/`data`/`value`/`chainId`/`nonce`/`gasLimit`/`maxFeePerGas`/`maxPriorityFeePerGas`), not raw hex. `useExecuteAction` parses it and forwards `to`/`data`/`value`/`chainId` plus `gasLimit` (as `gas`) to wagmi, letting it fetch nonce and fees fresh (the API's nonce is observed to be stale/`0` across multi-step actions). `gasLimit` is kept because a failed local estimate falls back to 21000 and the node rejects the tx with "Gas limit too low".
 - `GET /v1/yields/{yieldId}/validators` returns `{ items: [...], total, offset, limit }`, **not** a raw array - same pagination envelope as `/yields`. (An earlier version of this recipe assumed a raw array based on a test that was silently unwrapped by a fallback in a throwaway script; the live proxy response corrected it. `useValidators` now unwraps via `select: (data) => data.items`.)
 - Openfort's embedded wallet connector does **not** auto-switch chains per-transaction when `sendTransaction({ chainId })` targets a chain other than the wallet's current active one - it throws "current chain does not match target chain." `useExecuteAction` explicitly calls `switchChainAsync({ chainId })` before signing if `activeChainId !== chainId`.
 - Solana staking on Yield.xyz is **mainnet-only** (no `solana-devnet` yield opportunities) - that's why this recipe targets Monad instead of Solana.
@@ -39,28 +85,15 @@
 - The Monad faucet (faucet.monad.xyz) sits behind a Vercel bot check plus X/Discord gates, exposes no public claim API, and ignores an `?address=` query param - verified directly. A one-click in-app drip is therefore not possible; `WalletBalance.tsx` copies the address to the clipboard instead.
 - `GET /yields?network=monad` returns 73 opportunities: 66 `vault`, 6 `concentrated_liquidity_pool`, 1 `staking`. `GET /yields?network=monad-testnet` returns exactly 1. Yield.xyz's only testnets are `ethereum-sepolia`, `monad-testnet`, `stellar-testnet` and `ton-testnet`, and of those only ethereum-sepolia (Aave v3 lending) has a deposit-shaped flow.
 - Vault enters are 2-step (`APPROVAL` then `SUPPLY`); staking is 1 step. `useExecuteAction` already loops over `transactions[]` in `stepIndex` order, so both work unchanged.
-- Openfort's built-in wallet funding ("Add funds") returns "Funding isn't available on this network" for Monad Testnet - confirmed by testing the actual button. Mainnet support unverified (no explicit chain list in Openfort's docs). Because of this, the app **does not use `OpenfortButton`'s built-in "Connected" panel at all** once signed in - that panel (`EthereumConnected.tsx` in `@openfort/react`) hardcodes a Send/Deposit action row with no prop to hide just Deposit; `ConnectUIOptions` only exposes `hideBalance`/`hideTooltips`/`hideRecentBadge`, nothing for individual actions. `WalletChip.tsx` replaces it: `OpenfortButton` is rendered only when signed out (for login); once authenticated, `WalletChip` shows the address plus an icon-only `useSignOut()` button, and clicking the address opens `WalletModal.tsx` (a self-built modal - avatar, address, big Send/Receive action buttons, styled after Openfort's own Connected panel) instead of Openfort's version. `SendForm.tsx` (rendered inside the modal's "send" view) is a plain address-to-address native transfer, same switch-chain-then-send pattern as `useExecuteAction` but single-step. `WalletModal`'s `onSettled` prop threads through to `SendForm` so a completed send also refreshes the native balance, same as stake/exit.
+- Wallet management (address, copy, Send, Deposit) is `OpenfortButton`'s built-in connected panel. Its Deposit hub reports "Funding isn't available on this network" on Monad Testnet; on Monad mainnet it offers transfer from wallet, from address and from exchange.
 - Yield.xyz has no separate testnet/mainnet API environment or key - same `api.yield.xyz` base URL and key work for both `monad-testnet` and `monad` networks, confirmed by hitting `GET /v1/yields?network=monad` with the shared demo key (200 OK, real ~14.8% APR data, 209 validators vs testnet's 1). Plan tiers (Trial/Standard/Pro, see `docs/rate-limits-and-plans`) gate request throughput, not network access.
+
+## Code style
+- Vite + TypeScript, **Biome** for lint/format (`pnpm lint` / `pnpm check`): single quotes, no semicolons, 2-space, 120 col.
+- Prefer functional React components and hooks; wallet state via wagmi + `@openfort/react`.
+- Yield.xyz data comes from a hand-rolled REST client (`src/lib/yieldXyz.ts`); there is no official browser SDK, so requests go through the Vite dev proxy to keep the API key server-side.
 
 ## PR instructions
 - Title format: `[yield-xyz] <summary>`.
-- Run `pnpm lint` and `pnpm build` before requesting review.
-- Reflect new env vars, yieldIds, or chain support in `README.md`.
-
-## Submitting this recipe to recipes-hub
-
-This project was built standalone (not inside a checkout of `openfort-xyz/recipes-hub`), so it needs to be moved into that repo as a new `yield-xyz/` folder before it's a real PR. Steps, in order:
-
-1. **Fork and clone** `openfort-xyz/recipes-hub`, create a branch (e.g. `yield-xyz-recipe`).
-2. **Copy this folder in** as `yield-xyz/` at the repo root (sibling to `aave/`, `vaults-fyi/`, etc.). Copy everything except `node_modules/`, `dist/`, `.env`, and `pnpm-lock.yaml` (the repo's own install will regenerate the lockfile).
-3. **Check these against the monorepo's actual conventions** (read from the root `AGENTS.md` there - re-verify it hasn't changed since Aug 2026):
-   - **`@openfort/react` version pin.** The root `AGENTS.md` says to keep it at exactly `2.0.1` across every recipe for workspace consistency; this project used `2.0.2` (the latest at build time, same major/minor). Either downgrade to match, or call out the bump explicitly in the PR description so reviewers can decide - don't let it slide by silently.
-   - **Shared visual theme.** The root `AGENTS.md` states newer web recipes should track the [demo-dashboard](https://github.com/openfort-xyz/demo-directory/tree/main/demo-dashboard) look: **Geist** font, neutral shadcn palette, `0.625rem` radius. This recipe currently uses **Figtree** and a hand-picked neutral-900/950 palette (matching `vaults-fyi`'s font choice, but not the newer shadcn token convention some other recipes now share). Decide whether to restyle before submitting or leave it - it's a visual-consistency nit, not a functional blocker.
-4. **Add a row to the root `README.md`**, in both tables:
-   - Recipes table: `| **[Staking and vaults with Yield.xyz](./yield-xyz/)** | Native MON staking and ERC-4626 vaults on Monad via Yield.xyz's StakeKit API - discover, enter, track, and exit both, entirely non-custodial. No other Yield.xyz partner recipe has a working Monad demo. | \`pnpx gitpick openfort-xyz/recipes-hub/tree/main/yield-xyz openfort-yield-xyz && cd openfort-yield-xyz\` |`
-   - Stack Overview table: `| **Yield.xyz** | Vite + React | Express.js (openfort-backend-quickstart) | Monad | \`wagmi\`, \`viem\`, hand-rolled REST client |`
-5. **Re-run the install/build/lint cycle from a clean clone** (`rm -rf node_modules && pnpm install && pnpm build && pnpm lint`) inside the actual repo checkout - dependency resolution can differ once this sits in a real git repo/CI environment. Two gotchas already hit once during local development, expect they can recur on a fresh machine:
-   - `pnpm install` can fail to link `@rolldown/binding-*` (vite 8's bundler) on the very first install - a `pnpm install --force` (or a second plain install) resolves it. Known upstream pnpm optional-dependency quirk, not specific to this recipe.
-   - Don't add `minimumReleaseAge` to `pnpm-workspace.yaml` (some other recipes have it) - it blocks installing recently-published transitive packages like rolldown's platform bindings and will break a fresh install. Confirmed by testing; removed it from this recipe's `pnpm-workspace.yaml` for that reason.
-6. **Get real credentials one more time in the moved location** and manually re-verify the full enter → track → exit loop, plus Send, from inside the new `yield-xyz/` folder - don't assume the standalone verification carries over untouched after the file move and any version/theme changes from step 3.
-7. Open the PR: title `[yield-xyz] Add native MON staking recipe via Yield.xyz`, description linking this `AGENTS.md`'s "Integration notes" section for reviewers, and mention the `@openfort/react` version and theme decisions from step 3 explicitly so they're not missed in review.
+- Run `pnpm verify` before requesting review.
+- Reflect new env vars, yieldIds, or chain support in `README.md` and this file.
