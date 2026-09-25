@@ -32,6 +32,7 @@ Every variable is listed in `.env.example` with a comment.
 - `pnpm verify` runs `eslint src` and `next build` (type check included). It must finish with no errors and no warnings.
 - Not covered by `verify`: everything at runtime. NEAR Intents has no testnet, so manual validation uses small mainnet amounts (a few USDC). Test sign-in (email and external wallet), the "Fund your wallet" link opening the Openfort Deposit hub, quote fetch, deposit signing, chain switching, and status polling through to `SUCCESS`/`REFUNDED`.
 - Last runtime check: none since the move to `@openfort/react` 2.1.3 (2026-09-23); only `verify` was run.
+- 2026-09-25: `pnpm install` (pnpm 10.30.3, Node 22), `pnpm audit --audit-level=moderate` clean (1 low, the ignored elliptic CVE-2025-14505), `pnpm verify` passed with no warnings. No `test` script exists. No runtime check.
 
 ## Add this to your app
 For a coding agent adding Openfort wallets + NEAR Intents swaps to an existing Next.js app.

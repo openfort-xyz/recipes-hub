@@ -3,7 +3,7 @@
 ## Project overview
 
 - Expo React Native app showcasing perps trading on the Lighter zk L2 DEX with Openfort embedded wallets
-  (`@openfort/react-native` 2.1.2, Expo 57 / RN 0.86).
+  (`@openfort/react-native` 2.1.3, Expo 57 / RN 0.86).
 - **Defaults to Lighter testnet** (free, faucet-funded). The embedded wallet's L1 chain is Ethereum
   mainnet, used only by the mainnet deposit path. Mainnet trading is config-switchable (see
   Environment below), and every transaction there moves real funds/gas.
@@ -74,10 +74,16 @@
   construction, auth tokens, markets, fill confirmation, env-file rewriting).
 - `npx expo export --platform ios` is a bundle smoke test (checked after the 2.1.2 upgrade on
   2026-09-23).
+- 2026-09-25 (`@openfort/react-native` 2.1.3 / `@openfort/openfort-js` 2.5.0): `pnpm install`, `pnpm audit
+  --audit-level=moderate` (clean: `axios`, `ws`, `uuid` are fixed by `overrides` in `pnpm-workspace.yaml`;
+  `decode-uri-component` GHSA-vcc3-ghjq-m6fr is ignored there because its only fix, 0.5.0, is ESM-only and breaks
+  the CJS `query-string@7` that `expo-router` 57 pins), `pnpm verify` (app: 13 tests; `server/`: 70 tests, audit
+  clean) and `npx expo export --platform ios` all pass. `server/` has its own `pnpm-workspace.yaml` so pnpm run
+  there does not climb to the app's. Not runtime-tested.
 - Not covered by `verify`, manual only: native build, guest/email login, Shield automatic recovery,
   wallet creation, faucet, ChangePubKey `personal_sign`, a real order. The testnet flow can be run
   end-to-end for free (no funded wallet needed); the mainnet variant needs a funded wallet. See
-  `scripts/e2e.md` for both, testnet first. The 2.1.2 / 0.12.2 upgrade has NOT been runtime-tested yet.
+  `scripts/e2e.md` for both, testnet first. The 2.1.3 / 0.12.2 upgrade has NOT been runtime-tested yet.
 
 ## Add this to your app
 
@@ -93,7 +99,7 @@ authorize a server-held Lighter API key.
    `OPENFORT_FEE_SPONSORSHIP_ID`.
 
 **Packages**
-- App: `npx expo install @openfort/react-native@2.1.2 expo-apple-authentication expo-application expo-crypto expo-linking expo-secure-store expo-web-browser react-native-webview react-native-get-random-values`
+- App: `npx expo install @openfort/react-native@2.1.3 expo-apple-authentication expo-application expo-crypto expo-linking expo-secure-store expo-web-browser react-native-webview react-native-get-random-values`
   (the `expo-*` and `react-native-webview` packages are SDK peer dependencies).
 - Server: `npm install @openfort/openfort-node@0.12.2`.
 

@@ -25,6 +25,7 @@
 - `pnpm verify` = `biome lint .` + `tsc -b && vite build`. It checks types against `@openfort/react` 2.1.3 / wagmi 3 and that the bundle builds; it does not run the app.
 - Manual runtime check (needs real keys, the backend, a vaults.fyi key and USDC on Base): sign in with `OpenfortButton`, wallet is created/recovered without a password prompt, recommended vaults load, a 1 USDC deposit sends approve + deposit and appears under positions, redeem works, rewards list loads, borrow markets load.
 - Not runtime-verified for the 2.1.3 upgrade (2026-09-23): only `pnpm verify` was run.
+- 2026-09-25: `pnpm install`, `pnpm audit --audit-level=moderate` (clean; the `@walletconnect/ethereum-provider` override in `pnpm-workspace.yaml` removes the `query-string`/`decode-uri-component` path that `@vaultsfyi/sdk` → `x402` → wagmi 2 pulled in, GHSA-vcc3-ghjq-m6fr) and `pnpm verify` pass. No test script. Not runtime-verified.
 
 ## Add this to your app
 For a coding agent adding Openfort wallets + vaults.fyi deposits to an existing React app (Vite shown; any bundler works if the vaults.fyi key stays server-side).

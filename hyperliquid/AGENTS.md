@@ -38,6 +38,10 @@
 - Manually test on a simulator/device with real keys: login (guest, Google, Apple), wallet provisioning
   with automatic recovery, funding (both paths), and a sample buy/sell flow. Native builds and these flows
   were not re-run for the `@openfort/react-native` 2.1.2 upgrade (2026-09-23); only `pnpm verify` was.
+- 2026-09-25, `@openfort/react-native` 2.1.2 → 2.1.3 (`@openfort/openfort-js` 2.5.0): ran `pnpm install`,
+  `pnpm audit --audit-level=moderate` (clean; `decode-uri-component` GHSA-vcc3-ghjq-m6fr via
+  `expo-router > query-string@7` is ignored in `pnpm-workspace.yaml`, see Failure modes) and `pnpm verify`
+  (clean). There is no test script; native builds and the runtime flows above were not re-run.
 - Capture Metro logs for runtime warnings; resolve them before merge.
 - `npx expo export --platform ios` prints a non-fatal Metro warning about `@noble/hashes/crypto.js`
   not being listed in that package's `exports` map (a deep import from an ethers/viem signing
@@ -60,7 +64,7 @@ For a coding agent adding Openfort-signed Hyperliquid trading to an existing Exp
 
 **Install**
 ```bash
-npx expo install @openfort/react-native@2.1.2 expo-secure-store expo-crypto expo-application expo-apple-authentication react-native-webview react-native-get-random-values
+npx expo install @openfort/react-native@2.1.3 expo-secure-store expo-crypto expo-application expo-apple-authentication react-native-webview react-native-get-random-values
 npm install @nktkas/hyperliquid@^0.33.1 viem@^2.55.0 ethers@^6.17.0 event-target-polyfill@^0.0.4
 ```
 Add `expo-secure-store` to `plugins` in `app.json`. This uses native modules, so it needs a dev client
@@ -111,6 +115,7 @@ Hyperliquid balance card turns "Ready" within a minute; a buy returns an order I
 | `Property 'receiverAddress' does not exist on type 'FundingPaymentMethod'.` (also `'deeplinks'`) | Since `@openfort/react-native` 2.1 (openfort-js 2.5) `session.paymentMethod` is a union that includes `FundingOnrampPaymentMethod`, which has no deposit address | Narrow first: `paymentMethod && paymentMethod.type !== "onramp"` before reading `receiverAddress` / `deeplinks` |
 | No error; the Hyperliquid balance never increases after "Move to Hyperliquid" | Sent Circle's Arbitrum Sepolia USDC (`0x75faf114...`) instead of USDC2, or less than 5 USDC | Bridge2 only credits USDC2 (`0x1baAbB04529D43a73232B713C0FE471f7c7334d5`) and amounts >= 5; lost deposits are unrecoverable |
 | `contextOrFilename.getFilename is not a function` | ESLint 10 breaks `eslint-config-expo`'s bundled `eslint-plugin-react` | Keep `eslint` on `^9.x` |
+| `decodeComponent is not a function` or `queryString.parse is not a function` from `expo-router` | A pnpm override to clear `decode-uri-component` GHSA-vcc3-ghjq-m6fr: the only patched release (0.5.0) is ESM-only, which `query-string@7` (CJS) cannot call, and `query-string` 8/9 export only a default object, which breaks expo-router's `import * as queryString` | Leave `query-string@7.1.3` / `decode-uri-component@0.2.2`; every expo-router release (57.x, 58.x, canary) pins `query-string ^7.1.3`, so the advisory needs an upstream expo-router bump |
 
 ## Hard-won upgrade notes (@nktkas/hyperliquid 0.24 → 0.33)
 - **`actionSorter` was removed** from `@nktkas/hyperliquid/signing` somewhere between 0.24 and 0.33.
@@ -163,7 +168,7 @@ credited and is unrecoverable (5 USDC minimum too, same rule).
   upgrade.
 - `components/ui/` holds the shared design system (theme tokens, `PillButton`, `Keypad`, `Sparkline`,
   `SuccessCheck`, `Card`) for the Cash App-style dark UI.
-- `@openfort/react-native` is pinned to `2.1.2`.
+- `@openfort/react-native` is pinned to `2.1.3`.
 
 ## PR instructions
 - Title format: `[hyperliquid] <summary>`.

@@ -25,6 +25,7 @@
 ## Testing instructions
 - `pnpm verify` in `frontend/` runs `biome lint .` and `tsc -b && vite build`. `pnpm verify` in `backend/` runs `tsc`. There are no unit tests.
 - Verified on 2026-09-23: `pnpm install && pnpm verify` passes in both packages with `@openfort/react@2.1.3` and `@openfort/openfort-node@0.12.2`. The Vite build needs no `@vite-ignore` patch.
+- 2026-09-25: nothing bumped (`@openfort/react` 2.1.3 and `@openfort/openfort-node` 0.12.2 are current). `pnpm audit --audit-level=moderate` clean in both packages (1 low, CVE-2025-14505 in `elliptic`, ignored in `pnpm-workspace.yaml`); `pnpm verify` passes in both. No test scripts. Runtime flows not re-run.
 - Needs manual runtime testing with real keys (not run for this upgrade): embedded-wallet login and Shield automatic recovery, the sponsored USDC `transfer`, backend wallet creation, the backend gasless payment through `accounts.evm.backend.sendTransaction` (first send delegates the EOA), and both facilitator paths. Fund the payer with Base Sepolia USDC from https://faucet.circle.com.
 
 ## Add this to your app

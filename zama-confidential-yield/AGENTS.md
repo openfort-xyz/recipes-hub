@@ -42,6 +42,10 @@ All variables are listed in `.env.example`.
   Deposit, batch status polling and Claim, Reveal (decryption permit), Unshield → finalize.
 - Last runtime-verified: #58 (on `@openfort/react` 2.1.0). The bump to 2.1.3 is verified by
   `pnpm verify` only.
+- 2026-09-25: `pnpm install` (pnpm 10.30.3, Node 22), `pnpm audit --audit-level=moderate` clean
+  after bumping `viem` to 2.55.5 and overriding `axios@<1.18.0` and `ws@<8.21.1` in
+  `pnpm-workspace.yaml` (1 low, CVE-2025-14505 in `elliptic`, ignored there; no patched
+  release); `pnpm verify` passes; no test script. Runtime flows not re-checked.
 
 ## Add this to your app
 For a coding agent adding Openfort-sponsored Zama confidential flows to an existing React app.
@@ -55,7 +59,7 @@ For a coding agent adding Openfort-sponsored Zama confidential flows to an exist
 
 **Install** (exact versions this recipe builds with)
 ```bash
-pnpm add @openfort/react@2.1.3 wagmi@3.6.16 viem@2.52.2 @tanstack/react-query@5.101.0 @zama-fhe/sdk@3.2.0
+pnpm add @openfort/react@2.1.3 wagmi@3.6.16 viem@2.55.5 @tanstack/react-query@5.101.0 @zama-fhe/sdk@3.2.0
 ```
 
 **Files that carry the integration** (copy these, adapt the UI)
@@ -128,6 +132,9 @@ pnpm add @openfort/react@2.1.3 wagmi@3.6.16 viem@2.52.2 @tanstack/react-query@5.
   shows a spinner for it instead of the unlock screen.
 - The Vite build needs no `@vite-ignore` patch on `@openfort/react` 2.1.3 (no dynamic-import
   warnings in `vite build` or on dev start).
+- `viem` stays on 2.55.5: `@wagmi/core` 3.5.0 (wagmi 3.6.16) imports Tempo zone actions that
+  viem 2.55.8 removed and `viem/tempo/zones` that 2.56.0 removed, so `vite build` warns
+  `IMPORT_IS_UNDEFINED` or fails on newer viem until wagmi moves.
 - Addresses and the vault flow follow the Zama vault integration reference:
   https://github.com/enitrat/vault-integration-poc
 
