@@ -27,6 +27,7 @@ All variables are in `.env.example`, each with a comment.
 - `pnpm verify` runs `biome lint .` and `tsc -b && vite build`. It proves the app type-checks and bundles against the pinned SDKs. There are no unit tests.
 - Manual runtime checks (need real keys and a wallet holding at least 0.1 USDC on Base): passkey login through `OpenfortButton`, wallet USDC balance, vault APY, "Supply 0.1 USDC to pool" (approve, then deposit), vault balance updates, "Withdraw all from pool" (redeem).
 - Last runtime-verified: not recorded. The 2.1.3 upgrade was verified with `pnpm verify` only.
+- 2026-09-25: `pnpm install` (pnpm 10.30.3, Node 22), `pnpm audit --audit-level=moderate` (0 moderate or higher; 1 low, CVE-2025-14505 in `elliptic`, ignored in `pnpm-workspace.yaml`), `pnpm verify` passed. No test script. No runtime check.
 
 ## Add this to your app
 For a coding agent adding Openfort login + Morpho vault deposit/redeem to an existing React app (Vite or Next.js client components).

@@ -26,6 +26,7 @@
 - Full enter/exit verification needs a funded mainnet wallet and spends real MON. Mainnet has no faucet; the `fund wallet` action only copies the address. To rehearse for free, follow README "Running against testnet" (staking only; the vault panel is empty on testnet).
 - Last live end-to-end run: 2026-08-14 on `@openfort/react` 2.0.2: embedded wallet created, 2 MON delegated via `monad-testnet-mon-native-staking`, confirmed on-chain via `eth_getTransactionReceipt` against `testnet-rpc.monad.xyz`, position picked up by `GET /v1/yields/{yieldId}/balances`.
 - Not runtime-verified for the 2.1.3 upgrade (2026-09-23): only `pnpm verify` was run.
+- 2026-09-25: `pnpm install` (pnpm 10.30.3, Node 22), `pnpm audit --audit-level=moderate` (0 moderate or higher; 1 low, CVE-2025-14505 in `elliptic`, ignored in `pnpm-workspace.yaml`), `pnpm verify` passed. No test script. Not runtime-verified. `@openfort/react` was already 2.1.3 (`@openfort/openfort-js` 2.5.0); `packageManager` realigned from pnpm 10.33.0 to 10.30.3 to match CI and the other recipes.
 
 ## Add this to your app
 For a coding agent adding Openfort wallets + Yield.xyz staking/vaults to an existing React app (Vite shown; any bundler works if the Yield.xyz key stays server-side).

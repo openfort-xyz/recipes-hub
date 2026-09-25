@@ -27,6 +27,7 @@ All variables are in `.env.example`, each with a comment.
 - `pnpm verify` runs `biome lint .` and `tsc -b && vite build`. It proves the app type-checks and bundles against the pinned SDKs. There are no unit tests.
 - Manual runtime checks (need real keys and a wallet funded with USDC on Base or Base Sepolia): passkey login through `OpenfortButton`, USDC balance shown, "Supply 0.1 USDC to pool" (approval or permit, then supply), position and APY shown, "Withdraw all from pool".
 - Last runtime-verified: not recorded. The 2.1.3 upgrade was verified with `pnpm verify` only.
+- 2026-09-25: `pnpm install` (pnpm 10.30.3, Node 22), `pnpm audit --audit-level=moderate` clean after overriding `@walletconnect/utils` 2.21.0-2.21.8 to 2.21.10 (same minor; 2.21.9+ dropped `query-string`, which pulled vulnerable `decode-uri-component`, GHSA-vcc3-ghjq-m6fr, via `@aave/client` > `thirdweb`). Do not override `decode-uri-component` to 0.5.0 instead: it is ESM-only and breaks `query-string@7` (CJS) at runtime. `pnpm verify` passed. No test script. Runtime flows not re-verified.
 
 ## Add this to your app
 For a coding agent adding Openfort login + Aave supply/withdraw to an existing React app (Vite or Next.js client components).

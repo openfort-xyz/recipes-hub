@@ -25,6 +25,7 @@
 - `pnpm verify` runs `biome check src` and `tsc --noEmit`. CI runs it on every PR.
 - `pnpm demo` is the E2E check — it submits real sponsored transactions on Base Sepolia and prints explorer links. It needs real keys.
 - 2026-09-23 (`@openfort/openfort-node` 0.12.2): `pnpm verify` passes. `pnpm demo` ran `/start` and `/balance` (backend wallet `get`, RPC balance reads), then `/send` failed with `Authentication failed` (401) at the signing step because the local wallet secret no longer matches the project; the same call fails the same way on 0.10.8, so it is a credentials issue, not an SDK regression. The sponsored `/send` path was not runtime-verified on 0.12.2.
+- 2026-09-25 (`@openfort/openfort-node` 0.12.2, already the latest published version, nothing bumped): `pnpm install` (pnpm 10.30.3, Node 22), `pnpm audit --audit-level=moderate` reports no known vulnerabilities, `pnpm verify` passes. No `test` script exists. `pnpm demo` was not run; no runtime flow was verified.
 
 ## Add this to your app
 

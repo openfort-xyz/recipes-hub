@@ -28,6 +28,7 @@ All three are read in the browser (`NEXT_PUBLIC_*`) and all are required. See `.
   2. Click **Send 7702 UserOp**. Expect a transaction hash card; open it on Basescan.
   3. On Basescan the EOA should show code `0xef0100e6cae83bde06e4c305530e199d7217f42808555b` (the 7702 delegation designator) and an ETH balance of 0: the paymaster paid.
 - Last runtime check: not run in the 2026-09-23 SDK upgrade (2.0.1 → 2.1.3); only `verify` was run.
+- 2026-09-25: `pnpm install`, `pnpm audit --audit-level=moderate` (clean after overriding `axios@<1.18.0` to `>=1.18.0` in `pnpm-workspace.yaml`; `@openfort/shield-js` pins 1.15.0) and `pnpm verify` run; no test script exists; runtime flow not run.
 
 ## Add this to your app
 For a coding agent adding EIP-7702 gasless UserOperations to an existing React app that uses (or will use) Openfort embedded wallets.

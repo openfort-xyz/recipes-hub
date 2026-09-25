@@ -26,6 +26,7 @@ Every variable is listed in `.env.example` with a comment. All are `NEXT_PUBLIC_
 - `pnpm verify` runs `eslint src` and `next build` (type check included). It must finish with no errors and no warnings.
 - Not covered by `verify`, test manually with real keys: sign-in, wallet creation and passkey recovery, route discovery, swap execution, execution tracking, and resume/stop.
 - Last runtime check: none since the move to `@openfort/react` 2.1.3 (2026-09-23); only `verify` was run.
+- 2026-09-25: `pnpm install`, `pnpm audit --audit-level=moderate` (clean after the `axios@<1.18.0` override in `pnpm-workspace.yaml`; 29 axios advisories via `@openfort/shield-js` before), `pnpm verify` passed with no warnings. No test script. No runtime check.
 
 ## Add this to your app
 For a coding agent adding Openfort embedded wallets + LI.FI swaps to an existing React/Next.js app that already uses (or can add) wagmi.

@@ -45,6 +45,12 @@ Copy `backend/.env.local.example` → `backend/.env.local` and `frontend/.env.ex
 - Backend smoke test (checked 2026-09-23 with placeholder keys): `curl localhost:3020/api/health` returns
   `{"status":"ok"}`; `POST /api/unlink/register` and `/api/unlink/authorization-token` return `401` without
   a valid Openfort bearer token.
+- 2026-09-25: frontend `pnpm install` (pnpm 10.30.3, Node 22), `pnpm audit --audit-level=moderate` clean
+  after overriding `axios@<1.18.0` and `ws@<8.21.1` in `frontend/pnpm-workspace.yaml` (1 low,
+  CVE-2025-14505 in `elliptic`, ignored there), `pnpm verify` passed; backend `pnpm install`, audit
+  (no known vulnerabilities) and `pnpm verify` passed. No test scripts. Runtime flows not re-run. SDK
+  versions unchanged (`@openfort/react` 2.1.3, `@openfort/openfort-node` 0.12.2, `@openfort/openfort-js`
+  2.5.0 resolved).
 - Needs manual runtime testing with real keys (not run after the 2.x upgrade): email OTP login, passkey
   wallet create/unlock, Unlink client build (derivation signature), faucet funding, shield/unshield,
   private and public invoice payment.
