@@ -19,7 +19,7 @@
 | Variable | Required | Where to get it |
 | --- | --- | --- |
 | `OPENFORT_SECRET_KEY` | yes | Dashboard → API keys (`sk_test_...`) |
-| `OPENFORT_WALLET_SECRET` | yes | Dashboard → Backend wallets → Setup. Same project as the secret key |
+| `OPENFORT_WALLET_SECRET` | yes | Dashboard → API keys → Backend wallets tab. Same project as the secret key |
 | `TREASURY_WALLET_ID` | yes | An EVM backend wallet id (`acc_...`) holding PathUSD on Tempo testnet |
 | `MPP_RECIPIENT` | yes | Tempo address that receives the agent's payments |
 | `MPP_SECRET_KEY` | yes | At least 32 bytes (`openssl rand -base64 32`); mppx uses it to HMAC-bind payment challenges |
@@ -38,7 +38,7 @@
 For a coding agent adding MPP payments signed by Openfort backend wallets to an existing Node/Next.js server.
 
 **Dashboard setup**
-1. Create an API secret key (Dashboard → API keys) and a wallet secret (Dashboard → Backend wallets → Setup) in the same project.
+1. Create an API secret key (Dashboard → API keys) and a wallet secret (Dashboard → API keys → Backend wallets tab) in the same project.
 2. Create a treasury backend wallet (`openfort.accounts.evm.backend.create()`), fund its address with PathUSD from the Tempo faucet, and keep its `id`.
 3. No fee sponsorship policy is needed: PathUSD is Tempo's gas token and viem pays gas from the signing wallet.
 

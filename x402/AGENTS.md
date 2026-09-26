@@ -35,7 +35,7 @@ For a coding agent adding an x402 USDC paywall with Openfort wallets to an exist
    - API keys: publishable key (`pk_test_…`) and secret key (`sk_test_…`).
    - API keys, Shield section: Shield publishable key, Shield secret key and the encryption share (automatic recovery).
    - Gas sponsorships tab: a sponsorship on Base Sepolia (`pol_…`) that pays gas for the embedded wallet, and either a transaction-scoped (`pol_…`) or project-scoped sponsorship for backend-wallet sends.
-   - Backend wallets → Setup: a wallet secret, only if you use backend wallets.
+   - API keys → Backend wallets tab: a wallet secret, only if you use backend wallets.
 2. **Install**:
    - Frontend: `pnpm add @openfort/react@2.1.3 wagmi@^3 viem@^2 @tanstack/react-query@^5`.
    - Backend: `pnpm add @openfort/openfort-node@0.12.2 viem@^2` (plus `@coinbase/cdp-sdk` only for the CDP facilitator).
@@ -72,7 +72,7 @@ For a coding agent adding an x402 USDC paywall with Openfort wallets to an exist
 | Error | Cause | Fix |
 | --- | --- | --- |
 | API error containing `Invalid pol` / `Invalid policy` on a backend-wallet payment | `OPENFORT_FEE_SPONSORSHIP_ID` holds a backend-wallet policy or an id that is not a fee sponsorship | Use a `pol_…` from the dashboard's Gas sponsorships tab, or leave the variable empty to use a project-scoped fee sponsorship. The backend appends this hint to the error. |
-| `Authentication failed` from `accounts.evm.backend.create` | `OPENFORT_WALLET_SECRET` belongs to a different project than `OPENFORT_SECRET_KEY` (reads still work) | Copy the wallet secret from the same project's Backend wallets → Setup. |
+| `Authentication failed` from `accounts.evm.backend.create` | `OPENFORT_WALLET_SECRET` belongs to a different project than `OPENFORT_SECRET_KEY` (reads still work) | Copy the wallet secret from the same project's API keys → Backend wallets tab. |
 | Backend-wallet payment fails after changing `PAY_TO_ADDRESS` | The backend reads env once at startup, or the new value is not a valid address | Restart the backend; make sure `PAY_TO_ADDRESS` is a valid EVM address; check the fee sponsorship for recipient/calldata rules. |
 
 ## Recipe notes
