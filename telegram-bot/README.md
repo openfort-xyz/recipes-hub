@@ -23,7 +23,7 @@ The command handlers in `src/commands.ts` are plain functions — `src/bot.ts` w
 1. `pnpm install`
 2. `cp .env.example .env` and fill in:
    - `OPENFORT_SECRET_KEY` — dashboard → API keys
-   - `OPENFORT_WALLET_SECRET` — dashboard → Backend wallets → Setup
+   - `OPENFORT_WALLET_SECRET` — dashboard → API keys → Backend wallets tab
    - `OPENFORT_FEE_SPONSORSHIP_ID` — a Base Sepolia fee sponsorship (`pol_...`, dashboard → Gas sponsorship)
 3. Try the flow without Telegram: `pnpm demo`
 4. Go live: message [@BotFather](https://t.me/botfather), run `/newbot`, put the token in `TELEGRAM_BOT_TOKEN`, then `pnpm start` and message your bot.

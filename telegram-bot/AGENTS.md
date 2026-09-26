@@ -17,7 +17,7 @@
 | Variable | Required | Where to get it |
 | --- | --- | --- |
 | `OPENFORT_SECRET_KEY` | yes | Dashboard → API keys (`sk_test_...`) |
-| `OPENFORT_WALLET_SECRET` | yes | Dashboard → Backend wallets → Setup. Same project as the secret key |
+| `OPENFORT_WALLET_SECRET` | yes | Dashboard → API keys → Backend wallets tab. Same project as the secret key |
 | `OPENFORT_FEE_SPONSORSHIP_ID` | yes | Dashboard → Gas sponsorship; a Base Sepolia fee sponsorship (`pol_...`) |
 | `TELEGRAM_BOT_TOKEN` | only for `pnpm start` | @BotFather → `/newbot` |
 
@@ -32,7 +32,7 @@
 For a coding agent adding per-user custodial wallets with sponsored USDC sends to an existing Node bot or backend (Telegram, Discord, WhatsApp, any chat).
 
 **Dashboard setup**
-1. API secret key (Dashboard → API keys) and wallet secret (Dashboard → Backend wallets → Setup) from the same project.
+1. API secret key (Dashboard → API keys) and wallet secret (Dashboard → API keys → Backend wallets tab) from the same project.
 2. A gas sponsorship on Base Sepolia: a policy (`ply_`) whose rules accept sponsoring the transfer, and a fee sponsorship (`pol_`) that references it. The first send upgrades each wallet to an EIP-7702 delegated account, so the policy needs an `account_functions` "All functions" rule. Pass the `pol_` id, not the `ply_` id.
 
 **Install (exact versions)**
