@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project overview
-- Collection of Openfort integration samples (`7702`, `aave`, `hyperliquid`, `lifi`, `lighter`, `morpho`, `mpp`, `near-intents`, `private-payments`, `telegram-bot`, `vaults-fyi`, `x402`, `yield-xyz`, `zama-confidential-yield`).
+- Collection of Openfort integration samples (`7702`, `aave`, `hyperliquid`, `lifi`, `lighter`, `lightspark-grid`, `morpho`, `mpp`, `near-intents`, `private-payments`, `telegram-bot`, `vaults-fyi`, `x402`, `yield-xyz`, `zama-confidential-yield`).
 - Each subdirectory has its own `AGENTS.md`; start at the sample you are modifying.
 - The recipe code is the source of truth. The docs pages at `openfort.io/docs/recipes/*` are checked against each recipe's `.env.example` and file paths, and they link to each recipe's `AGENTS.md` for the "add it to your app" steps.
 
@@ -28,14 +28,14 @@ Every recipe must have:
 
 ## Code style
 - Frontend web apps use Vite + TypeScript or Next.js + TypeScript; keep hooks functional and avoid new global state.
-- Linting/formatting is standardizing on **Biome** (single quotes, no semicolons, 2-space, 120 col): `7702`, `mpp`, `x402` (frontend), and the Vite samples `aave`, `morpho`, `vaults-fyi`. `lifi` and `near-intents` still use `next lint` (ESLint).
+- Linting/formatting is standardizing on **Biome** (single quotes, no semicolons, 2-space, 120 col): `7702`, `lightspark-grid`, `mpp`, `x402` (frontend), and the Vite samples `aave`, `morpho`, `vaults-fyi`. `lifi` and `near-intents` still use `next lint` (ESLint).
 - React Native apps (`hyperliquid`, `lighter`) follow Expo Router conventions, functional components, and pnpm.
 - Backend services are Express with Node 18; keep async handlers tidy and leverage existing logging patterns.
 - **Shared theme:** web recipes track the [demo-dashboard](https://github.com/openfort-xyz/demo-directory/tree/main/demo-dashboard) look — **Geist** font, **neutral shadcn** palette (light `#171717` / dark `#e5e5e5` primary), `0.625rem` radius, light+dark. Keep new recipes on these tokens; use the brand color as an accent, not the global primary. The shadcn recipes (`7702`, `lifi`, `near-intents`) share the dashboard's exact `:root`/`.dark` token block.
 
 ## Dependency constraints (read before bumping anything)
 These are non-obvious and will break samples if ignored:
-- **Match the `wagmi` major to the `@openfort/react` version.** All web samples that use `@openfort/react` (`7702`, `aave`, `lifi`, `morpho`, `near-intents`, `vaults-fyi`, `x402`) run the latest published `@openfort/react` (pinned exactly, same version in every recipe) + `wagmi@^3`; keep `viem` on `^2.x`.
+- **Match the `wagmi` major to the `@openfort/react` version.** All web samples that use `@openfort/react` (`7702`, `aave`, `lifi`, `lightspark-grid`, `morpho`, `near-intents`, `vaults-fyi`, `x402`) run the latest published `@openfort/react` (pinned exactly, same version in every recipe) + `wagmi@^3`; keep `viem` on `^2.x`.
 - **wagmi 3 gotchas (already applied):** (1) `@wagmi/connectors@8` pulls optional connector peers loaded via a guarded `import('accounts').catch()`; webpack (Next.js) hard-fails resolving them at build, so the Next samples stub `accounts` / `porto` / `@base-org/account` / `@metamask/connect-evm` to `false` in `next.config` (`resolve.fallback` or `resolve.alias`). Vite tolerates them without config. (2) `useBalance` is native-only in wagmi 3 (no `token` option) and its `data` has no `.formatted` — fetch ERC-20 balances with `useReadContract`(`balanceOf`) and format with `formatUnits(data, decimals)`; `useBalance` native data is `{ value, decimals, symbol }`.
 - **`@openfort/react` provider needs a publishable key at render time.** In Next.js samples, the App Router will throw during static prerender without it — every Next sample sets `export const dynamic = 'force-dynamic'` in `app/layout.tsx`. Its `walletConfig` nests `accountType` / `ethereumFeeSponsorshipId` under `ethereum: { … }`. The React Native SDK config key is `feeSponsorshipId` (not `ethereumProviderPolicyId`).
 - **Next.js stays on 15 for the wallet samples.** Next 16 forces Turbopack and rejects the webpack walletconnect shims (`pino-pretty` external, `@react-native-async-storage/async-storage: false`). Only `mpp` (no wagmi/walletconnect) runs on Next 16.

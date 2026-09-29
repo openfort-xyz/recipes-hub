@@ -20,6 +20,7 @@ This repository contains comprehensive samples demonstrating how to integrate Op
 | **[MPP agent payments](./mpp/)** | An AI agent with its own Openfort backend wallet pays for an HTTP service over MPP (Machine Payments Protocol), settling on Tempo. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/mpp openfort-mpp && cd openfort-mpp` |
 | **[Yield with vaults.fyi](./vaults-fyi/)** | Discover, deposit into and track USDC vaults across 80+ protocols through the vaults.fyi API, plus rewards claims. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/vaults-fyi openfort-vaults-fyi && cd openfort-vaults-fyi` |
 | **[Private invoice payments](./private-payments/)** | Pay supplier invoices from an embedded wallet through Unlink's shielded pool on Monad testnet, breaking the on-chain link between payer and supplier. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/private-payments openfort-private-payments && cd openfort-private-payments` |
+| **[Bank rails with Lightspark Grid](./lightspark-grid/)** | Fund an embedded wallet from a bank account and cash it back out. Grid converts USD ↔ USDC on Base; the wallet sends USDC to Grid's deposit address with sponsored gas. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/lightspark-grid openfort-lightspark-grid && cd openfort-lightspark-grid` |
 
 ## Getting Started
 
@@ -40,4 +41,5 @@ Each sample is completely self-contained with its own setup instructions, enviro
 | **Zama Yield**          | React + Vite | -          | Ethereum Sepolia  | `@zama-fhe/sdk`, `@openfort/react`, `wagmi`, `viem`  |
 | **Telegram bot**        | -            | Node.js    | Base Sepolia      | `grammy`, `@openfort/openfort-node`, `viem`          |
 | **Lighter**             | React Native | Node.js    | Ethereum mainnet  | `@openfort/react-native`, vendored `lighter-go` WASM |
+| **Lightspark Grid**     | Next.js 15   | Next.js API routes | Base Sepolia | `@openfort/react`, `@openfort/openfort-node`, `wagmi` |
 
