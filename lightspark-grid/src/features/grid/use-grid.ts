@@ -162,6 +162,17 @@ export function useGrid() {
         const to = deposit?.accountOrWalletInfo.address as `0x${string}` | undefined
         if (!to) throw new Error('The quote has no Base deposit address')
 
+        // A transfer above the balance reverts during gas estimation, which viem
+        // reports as a gas error. Say what is actually wrong instead.
+        const needed = BigInt(quote.totalSendingAmount)
+        const held = (balanceData as bigint | undefined) ?? 0n
+        if (held < needed) {
+          throw new Error(
+            `The wallet holds ${formatUnits(held, USDC_DECIMALS)} USDC and this cash-out needs ${formatUnits(needed, USDC_DECIMALS)}. ` +
+              'Sandbox deposits never deliver on-chain, so fund the wallet with Base Sepolia USDC from faucet.circle.com.'
+          )
+        }
+
         const hash = await writeContractAsync({
           abi: ERC20_ABI,
           address: usdc,
@@ -177,7 +188,18 @@ export function useGrid() {
         if (account?.environment === 'sandbox') await simulate()
         else setPayment({ status: 'PENDING', paymentRail: null, settledAt: null, failureReason: null })
       }),
-    [account?.environment, refetchBalance, chainId, publicClient, quote, run, simulate, usdc, writeContractAsync]
+    [
+      account?.environment,
+      balanceData,
+      refetchBalance,
+      chainId,
+      publicClient,
+      quote,
+      run,
+      simulate,
+      usdc,
+      writeContractAsync,
+    ]
   )
 
   return {

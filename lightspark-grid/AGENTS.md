@@ -29,7 +29,7 @@ Every variable is listed in `.env.example` with a comment.
 ## Testing instructions
 - `pnpm verify` runs `biome lint .` and `next build` (type check included). It must finish with no errors and no warnings.
 - Tested against the Grid sandbox on 2026-09-25 by calling `src/features/grid/client.ts` directly: customer and wallet account are idempotent, a $5.00 quote settles to 5 USDC `COMPLETED`, a quote read with another customer's id returns 404, and 3 USDC → bank settles `COMPLETED` over ACH with a 0.05 USDC fee.
-- Not covered by `verify`, test manually with real keys: sign-in, wallet creation, the Base Sepolia USDC transfer in **Cash out**.
+- Run in the browser on 2026-09-29: email sign-in, wallet creation, the legal-name step, and a Deposit quote simulated to `COMPLETED`. Cash out from an unfunded wallet surfaced the transfer revert listed under Failure modes; a funded Base Sepolia cash-out has not been run yet.
 
 ## Add this to your app
 For a coding agent adding bank on/off-ramps through Grid to an existing app that already has Openfort embedded wallets on an EVM chain.
@@ -69,7 +69,7 @@ Grid has no SDK dependency here: `src/features/grid/client.ts` is a ~150-line `f
 | `walletConfig.shieldPublishableKey` | same | Shield publishable key | [API keys](https://www.openfort.io/docs/configuration/api-keys) |
 | `walletConfig.ethereum.ethereumFeeSponsorshipId` | same | Fee sponsorship policy on the default chain | [Gas sponsorship](https://www.openfort.io/docs/configuration/gas-sponsorship) |
 | `uiConfig.authProviders: [EMAIL_OTP]`, `walletRecovery.defaultMethod: PASSKEY` | same | Email OTP enabled | [UI configuration](https://www.openfort.io/docs/products/embedded-wallet/react/ui/configuration) |
-| `OpenfortButton` | `src/components/header.tsx`, `src/features/grid/components/FundingFlow.tsx` | none | [Openfort UI](https://www.openfort.io/docs/products/embedded-wallet/react/ui) |
+| `OpenfortButton` | `src/features/grid/components/FundingFlow.tsx` | none | [Openfort UI](https://www.openfort.io/docs/products/embedded-wallet/react/ui) |
 | `embeddedWalletConnector`, `OpenfortWagmiBridge` | `src/features/openfort/config/wagmi-config.ts`, `src/app/providers.tsx` | none | [Ethereum wallet configuration](https://www.openfort.io/docs/products/embedded-wallet/react/wallet/ethereum) |
 | `useUser().getAccessToken` | `src/features/grid/use-grid.ts` | none | [useUser](https://www.openfort.io/docs/products/embedded-wallet/react/hooks/useUser) |
 | `openfort.iam.getSession` | `src/lib/auth.ts` | Secret key | [Server-side auth](https://www.openfort.io/docs/products/server) |
@@ -83,6 +83,7 @@ Grid has no SDK dependency here: `src/features/grid/client.ts` is a ~150-line `f
 | `INVALID_INPUT: fullName must include at least a first and last name` | Email sign-in leaves the Openfort user with no display name, and a single word (such as the part of the email before the @) is not enough | The recipe asks for a first and last name before creating the customer (`/api/account` answers `409 Enter your first and last name` until it has one) |
 | `INVALID_INPUT: Invalid email. Expected a valid, deliverable email address.` | Placeholder domain such as `example.com` | Use a real, deliverable address |
 | `INVALID_INPUT: bankAccountType: Field required; beneficiary: Field required` | `USD_ACCOUNT` sent with only routing and account numbers | Send `bankAccountType` (`CHECKING`/`SAVINGS`) and a full `beneficiary` (name, birth date, nationality, address) |
+| `The contract function "transfer" reverted with the following reason: Gas error: the transaction needs more gas than is available or allowed.` | Cash out from a wallet holding less USDC than the quote; the USDC transfer reverts during gas estimation and viem reports it as a gas error. Sandbox deposits never fund the wallet on-chain | `sendUsdc` now checks the balance first and names the shortfall. Fund the wallet with Base Sepolia USDC from faucet.circle.com |
 | `ACCOUNT_NOT_FOUND: destination.accountId does not match an active account.` | Quote pointed at an external account that failed to create | Create the bank account first and use the id it returns |
 | `Quote not found` from `/api/quotes/[id]` on your own quote | `GET /quotes/{id}` returns `source.customerId` without the `Customer:` prefix that `POST /quotes` returns | Compare ids with the prefix stripped (`bareId` in `customer.ts`) |
 
