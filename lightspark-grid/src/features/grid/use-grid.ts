@@ -38,6 +38,7 @@ export function useGrid() {
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [needsName, setNeedsName] = useState(false)
 
   const usdc = USDC_ADDRESS[chainId]
   const { data: balanceData, refetch: refetchBalance } = useReadContract({
@@ -58,7 +59,8 @@ export function useGrid() {
         body: init?.body ? JSON.stringify(init.body) : undefined,
       })
       const payload = await res.json()
-      if (!res.ok) throw new Error(payload.error ?? `Request failed (${res.status})`)
+      if (!res.ok)
+        throw Object.assign(new Error(payload.error ?? `Request failed (${res.status})`), { status: res.status })
       return payload as T
     },
     [getAccessToken]
@@ -76,12 +78,26 @@ export function useGrid() {
     }
   }, [])
 
+  /** 409 means Grid has no customer yet and the Openfort user has no full name to create one with. */
+  const loadAccount = useCallback(
+    (fullName?: string) =>
+      run('account', async () => {
+        try {
+          setAccount(await call<AccountState>('/api/account', { method: 'POST', body: { address, fullName } }))
+          setNeedsName(false)
+        } catch (err) {
+          if ((err as { status?: number }).status !== 409) throw err
+          setNeedsName(true)
+          if (fullName) throw err
+        }
+      }),
+    [address, call, run]
+  )
+
   const refreshAccount = useCallback(async () => {
     if (!isAuthenticated || !address) return
-    await run('account', async () => {
-      setAccount(await call<AccountState>('/api/account', { method: 'POST', body: { address } }))
-    })
-  }, [address, call, isAuthenticated, run])
+    await loadAccount()
+  }, [address, isAuthenticated, loadAccount])
 
   useEffect(() => {
     void refreshAccount()
@@ -166,6 +182,8 @@ export function useGrid() {
 
   return {
     account,
+    needsName,
+    submitName: loadAccount,
     quote,
     payment,
     txHash,

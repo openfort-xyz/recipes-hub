@@ -61,17 +61,23 @@ async function request<T>(path: string, init: { method: 'GET' | 'POST'; body?: u
 }
 
 /**
- * The Grid customer for an Openfort user, created on first use.
+ * The Grid customer for an Openfort user, if one exists.
  *
  * `platformCustomerId` is the Openfort user id, so Grid itself holds the
- * mapping and this app needs no database. Sandbox platforms configured as a
- * regulated institution approve customers at creation; elsewhere the customer
- * starts unverified and needs `/customers/{id}/kyc-link` first.
+ * mapping and this app needs no database.
  */
-export async function findOrCreateCustomer(input: { userId: string; email: string; fullName: string }) {
-  const found = await request<{ data: Customer[] }>(`/customers?platformCustomerId=${encodeURIComponent(input.userId)}`)
-  if (found.data[0]) return found.data[0]
+export async function findCustomer(userId: string) {
+  const found = await request<{ data: Customer[] }>(`/customers?platformCustomerId=${encodeURIComponent(userId)}`)
+  return found.data[0] ?? null
+}
 
+/**
+ * Sandbox platforms configured as a regulated institution approve customers at
+ * creation; elsewhere the customer starts unverified and needs
+ * `/customers/{id}/kyc-link` first. Grid rejects a `fullName` without both a
+ * first and a last name.
+ */
+export function createCustomer(input: { userId: string; email: string; fullName: string }) {
   return request<Customer>('/customers', {
     method: 'POST',
     body: {

@@ -58,6 +58,7 @@ function QuoteSummary({ quote, secondsLeft }: { quote: Quote; secondsLeft: numbe
 export default function FundingFlow() {
   const [direction, setDirection] = useState<Direction>('in')
   const [amount, setAmount] = useState('')
+  const [fullName, setFullName] = useState('')
   const wallet = useOpenfortWallet()
   const grid = useGrid()
 
@@ -117,6 +118,29 @@ export default function FundingFlow() {
           {grid.error && <p className="text-sm text-destructive">{grid.error}</p>}
         </CardContent>
       </Card>
+
+      {grid.needsName && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Your legal name</CardTitle>
+            <CardDescription>
+              Grid opens a customer record in your name, so it needs your first and last name.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex gap-2">
+            <input
+              className={inputClass}
+              placeholder="First and last name"
+              autoComplete="name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
+            <Button disabled={!fullName.trim() || grid.busy === 'account'} onClick={() => grid.submitName(fullName)}>
+              {grid.busy === 'account' ? 'Saving…' : 'Continue'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {direction === 'out' && (
         <Card>

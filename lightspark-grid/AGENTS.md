@@ -55,7 +55,7 @@ Grid has no SDK dependency here: `src/features/grid/client.ts` is a ~150-line `f
 
 **Steps**
 1. Copy `client.ts`, `customer.ts` and `types.ts` into your server code, and set `GRID_CLIENT_ID` / `GRID_CLIENT_SECRET`.
-2. For each signed-in user, call `findOrCreateCustomer` with the Openfort user id and a deliverable email, then `findOrCreateWalletAccount` with their embedded wallet address.
+2. For each signed-in user, call `findCustomer` with the Openfort user id; if there is none, `createCustomer` with a deliverable email and a first and last name. Then call `findOrCreateWalletAccount` with their embedded wallet address.
 3. **Money in**: call `createOnRampQuote` and show the user the `USD_ACCOUNT` payment instruction (routing, account, reference). The quote expires in 3 minutes.
 4. **Money out**: call `createBankAccount` once, then `createOffRampQuote`. Send exactly `totalSendingAmount` USDC to the `BASE_WALLET` address in `paymentInstructions` from the embedded wallet before `expiresAt`.
 5. Track the payment with `GET /transactions/{quote.transactionId}` until `COMPLETED` or `FAILED`, or subscribe to `OUTGOING_PAYMENT.*` webhooks via `PATCH /config` in production.
@@ -80,6 +80,7 @@ Grid has no SDK dependency here: `src/features/grid/client.ts` is a ~150-line `f
 | --- | --- | --- |
 | `Grid rejected the API credentials — check GRID_CLIENT_ID is the key ID, not the platform ID` | Grid answers a wrong id/secret pair with an HTML 401 | Use the API key's ID from Settings → API Keys, not the `Platform:` id |
 | `INVALID_INPUT: Customer email is required when the platform supports Spark token embedded wallets.` | Customer created without `email` | Pass the Openfort user's email (the recipe does) |
+| `INVALID_INPUT: fullName must include at least a first and last name` | Email sign-in leaves the Openfort user with no display name, and a single word (such as the part of the email before the @) is not enough | The recipe asks for a first and last name before creating the customer (`/api/account` answers `409 Enter your first and last name` until it has one) |
 | `INVALID_INPUT: Invalid email. Expected a valid, deliverable email address.` | Placeholder domain such as `example.com` | Use a real, deliverable address |
 | `INVALID_INPUT: bankAccountType: Field required; beneficiary: Field required` | `USD_ACCOUNT` sent with only routing and account numbers | Send `bankAccountType` (`CHECKING`/`SAVINGS`) and a full `beneficiary` (name, birth date, nationality, address) |
 | `ACCOUNT_NOT_FOUND: destination.accountId does not match an active account.` | Quote pointed at an external account that failed to create | Create the bank account first and use the id it returns |

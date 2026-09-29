@@ -39,7 +39,7 @@ Fill in the values; every variable is commented in `.env.example`.
 pnpm dev
 ```
 
-Open http://localhost:3000, sign in with email, and create the wallet.
+Open http://localhost:3000, sign in with email, and create the wallet. The first time, enter your first and last name: Grid opens the customer record in it.
 
 - **Add money**: enter an amount, get a quote, then press **Simulate the bank transfer**. The payment moves to `COMPLETED`.
 - **Cash out**: link the prefilled sandbox bank account, get a quote, then press **Send**. The wallet needs Base Sepolia USDC; get some from [faucet.circle.com](https://faucet.circle.com).
