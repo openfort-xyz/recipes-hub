@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project overview
-- Collection of Openfort integration samples (`7702`, `aave`, `hyperliquid`, `lifi`, `lighter`, `lightspark-grid`, `morpho`, `mpp`, `near-intents`, `private-payments`, `telegram-bot`, `vaults-fyi`, `x402`, `yield-xyz`, `zama-confidential-yield`).
+- Collection of Openfort integration samples (`7702`, `aave`, `hyperliquid`, `lifi`, `lighter`, `lightspark-grid`, `morpho`, `mpp`, `near-intents`, `private-payments`, `tala`, `telegram-bot`, `vaults-fyi`, `x402`, `yield-xyz`, `zama-confidential-yield`).
 - Each subdirectory has its own `AGENTS.md`; start at the sample you are modifying.
 - The recipe code is the source of truth. The docs pages at `openfort.io/docs/recipes/*` are checked against each recipe's `.env.example` and file paths, and they link to each recipe's `AGENTS.md` for the "add it to your app" steps.
 
@@ -35,7 +35,7 @@ Every recipe must have:
 
 ## Dependency constraints (read before bumping anything)
 These are non-obvious and will break samples if ignored:
-- **Match the `wagmi` major to the `@openfort/react` version.** All web samples that use `@openfort/react` (`7702`, `aave`, `lifi`, `lightspark-grid`, `morpho`, `near-intents`, `vaults-fyi`, `x402`) run the latest published `@openfort/react` (pinned exactly, same version in every recipe) + `wagmi@^3`; keep `viem` on `^2.x`.
+- **Match the `wagmi` major to the `@openfort/react` version.** All web samples that use `@openfort/react` (`7702`, `aave`, `lifi`, `lightspark-grid`, `morpho`, `near-intents`, `tala`, `vaults-fyi`, `x402`) run the latest published `@openfort/react` (pinned exactly, same version in every recipe) + `wagmi@^3`; keep `viem` on `^2.x`.
 - **wagmi 3 gotchas (already applied):** (1) `@wagmi/connectors@8` pulls optional connector peers loaded via a guarded `import('accounts').catch()`; webpack (Next.js) hard-fails resolving them at build, so the Next samples stub `accounts` / `porto` / `@base-org/account` / `@metamask/connect-evm` to `false` in `next.config` (`resolve.fallback` or `resolve.alias`). Vite tolerates them without config. (2) `useBalance` is native-only in wagmi 3 (no `token` option) and its `data` has no `.formatted` — fetch ERC-20 balances with `useReadContract`(`balanceOf`) and format with `formatUnits(data, decimals)`; `useBalance` native data is `{ value, decimals, symbol }`.
 - **`@openfort/react` provider needs a publishable key at render time.** In Next.js samples, the App Router will throw during static prerender without it — every Next sample sets `export const dynamic = 'force-dynamic'` in `app/layout.tsx`. Its `walletConfig` nests `accountType` / `ethereumFeeSponsorshipId` under `ethereum: { … }`. The React Native SDK config key is `feeSponsorshipId` (not `ethereumProviderPolicyId`).
 - **Next.js stays on 15 for the wallet samples.** Next 16 forces Turbopack and rejects the webpack walletconnect shims (`pino-pretty` external, `@react-native-async-storage/async-storage: false`). Only `mpp` (no wagmi/walletconnect) runs on Next 16.
