@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react'
 type Fiat = Record<string, number>
 type Status = {
   address: string
-  wallet: { usdc: string; eth: string }
+  walletUsdc: string
   account: { accountId: string; safeAddress: string } | null
   balance: { total: Fiat } | null
   returns: { returns: Fiat; returnsPct: number } | null
@@ -124,8 +124,7 @@ export default function Home() {
         <section className="grid gap-3 rounded-lg border border-border bg-card p-4 text-sm sm:grid-cols-2">
           <Stat label="Treasury wallet" value={status.address} mono />
           <Stat label="Blend Safe" value={status.account?.safeAddress ?? 'Created on first deposit'} mono />
-          <Stat label="Wallet USDC" value={units(status.wallet.usdc, 6)} />
-          <Stat label="Wallet ETH (gas)" value={units(status.wallet.eth, 18)} />
+          <Stat label="Wallet USDC" value={units(status.walletUsdc, 6)} />
           <Stat label="Earning in Blend" value={fiat(status.balance?.total)} />
           <Stat
             label="Returns"
