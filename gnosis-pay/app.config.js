@@ -9,8 +9,10 @@ export default ({ config }) => ({
     openfortPublishableKey: process.env.OPENFORT_PROJECT_PUBLISHABLE_KEY || "YOUR_PROJECT_PUBLISHABLE_KEY",
     openfortShieldPublishableKey: process.env.OPENFORT_SHIELD_PUBLISHABLE_KEY || "YOUR_SHIELD_PUBLISHABLE_KEY",
     openfortFeeSponsorshipId: process.env.OPENFORT_FEE_SPONSORSHIP_ID || "",
-    pimlicoApiKey: process.env.PIMLICO_API_KEY || "",
-    pimlicoSponsorshipPolicyId: process.env.PIMLICO_SPONSORSHIP_POLICY_ID || "",
+    gnosisPayEnv: process.env.GNOSIS_PAY_ENV || "sandbox",
+    gnosisPaySiweDomain: process.env.GNOSIS_PAY_SIWE_DOMAIN || "",
+    gnosisPaySiweUri: process.env.GNOSIS_PAY_SIWE_URI || "",
+    gnosisPayAppName: process.env.GNOSIS_PAY_APP_NAME || "",
     gnosisRpcUrl: process.env.GNOSIS_RPC_URL || "https://rpc.gnosischain.com",
   },
 });

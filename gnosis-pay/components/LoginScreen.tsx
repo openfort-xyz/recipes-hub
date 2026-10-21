@@ -10,8 +10,9 @@ type FeatherName = ComponentProps<typeof Feather>["name"];
 
 const STEPS: { icon: FeatherName; title: string; body: string }[] = [
   { icon: "shield", title: "Create a self-custodial wallet", body: "One tap — your keys, secured by Openfort. No seed phrase, no backend." },
-  { icon: "credit-card", title: "Deploy your Gnosis Pay account", body: "A Safe on Gnosis Chain that you fully own and control." },
-  { icon: "zap", title: "Set a limit, fund it, and spend", body: "Configure a spending allowance, top it up with EURe, and draw within it." },
+  { icon: "user-check", title: "Onboard to Gnosis Pay", body: "Sign in with your wallet, verify your email, accept the terms and pass KYC." },
+  { icon: "credit-card", title: "Get a Safe and a virtual card", body: "Gnosis Pay deploys a Safe your wallet owns on Gnosis Chain and issues a Visa card." },
+  { icon: "zap", title: "Fund it and spend", body: "Top the Safe up with EURe from your wallet; the card spends from it." },
 ];
 
 export function LoginScreen() {
@@ -39,8 +40,8 @@ export function LoginScreen() {
             </View>
             <Text style={styles.title}>Run a Gnosis Pay{"\n"}card, end to end</Text>
             <Text style={styles.subtitle}>
-              A Gnosis Pay card is a Visa attached to a self-custodial Safe. Here your Openfort wallet owns and runs it —
-              on Gnosis Chain, no backend.
+              A Gnosis Pay card is a Visa attached to a self-custodial Safe. Here your Openfort wallet signs in to Gnosis
+              Pay and owns that Safe, with no backend of your own.
             </Text>
             <Card style={{ gap: 18, marginTop: 8 }}>
               {STEPS.map((step) => (

@@ -14,7 +14,7 @@ export default function RootLayout() {
           shieldPublishableKey: getShieldPublishableKey(),
           // Password recovery keeps the key client-side encrypted — no Shield backend.
           recoveryMethod: "password",
-          // account-kit needs a plain ECDSA owner signature, so the wallet is an EOA.
+          // The Safe owner and SIWE signer must be a plain ECDSA key, so the wallet is an EOA.
           accountType: AccountTypeEnum.EOA,
           feeSponsorshipId: getFeeSponsorshipId(),
         }}

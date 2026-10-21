@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import type { SiweParams } from "./session";
 
 function read(key: string): string | undefined {
   return Constants.expoConfig?.extra?.[key] as string | undefined;
@@ -35,19 +36,22 @@ export function getFeeSponsorshipId(): string | undefined {
   return value ? value : undefined;
 }
 
-// Optional: a Pimlico API key enables a sponsored relayer (gasless). When unset,
-// the embedded wallet relays its own transactions and pays gas in xDAI.
-export function getPimlicoApiKey(): string | undefined {
-  const value = read("pimlicoApiKey");
-  return value ? value : undefined;
+// "sandbox" (default) or "production". Production credentials need a Gnosis Pay partnership.
+export function getGnosisPayApiUrl(): string {
+  return read("gnosisPayEnv") === "production"
+    ? "https://core.prod.gnosispay.com/user-api"
+    : "https://core.sandbox.gnosispay.in/user-api";
 }
 
-// Optional: a Pimlico sponsorship policy id (sp_...). On mainnet (Gnosis is
-// mainnet) the paymaster only sponsors with a policy + funded gas tank; pass the
-// id here if your API key doesn't already have a default policy bound to it.
-export function getPimlicoSponsorshipPolicyId(): string | undefined {
-  const value = read("pimlicoSponsorshipPolicyId");
-  return value ? value : undefined;
+// SIWE params. Gnosis Pay rejects (403) a domain it has not whitelisted for your partner account.
+export function getSiweParams(): SiweParams {
+  const domain = read("gnosisPaySiweDomain");
+  if (!domain) throw new Error("[CONFIG] Missing GNOSIS_PAY_SIWE_DOMAIN. Use the domain Gnosis Pay whitelisted for you.");
+  return {
+    domain,
+    uri: read("gnosisPaySiweUri") || `https://${domain}`,
+    appName: read("gnosisPayAppName") || "Openfort Gnosis Pay",
+  };
 }
 
 export function getGnosisRpcUrl(): string {

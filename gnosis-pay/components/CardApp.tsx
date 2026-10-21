@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AccountTypeEnum, useEmbeddedEthereumWallet, useSignOut } from "@openfort/react-native";
 import { DEMO_RECOVERY_PASSWORD, GNOSIS_CHAIN_ID } from "@/lib/constants";
