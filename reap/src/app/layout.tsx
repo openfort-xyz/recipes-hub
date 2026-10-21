@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Openfort × Reap cards recipe',
-  description: 'Issue a Reap Visa card on an Openfort embedded wallet and load it with stablecoins on Base.',
+  description: 'Issue a Reap Visa card on an Openfort embedded wallet and load it with stablecoins on Polygon.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

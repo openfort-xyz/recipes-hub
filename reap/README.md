@@ -1,6 +1,6 @@
 # Openfort × Reap: a card on your wallet
 
-Issue a [Reap](https://docs.reap.global) virtual Visa card on an Openfort embedded wallet and load it with stablecoins on Base.
+Issue a [Reap](https://docs.reap.global) virtual Visa card on an Openfort embedded wallet and load it with stablecoins on Polygon.
 
 - **Open**: the user passes KYC and their embedded wallet signs Reap's auth message, which makes it the signer of a self-custodial Reap account.
 - **Load**: the wallet sends stablecoins to the account's Reap deposit address (gas sponsored). Reap credits the card balance.
@@ -19,14 +19,14 @@ pnpm install
 
 1. Create a project at [dashboard.openfort.io](https://dashboard.openfort.io).
 2. From **API keys**, copy the publishable key, the secret key and the Shield publishable key.
-3. Optional: create a **fee sponsorship** policy for Base Sepolia (84532) and copy its ID (`pol_...`).
+3. Optional: create a **fee sponsorship** policy for Polygon Amoy (80002) and copy its ID (`pol_...`).
 
 ### Reap
 
 Reap issues keys on request. Ask the Reap team for:
 
 1. A **sandbox API key** on a **User-Funded** project.
-2. Some **RUSDC on Base Sepolia**, Reap's sandbox stablecoin, sent to your test wallet (sign in to the app first to get its address).
+2. Some **RUSDC on Polygon Amoy**, Reap's sandbox stablecoin, sent to your test wallet (sign in to the app first to get its address).
 
 ## 3. Configure
 

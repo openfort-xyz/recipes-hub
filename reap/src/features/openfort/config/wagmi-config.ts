@@ -1,9 +1,9 @@
 import { embeddedWalletConnector } from '@openfort/react/wagmi'
 import { createConfig, http } from 'wagmi'
-import { base, baseSepolia } from 'wagmi/chains'
+import { polygon, polygonAmoy } from 'wagmi/chains'
 
-// Reap's sandbox credits RUSDC on Base Sepolia; production credits USDC on Base.
-const chains = [baseSepolia, base] as const
+// Reap's sandbox credits RUSDC on Polygon Amoy; production credits USDC on Polygon.
+const chains = [polygonAmoy, polygon] as const
 
 /**
  * Embedded wallet only, deliberately — hence the hand-built config rather than
@@ -19,8 +19,8 @@ export const wagmiConfig = createConfig({
   chains,
   connectors: [embeddedWalletConnector()],
   transports: {
-    [baseSepolia.id]: http(),
-    [base.id]: http(),
+    [polygonAmoy.id]: http(),
+    [polygon.id]: http(),
   },
   // Defer browser-only storage (indexedDB) hydration to the client so server
   // rendering doesn't touch it.

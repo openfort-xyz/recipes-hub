@@ -21,7 +21,7 @@ This repository contains comprehensive samples demonstrating how to integrate Op
 | **[Yield with vaults.fyi](./vaults-fyi/)** | Discover, deposit into and track USDC vaults across 80+ protocols through the vaults.fyi API, plus rewards claims. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/vaults-fyi openfort-vaults-fyi && cd openfort-vaults-fyi` |
 | **[Private invoice payments](./private-payments/)** | Pay supplier invoices from an embedded wallet through Unlink's shielded pool on Monad testnet, breaking the on-chain link between payer and supplier. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/private-payments openfort-private-payments && cd openfort-private-payments` |
 | **[Bank rails with Lightspark Grid](./lightspark-grid/)** | Fund an embedded wallet from a bank account and cash it back out. Grid converts USD ↔ USDC on Base; the wallet sends USDC to Grid's deposit address with sponsored gas. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/lightspark-grid openfort-lightspark-grid && cd openfort-lightspark-grid` |
-| **[Cards with Reap](./reap/)** | Issue a Reap virtual Visa card on an embedded wallet. The wallet signs as the card account's signer and loads it with stablecoins on Base (sponsored gas); spend anywhere Visa is accepted. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/reap openfort-reap && cd openfort-reap` |
+| **[Cards with Reap](./reap/)** | Issue a Reap virtual Visa card on an embedded wallet. The wallet signs as the card account's signer and loads it with stablecoins on Polygon (sponsored gas); spend anywhere Visa is accepted. | `pnpx gitpick openfort-xyz/recipes-hub/tree/main/reap openfort-reap && cd openfort-reap` |
 
 ## Getting Started
 
@@ -43,5 +43,5 @@ Each sample is completely self-contained with its own setup instructions, enviro
 | **Telegram bot**        | -            | Node.js    | Base Sepolia      | `grammy`, `@openfort/openfort-node`, `viem`          |
 | **Lighter**             | React Native | Node.js    | Ethereum mainnet  | `@openfort/react-native`, vendored `lighter-go` WASM |
 | **Lightspark Grid**     | Next.js 15   | Next.js API routes | Base Sepolia | `@openfort/react`, `@openfort/openfort-node`, `wagmi` |
-| **Reap**                | Next.js 15   | Next.js API routes | Base Sepolia | `@openfort/react`, `@openfort/openfort-node`, `wagmi` |
+| **Reap**                | Next.js 15   | Next.js API routes | Polygon Amoy | `@openfort/react`, `@openfort/openfort-node`, `wagmi` |
 

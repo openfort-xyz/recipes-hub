@@ -1,17 +1,17 @@
-import { base, baseSepolia } from 'wagmi/chains'
+import { polygon, polygonAmoy } from 'wagmi/chains'
 
 /**
  * The stablecoin Reap credits on each chain this recipe runs on. The sandbox
  * only accepts Reap's own test token, RUSDC, which Reap sends on request.
- * The same address is RUSDT on Ethereum Sepolia, so always key by chain.
+ * Token addresses are only meaningful per chain, so always key by chain.
  */
 export const DEPOSIT_TOKEN: Record<number, { address: `0x${string}`; symbol: string; reapChainId: string }> = {
-  [baseSepolia.id]: {
-    address: '0xeB9Cb47c97ecff4875a1f29A8345818BC0eDc30E',
+  [polygonAmoy.id]: {
+    address: '0x00D4e14024d8AbC6D6D35708b5bEC65B2f28e6E3',
     symbol: 'RUSDC',
-    reapChainId: 'BASE_SEPOLIA',
+    reapChainId: 'POLYGON_AMOY',
   },
-  [base.id]: { address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', symbol: 'USDC', reapChainId: 'BASE_MAINNET' },
+  [polygon.id]: { address: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', symbol: 'USDC', reapChainId: 'POLYGON_MAINNET' },
 }
 
 export const TOKEN_DECIMALS = 6
@@ -40,6 +40,6 @@ export const ERC20_ABI = [
 ] as const
 
 export const CHAIN_NAME: Record<number, string> = {
-  [base.id]: 'Base',
-  [baseSepolia.id]: 'Base Sepolia',
+  [polygon.id]: 'Polygon',
+  [polygonAmoy.id]: 'Polygon Amoy',
 }

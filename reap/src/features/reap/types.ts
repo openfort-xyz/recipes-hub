@@ -17,7 +17,7 @@ export interface User {
   application: { status: ApplicationStatus; rejectionReason: string | null }
 }
 
-/** Reap's chain identifiers, e.g. `BASE_SEPOLIA`. */
+/** Reap's chain identifiers, e.g. `POLYGON_AMOY`. */
 export type ReapChainId = string
 
 export interface Account {

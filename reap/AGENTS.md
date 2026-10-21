@@ -3,9 +3,9 @@
 ## Project overview
 - Openfort embedded wallet + Reap card issuing, Next.js 15 (App Router).
 - The user signs in, passes KYC, and opens a **User-Funded** Reap account whose EVM signer is their Openfort wallet. Reap issues a virtual Visa card on that account.
-- **Load**: the embedded wallet sends stablecoins to the account's own Reap deposit address on Base (gas sponsored). Reap credits the card balance once the deposit is approved.
+- **Load**: the embedded wallet sends stablecoins to the account's own Reap deposit address on Polygon (gas sponsored). Reap credits the card balance once the deposit is approved.
 - **Spend**: the card authorizes against that balance. In sandbox, a button simulates a purchase; card details open in Reap's hosted reveal iframe.
-- Chain: Base Sepolia with Reap's sandbox token RUSDC by default; Base mainnet USDC with a production key.
+- Chain: Polygon Amoy with Reap's sandbox token RUSDC by default; Polygon mainnet USDC with a production key. Reap's User-Funded deposits are supported on Base, Polygon and Solana; this recipe uses Polygon.
 - The Reap API key stays on the server. The route handlers in `src/app/api/` call Reap only after verifying the Openfort session.
 
 ## Setup commands
@@ -22,21 +22,21 @@ Every variable is listed in `.env.example` with a comment.
 | `NEXT_PUBLIC_OPENFORT_SHIELD_PUBLISHABLE_KEY` | yes | `src/features/openfort/providers/openfort-provider-boundary.tsx` |
 | `OPENFORT_SECRET_KEY` | yes | `src/lib/auth.ts` |
 | `NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID` | no | `src/features/openfort/providers/openfort-provider-boundary.tsx` |
-| `NEXT_PUBLIC_OPENFORT_DEFAULT_CHAIN_ID` | no, default `84532` | same |
+| `NEXT_PUBLIC_OPENFORT_DEFAULT_CHAIN_ID` | no, default `80002` | same |
 | `REAP_API_KEY` | yes | `src/features/reap/client.ts` |
 | `REAP_API_URL` | no, default `https://sg.sandbox.api.reap.global` | same (a `sandbox` URL enables the simulate buttons) |
 
 ## Testing instructions
 - `pnpm verify` runs `biome lint .` and `next build` (type check included). It must finish with no errors and no warnings.
 - **Not yet run against the Reap sandbox.** The requests follow the Reap API reference (`Reap-Version: 2025-02-14`) as of 2026-10-20, but no sandbox key was available when the recipe was written. Before relying on it, run the full flow once: details → simulated KYC → sign and open account → load RUSDC → reveal → simulated purchase, and record the date and result here.
-- The flow needs a Reap project configured as **User-Funded** (Reap's default). A Program-Funded project provisions no deposit addresses, so the Load step reports `Reap has no deposit address for this account on chain 84532`.
+- The flow needs a Reap project configured as **User-Funded** (Reap's default). A Program-Funded project provisions no deposit addresses, so the Load step reports `Reap has no deposit address for this account on chain 80002`.
 
 ## Add this to your app
-For a coding agent adding a Reap card to an existing app that already has Openfort embedded wallets on Base.
+For a coding agent adding a Reap card to an existing app that already has Openfort embedded wallets on an EVM chain.
 
 **Dashboard setup**
-1. [dashboard.openfort.io](https://dashboard.openfort.io): publishable, secret and Shield publishable keys from one project; optional fee sponsorship policy (`pol_...`) on Base or Base Sepolia.
-2. Reap: ask the Reap team for a sandbox API key on a **User-Funded** project, and for RUSDC on Base Sepolia sent to your test wallet. Reap has no self-serve dashboard signup.
+1. [dashboard.openfort.io](https://dashboard.openfort.io): publishable, secret and Shield publishable keys from one project; optional fee sponsorship policy (`pol_...`) on Polygon Amoy (80002) or Polygon (137).
+2. Reap: ask the Reap team for a sandbox API key on a **User-Funded** project, and for RUSDC on Polygon Amoy sent to your test wallet. Reap has no self-serve dashboard signup.
 
 **Install** (exact versions this recipe runs)
 ```sh
@@ -60,7 +60,7 @@ Reap has no SDK dependency here: `src/features/reap/client.ts` is a `fetch` wrap
 4. KYC: in sandbox, `simulateKycApproval` and poll `GET /users/{id}` until `application.status` is `APPROVED`. In production, run Reap's managed KYC (`POST /users/{id}/application` returns a provider SDK token).
 5. `GET /accounts/auth-message`, have the wallet `signMessage` the returned `message` unchanged, then `createAccount` with `signers.evm = { address, message, signature }`. The message expires after 15 minutes.
 6. `createCard` with `type: 'VIRTUAL'`.
-7. Load: transfer RUSDC (sandbox) or USDC (production) on Base to the account's `chainAddresses` entry for `BASE_SEPOLIA` / `BASE_MAINNET`. Poll `GET /accounts/{id}/balance` or subscribe to `CRYPTO_DEPOSIT_STATUS_UPDATED`; only `APPROVED` means spendable.
+7. Load: transfer RUSDC (sandbox) or USDC (production) on Polygon to the account's `chainAddresses` entry for `POLYGON_AMOY` / `POLYGON_MAINNET`. Poll `GET /accounts/{id}/balance` or subscribe to `CRYPTO_DEPOSIT_STATUS_UPDATED`; only `APPROVED` means spendable.
 8. Show card details with `POST /cards/{id}/reveal` and load `revealUrl` in an iframe. Fetch a new URL each time.
 
 **Check it works**: in sandbox, after a deposit is credited, `simulatePurchase` for less than the balance returns `status: PENDING`, and the balance drops by that amount.
@@ -86,7 +86,7 @@ None observed yet: the recipe has not been run against the Reap sandbox (see Tes
 ## Reap notes
 - Base URLs: `https://sg.sandbox.api.reap.global` and `https://sg.prod.api.reap.global` (Mexico: `mx.`). A key works in one environment only. Every request needs `Reap-Version: 2025-02-14`; every create call needs an `Idempotency-Key`.
 - The funding model (User-Funded or Program-Funded) is fixed by Reap at project setup. This recipe is User-Funded: each user's account has its own deposit addresses and the user's wallet is the withdrawal signer. In a Program-Funded project you would instead hold funds yourself, top up a master collateral account, and set each user's spending power with Virtual Asset postings.
-- User-Funded deposits land on Base, Polygon or Solana. Sandbox accepts only Reap's RUSDC/RUSDT; `0xeB9Cb47c97ecff4875a1f29A8345818BC0eDc30E` is RUSDC on Base Sepolia but RUSDT on Ethereum Sepolia, so match on chain and address together.
+- User-Funded deposits land on Base, Polygon or Solana (Ethereum is master-collateral only). Polygon is the one EVM chain both funding models accept. Sandbox accepts only Reap's RUSDC/RUSDT: on Polygon Amoy RUSDC is `0x00D4e14024d8AbC6D6D35708b5bEC65B2f28e6E3` and RUSDT `0x0aAACf028519E30A88683222B00f4c7A8B5913CB`; production is Circle USDC `0x3c499c542cef5e3811e1192ce70d8cc03d5c3359`. Reap reuses addresses across symbols on other testnets, so match on chain and address together.
 - Deposits below 0.50 USD are rejected. There is no deposit simulation in sandbox: the transfer must be real.
 - Withdrawals (`POST /crypto-withdrawals` → mint signing payload → wallet `signMessage` → submit signature) are not part of this recipe; the signer registered at account creation is the key they need.
 

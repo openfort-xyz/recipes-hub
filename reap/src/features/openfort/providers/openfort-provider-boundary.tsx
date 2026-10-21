@@ -4,7 +4,7 @@ import type { OpenfortWalletConfig } from '@openfort/react'
 import { AccountTypeEnum, AuthProvider, OpenfortProvider, RecoveryMethod } from '@openfort/react'
 import type { PropsWithChildren } from 'react'
 
-const _defaultChainId = Number.parseInt(process.env.NEXT_PUBLIC_OPENFORT_DEFAULT_CHAIN_ID ?? '84532', 10)
+const _defaultChainId = Number.parseInt(process.env.NEXT_PUBLIC_OPENFORT_DEFAULT_CHAIN_ID ?? '80002', 10)
 const _feeSponsorshipId = process.env.NEXT_PUBLIC_OPENFORT_FEE_SPONSORSHIP_ID
 const _ethereumFeeSponsorshipId =
   _feeSponsorshipId && Number.isFinite(_defaultChainId)
