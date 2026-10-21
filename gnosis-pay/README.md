@@ -4,6 +4,8 @@ An Expo React Native app that issues a **Gnosis Pay Visa card to an Openfort emb
 
 It uses the [Gnosis Pay User API](https://docs.gnosispay.com/guides/configuring-environment) directly from the app; there is no backend.
 
+> **Gnosis Pay requires approval from the Gnosis Pay team:** sandbox is by invite, production needs a partnership, and your app's SIWE domain must be whitelisted. To coordinate access, [contact the Openfort team](https://t.me/joalavedra).
+
 ## 1. Setup
 
 ```sh

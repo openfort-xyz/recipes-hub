@@ -5,6 +5,7 @@
 - Uses the **Gnosis Pay User API** (`https://core.sandbox.gnosispay.in/user-api` or `https://core.prod.gnosispay.com/user-api`): SIWE auth with rotating access/refresh tokens, email OTP registration, terms, Sumsub KYC, source of funds, `POST /user/account`, `POST /cards/virtual`, `GET /user/balances/v2`.
 - Gnosis Chain mainnet (id 100) for the Safe and funding. Sandbox runs the card side on a simulated network with Sumsub test documents; production needs a Gnosis Pay partnership.
 - No backend: the wallet uses Openfort PASSWORD recovery and the app calls the User API directly. The wallet is an **EOA** so its SIWE signature is plain ECDSA.
+- Gnosis Pay requires approval from the Gnosis Pay team: sandbox is by invite, production needs a partnership, and your app's SIWE domain must be whitelisted. To coordinate access, [contact the Openfort team](https://t.me/joalavedra).
 
 ## Setup commands
 - `pnpm install`
