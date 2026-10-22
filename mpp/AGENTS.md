@@ -33,6 +33,7 @@
 - 2026-09-23 (openfort-node 0.12.2, mppx 0.10.1, next 16.3.5, viem 2.56.5): `pnpm verify` passes. With `pnpm start`, the weather route returned a `402` Tempo charge challenge (chainId 42431). An mppx client using the same `toAccount` + `SignatureEnvelope` adapter as `lib/openfort-account.ts`, with a faucet-funded local key in place of Openfort's `account.sign`, paid it and got `200` with a `payment-receipt`. Not run: the Openfort signing call itself, and treasury funding (no valid wallet secret locally).
 - 2026-09-25 (openfort-node 0.12.2, already the latest; no version changes): `pnpm install` (pnpm 10.30.3, Node 22), `pnpm audit --audit-level=moderate` reports no known vulnerabilities, `pnpm verify` passes. No test script exists. Runtime flows not re-run.
 - 2026-10-22 (next 16.3.5 → 16.4.1, `axios@<1.20.0` override for `@openfort/shield-js` 0.1.38 via openfort-node): `pnpm install` (pnpm 10.30.3, Node 22), `pnpm audit --audit-level=moderate` reports no known vulnerabilities, `pnpm verify` passes, `pnpm start` serves `/` with `200`. Runtime flows not re-run.
+- 2026-10-22 (sharp override floor raised to `>=0.35.5` for GHSA-2464-fhr4-w9xw; next already 16.4.1): `pnpm install`, `pnpm audit --audit-level=moderate` reports no known vulnerabilities, `pnpm verify` passes. Runtime flows not re-run.
 
 ## Add this to your app
 
