@@ -29,6 +29,7 @@ All three are read in the browser (`NEXT_PUBLIC_*`) and all are required. See `.
   3. On Basescan the EOA should show code `0xef0100e6cae83bde06e4c305530e199d7217f42808555b` (the 7702 delegation designator) and an ETH balance of 0: the paymaster paid.
 - Last runtime check: not run in the 2026-09-23 SDK upgrade (2.0.1 → 2.1.3); only `verify` was run.
 - 2026-09-25: `pnpm install`, `pnpm audit --audit-level=moderate` (clean after overriding `axios@<1.18.0` to `>=1.18.0` in `pnpm-workspace.yaml`; `@openfort/shield-js` pins 1.15.0) and `pnpm verify` run; no test script exists; runtime flow not run.
+- 2026-10-22 (next 15.5.28, sharp 0.35.5 for GHSA-2464-fhr4-w9xw, axios override floor raised to `>=1.20.0` because `@openfort/shield-js` 0.1.38 pins 1.18.1): `pnpm install` (pnpm 10.30.3, Node 22), `pnpm audit --audit-level=moderate` clean (1 low, the ignored elliptic CVE), `pnpm verify` passes. Runtime flow not run.
 
 ## Add this to your app
 For a coding agent adding EIP-7702 gasless UserOperations to an existing React app that uses (or will use) Openfort embedded wallets.
