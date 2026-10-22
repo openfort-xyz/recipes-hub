@@ -46,6 +46,8 @@ All variables are listed in `.env.example`.
   after bumping `viem` to 2.55.5 and overriding `axios@<1.18.0` and `ws@<8.21.1` in
   `pnpm-workspace.yaml` (1 low, CVE-2025-14505 in `elliptic`, ignored there; no patched
   release); `pnpm verify` passes; no test script. Runtime flows not re-checked.
+- 2026-10-22: `vite` 8.0.16 → 8.1.6. `pnpm audit --audit-level=moderate` clean (the `elliptic` low
+  stays ignored), `pnpm verify` passes. Runtime flows not re-checked.
 
 ## Add this to your app
 For a coding agent adding Openfort-sponsored Zama confidential flows to an existing React app.
