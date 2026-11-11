@@ -39,7 +39,7 @@ For a coding agent adding Openfort embedded wallets + LI.FI swaps to an existing
 
 **Install** (exact versions this recipe runs)
 ```sh
-pnpm add @openfort/react@2.1.3 @solana/kit@6.10.0 @solana/kora@0.2.1 @solana-program/token@0.12.0 @solana-program/compute-budget@0.13.0 wagmi@^3.6.20 viem@^2.52.2 @tanstack/react-query@^5.101.1 @lifi/sdk@^4.0.0 @lifi/sdk-provider-ethereum@^4.0.0
+pnpm add @openfort/react@2.1.3 @solana/kit@6.10.0 @solana/kora@0.2.1 @solana-program/token@0.12.0 @solana-program/compute-budget@0.13.0 wagmi@^3.6.20 viem@2.57.15 @tanstack/react-query@^5.101.1 @lifi/sdk@^4.0.0 @lifi/sdk-provider-ethereum@^4.0.0
 ```
 
 **Files that carry the integration**

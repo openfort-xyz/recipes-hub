@@ -40,7 +40,7 @@ For a coding agent adding bank on/off-ramps through Grid to an existing app that
 
 **Install** (exact versions this recipe runs)
 ```sh
-pnpm add @openfort/react@2.1.3 @openfort/openfort-node@0.12.2 wagmi@^3.6.16 viem@^2.52.2 @tanstack/react-query@^5.101.0
+pnpm add @openfort/react@2.1.3 @openfort/openfort-node@0.12.2 wagmi@^3.6.16 viem@2.57.15 @tanstack/react-query@^5.101.0
 ```
 Grid has no SDK dependency here: `src/features/grid/client.ts` is a ~150-line `fetch` wrapper with Basic auth.
 
