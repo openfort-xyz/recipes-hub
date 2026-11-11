@@ -23,7 +23,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "tailwind-merge": "^3.3.1",
-    "viem": "^2.52.2",
+    "viem": "2.57.15",
     "wagmi": "^3.6.16"
   },
   "devDependencies": {
