@@ -41,7 +41,7 @@ For a coding agent adding EIP-7702 gasless UserOperations to an existing React a
 
 **Packages** (pin exactly; wagmi major must match `@openfort/react`):
 ```sh
-pnpm add @openfort/react@2.1.3 wagmi@3 viem@2 @tanstack/react-query@5
+pnpm add @openfort/react@2.1.3 wagmi@3 viem@2.57.15 @tanstack/react-query@5
 pnpm add @solana/kit@6 @solana/kora@0.2 @solana-program/token@0.12 @solana-program/compute-budget@0.13
 ```
 The Solana packages are peer dependencies of `@openfort/react`; install them even for an EVM-only app.
@@ -89,7 +89,7 @@ The Solana packages are peer dependencies of `@openfort/react`; install them eve
 ## Upgrade notes
 - **2026-09-23**: `@openfort/react` 2.0.1 → 2.1.3. No API used here changed between these versions (2.1.x adds onramp funding, Solana sponsorship fixes and a single owner for passkey recovery, so a login no longer prompts for the passkey twice). The owner passed to `toSimple7702SmartAccount` is now a plain `{ address, signMessage, signTypedData }` object instead of `toAccount(...)` with two `as any` casts; viem only reads those three members. `next.config.js` now also stubs `@walletconnect/ethereum-provider`, `@coinbase/wallet-sdk` and the two `@safe-global` packages, which `next build` warned about. `biome.json` drops `"recommended": true` (the default; Biome 2.5 deprecates the field).
 - Next.js stays on **15** (wagmi/walletconnect needs the webpack shim in `next.config.js`, which Next 16's Turbopack rejects). `app/layout.tsx` sets `export const dynamic = 'force-dynamic'` because `@openfort/react` throws if it renders without a publishable key at static prerender.
-- Keep `wagmi` on `^3` and `viem` on `^2` (`@openfort/react` 2.x needs viem `>=2.52.2`).
+- Keep `wagmi` on `^3` and `viem` pinned at `2.57.15` (`@openfort/react` 2.x needs viem `>=2.52.2`). viem 2.57.16 imports the optional peer `mppx/client` from `viem/tempo`, which wagmi's connectors pull in, and `next build` fails with `Can't resolve 'mppx/client'`.
 - The old node polyfill deps (`crypto-browserify`, `stream-browserify`, etc.) plus `dotenv` and `valtio` were removed as unused; `next.config.js` only keeps `fs/net/tls: false`, the optional-peer stubs and the `pino-pretty` external.
 - Biome 2.4+: config uses `files.includes` (not `experimentalScannerIgnores`) and `css.parser.tailwindDirectives`.
 
