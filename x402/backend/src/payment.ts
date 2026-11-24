@@ -7,8 +7,10 @@ import {
 	erc20Abi,
 	getAddress,
 	http,
+	isHash,
 	parseEventLogs,
 	verifyTypedData,
+	zeroHash,
 	type Address,
 	type Hex,
 } from "viem";
@@ -119,6 +121,12 @@ export async function verifyOnChainPayment(
 	paywall: Config["paywall"],
 	rpcUrl: string,
 ): Promise<void> {
+	if (!isHash(txHash) || txHash.toLowerCase() === zeroHash) {
+		throw new PaymentVerificationError(
+			"INVALID_TRANSACTION_HASH",
+			"A nonzero transaction hash is required",
+		);
+	}
 	const normalizedHash = txHash.toLowerCase();
 	if (usedTxHashes.has(normalizedHash)) {
 		throw new PaymentVerificationError(
@@ -131,11 +139,17 @@ export async function verifyOnChainPayment(
 
 	let receipt: Awaited<ReturnType<typeof client.getTransactionReceipt>>;
 	try {
-		receipt = await client.getTransactionReceipt({ hash: txHash as Hex });
+		receipt = await client.getTransactionReceipt({ hash: txHash });
 	} catch {
 		throw new PaymentVerificationError(
 			"TX_NOT_FOUND",
 			"Transaction not found on-chain",
+		);
+	}
+	if (receipt.transactionHash?.toLowerCase() !== normalizedHash) {
+		throw new PaymentVerificationError(
+			"TX_NOT_FOUND",
+			"Transaction receipt did not match the requested hash",
 		);
 	}
 
@@ -152,12 +166,15 @@ export async function verifyOnChainPayment(
 		logs: receipt.logs,
 	});
 
+	const asset = getAddress(paywall.payment.asset);
 	const payTo = getAddress(paywall.payToAddress);
 	const requiredAmount = BigInt(paywall.payment.maxAmountRequired);
 
-	const matchingLog = logs.find(
-		(log: any) =>
-			getAddress(log.args.to) === payTo && log.args.value >= requiredAmount,
+	const matchingLog = logs.some(
+		(log) =>
+			getAddress(log.address) === asset &&
+			getAddress(log.args.to) === payTo &&
+			log.args.value >= requiredAmount,
 	);
 
 	if (!matchingLog) {
