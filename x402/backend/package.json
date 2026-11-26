@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "tsc && node --watch dist/server.js",
-    "verify": "pnpm build"
+    "test": "node --test test/*.test.mjs",
+    "verify": "pnpm build && pnpm test"
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.51.0",
